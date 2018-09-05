@@ -8,8 +8,9 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QHBoxLayout, QGroupBox, QPushButton, QLineEdit, \
-                            QDoubleSpinBox, QLabel, QScrollArea
+                            QDoubleSpinBox, QLabel, QScrollArea, QMessageBox
 import numpy as np
+import os
 # Local relative imports
 from . import plot_widgets
 from . import utility
@@ -245,22 +246,84 @@ class DataConvertGroupBox(QGroupBox):
         self.setChecked(False)
 
         
-        self.load_conv_data_btn = QPushButton("2 theta Data")
-        self.data_filename_lbl = QLabel("Filename: ")
+        self.load_conv_data_btn = QPushButton('2 theta Data')
+        self.data_filename_lbl = QLabel('None')
+        
+        self.lambda_lbl = QLabel('Lambda: ')
+        #self.lambda_lbl.setAlignment(Qt.AlignRight)
+        self.lambda_input = QLineEdit('')
+        self.lambda_input.setValidator(QDoubleValidator())
+        self.lambda_input.setMaximumWidth(60)
+        #self.lambda_input.setAlignment(Qt.AlignLeft)
+        
         self.data_filename_lbl.setAlignment(Qt.AlignCenter)
-        self.save_conv_data_btn = QPushButton("Convert")
+        self.save_conv_data_btn = QPushButton('Convert')
         
         self.outer_layout = QVBoxLayout()
-        self.outer_layout.setContentsMargins(25, 5, 25, 25)
-        self.outer_layout.setSpacing(1)
+        self.outer_layout.setContentsMargins(25, 25, 25, 25)
+        self.outer_layout.setSpacing(10)
 
         self.inner_layout = QHBoxLayout()
         self.inner_layout.setContentsMargins(0,0,0,0)
-        self.inner_layout.setSpacing(5)
+        self.inner_layout.setSpacing(10)
         
-        self.inner_layout.addWidget(self.load_conv_data_btn)
-        self.inner_layout.addWidget(self.data_filename_lbl)
+        self.outer_layout.addWidget(self.load_conv_data_btn)
+        self.outer_layout.addWidget(self.data_filename_lbl)
+        
+        self.inner_layout.addWidget(self.lambda_lbl)
+        self.inner_layout.addWidget(self.lambda_input)
+
         self.outer_layout.addLayout(self.inner_layout)
         self.outer_layout.addWidget(self.save_conv_data_btn)
         
         self.setLayout(self.outer_layout)
+        
+        self.create_signals()
+
+
+    def create_signals(self):
+        self.load_conv_data_btn.clicked.connect(self.load_two_theta)
+        self.save_conv_data_btn.clicked.connect(self.save_q_space)
+        
+    def load_two_theta(self):
+
+        __file_name = utility.get_filename(io='open', caption='Load 2-theta data file')
+        if not __file_name:
+            return
+        self.data_file = __file_name
+        self.data_filename_lbl.setText(self.data_file.split('/')[-1])
+        __split_path = os.path.splitext(self.data_file)
+        self.default_fname = __split_path[0] + '_qspace' + __split_path[1]        
+        try:
+            self.two_theta_data = np.loadtxt(self.data_file, unpack=False)
+        except ValueError as e:
+            print('Please check header lines in data file')
+        
+    def save_q_space(self):
+        try:
+            # Get out filename
+            self.convert_filename = utility.get_filename(io='save', caption='Save Q-space Data', directory=self.default_fname)
+        except NameError:
+            return
+        if not self.convert_filename:
+            return
+        # Convert 2theta data
+        try:
+            __lambda = np.float(self.lambda_input.text())
+        # Return if no wavelength set
+        except ValueError:
+            print('Must set wavelength value')
+            return
+        __q_data = data_manip.convert_two_theta(self.two_theta_data[0], __lambda)
+        __out_data = np.column_stack((__q_data, self.two_theta_data[1]))
+        np.savetxt(self.convert_filename, __out_data)
+        # Message user success
+        self.success_msg = QMessageBox(QMessageBox.OK)
+        self.success_msg.setIcon(QMessageBox.Information)
+        self.success_msg.setText('Data converted to Q-Space!')
+        self.success_msg.setInformativeText(('Lambda: ', __lambda, '\nConverted data: ', self.convert_filename))
+        self.success_msg.setWindowTitle("LiquidCalc v0.1")
+        # Clear variables
+        self.data_filename_lbl.setText('None')       
+        del __lambda, __q_data, __out_data, self.convert_filename, self.default_fname
+        

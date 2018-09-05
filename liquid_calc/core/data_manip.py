@@ -20,3 +20,9 @@ def rebin_data(x, y, dq=0.02):
     y_rebin = f_interp(x_rebin)
     return x_rebin, y_rebin
     
+def convert_two_theta(two_theta, wavelength):
+    '''
+    Convert 2theta data to Q space
+    '''
+    q_data = (4 * np.pi / wavelength) * np.sin(np.radians(two_theta)/2)
+    return q_data

@@ -1,2 +1,0 @@
-from glass_structure.run_gui import main
-main()
