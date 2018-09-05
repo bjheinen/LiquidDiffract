@@ -318,11 +318,14 @@ class DataConvertGroupBox(QGroupBox):
         __out_data = np.column_stack((__q_data, self.two_theta_data[1]))
         np.savetxt(self.convert_filename, __out_data)
         # Message user success
-        self.success_msg = QMessageBox(QMessageBox.OK)
+        self.success_msg = QMessageBox()
         self.success_msg.setIcon(QMessageBox.Information)
+        self.success_msg.setStandardButtons(QMessageBox.Ok)
         self.success_msg.setText('Data converted to Q-Space!')
-        self.success_msg.setInformativeText(('Lambda: ', __lambda, '\nConverted data: ', self.convert_filename))
+        self.success_msg.setInformativeText(('Lambda: ' + str(__lambda) + '\nConverted data: ' + self.convert_filename))
         self.success_msg.setWindowTitle("LiquidCalc v0.1")
+        self.success_msg.adjustSize()
+        self.success_msg.show()
         # Clear variables
         self.data_filename_lbl.setText('None')       
         del __lambda, __q_data, __out_data, self.convert_filename, self.default_fname
