@@ -306,6 +306,8 @@ def calc_F_r(x, y, rho, dx='check', N=12, lorch=False, function='density_func'):
         pass        
     # Calculate qi(q) input array
     z = x * y
+    # Make sure using float64
+    z = z.astype(np.float64)
     # Pad with enough zeros to make array of size 2**N
     padding_zeros = np.int(2**N - (len(z)*2 - 1))    
     # Pad array with odd image of function
@@ -325,11 +327,12 @@ def calc_F_r(x, y, rho, dx='check', N=12, lorch=False, function='density_func'):
         F_r = fft_z * 2/np.pi
         return r, F_r
     elif function == 'pair_dist_func':
-        g_r = fft_z / (2 * r * rho * np.pi**2)
+        sf = 1 / (2 * r * rho * np.pi**2)
+        g_r = fft_z * sf
         g_r += 1
         return r, g_r
     elif function == 'radial_dist_func':
-        RDF_r = (2 * r * fft_z) - (4 * np.pi * rho * r**2)
+        RDF_r = (2 * r * fft_z / np.pi) + (4 * np.pi * rho * r**2)
         return r, RDF_r        
     else:
         raise ValueError('arg \'function\' must be valid option')
