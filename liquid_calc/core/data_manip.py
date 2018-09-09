@@ -26,3 +26,11 @@ def convert_two_theta(two_theta, wavelength):
     '''
     q_data = (4 * np.pi / wavelength) * np.sin(np.radians(two_theta)/2)
     return q_data
+
+def zero_norm(int_func, _S_inf):
+    '''
+    Shift data to fit first value to zero - S_inf
+    '''
+    shift = int_func[0] 
+    int_func = int_func - shift
+    return int_func

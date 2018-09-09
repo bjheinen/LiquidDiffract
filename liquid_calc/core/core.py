@@ -15,6 +15,30 @@ from scipy.integrate import simps
 import scipy.interpolate
 import scipy.fftpack
 
+def calc_mol_mass(composition):
+    '''
+    Returns to molecular mass for a given composition
+    
+    composition is dictionary in the form: (Z, charge, n)
+    
+    '''
+    _data_path = os.path.join(os.path.abspath(os.getcwd()), 'data')
+    mass_dict = np.load(os.path.join(_data_path, 'mass_data.npy')).item()
+    #mol_mass = np.sum([mass_dict[element]*composition[element][2] for element in composition])
+    mol_mass = np.sum([mass_dict[element] for element in composition])
+    return mol_mass
+
+def conv_density(rho, composition):
+    '''
+    Converts atomic number density - atoms/cubic angstrom
+    to mass density in g/cm^3
+    '''
+    # Calculate molecular mass g/mole
+    mol_mass = calc_mol_mass(composition)
+    # Calculate atoms/cm3 > then moles/cm3
+    mass_density = (rho * 10 / 6.0221409) * mol_mass
+    return mass_density
+
 def calc_Z_sum(composition):
     '''
     Calculates the sum of the atomic number of all elements in the composition
@@ -83,6 +107,19 @@ def calc_effective_ff(composition,Q):
     atomic_ff = np.asarray(atomic_ff)
     effective_ff = np.sum(atomic_ff,0) / Z_tot
     return effective_ff, atomic_ff
+
+def calc_average_scattering(composition,Q):
+    '''
+    Calculates <f2> which is equal to <f>2 for monatomic case
+    '''    
+    # for a4 equation:
+    ff_array = []
+    for element in composition:
+        # Calculate atomic form factors, square and multiply by proportion
+        ff_array.append(calc_atomic_ff(composition[element], Q)**2 * composition[element][2])
+    ff_array = np.asarray(ff_array)
+    average_scattering = np.sum(ff_array, 0)
+    return average_scattering#above a4 thing  
         
 
 def calc_compton_scattering(element, Q):
@@ -163,7 +200,10 @@ def calc_S_inf(composition, Q):
     return S_inf
 
 
-def calc_alpha(Q_cor, I_cor, Z_tot, rho, J, S_inf, effective_ff):
+def calc_alpha(Q_cor, I_cor, rho, 
+               Z_tot=None, J=None, S_inf=None, effective_ff=None,
+               average_scattering=None, compton_intensity=None,
+               method='ashcroft-langreth'):
     '''
     Calculates 'alpha' - the normalisation factor defined in Eq 34 of 
     Eggert et al., 2002
@@ -180,12 +220,23 @@ def calc_alpha(Q_cor, I_cor, Z_tot, rho, J, S_inf, effective_ff):
     Returns:
         alpha
     '''
-    # define the two integrals in the equation
-    int_1 = simps((J + S_inf) * Q_cor**2, Q_cor)
-    int_2 = simps((I_cor / effective_ff**2) * Q_cor**2, Q_cor)
-    # calculate alpha
-    alpha = Z_tot**2 * (((-2 * np.pi**2 * rho) + int_1) / int_2)
-    return alpha
+    
+    if method == 'ashcroft-langreth':
+        # define the two integrals in the equation
+        int_1 = simps((J + S_inf) * Q_cor**2, Q_cor)
+        int_2 = simps((I_cor / effective_ff**2) * Q_cor**2, Q_cor)
+        # calculate alpha
+        alpha = Z_tot**2 * (((-2 * np.pi**2 * rho) + int_1) / int_2)
+        return alpha
+    elif method == 'faber-ziman':
+        # define the two integrals in the equation    
+        int_1 = simps((compton_intensity + 1) * Q_cor**2, Q_cor)
+        int_2 = simps(Q_cor**2 * I_cor / average_scattering, Q_cor)
+        alpha = ((-2 * np.pi**2 * rho) + int_1)/int_2
+        return alpha
+    else:
+        raise ValueError()
+
 
 
 def calc_coherent_scattering(Q_cor, I_cor, composition, alpha):
@@ -212,7 +263,7 @@ def calc_coherent_scattering(Q_cor, I_cor, composition, alpha):
 	return coherent_scattering
 
 
-def calc_structure_factor(Q_cor, I_cor, composition, rho):
+def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langreth'):
     '''
 	Calculate the molecular structure factor using Eq 18 of Eggert et al., 2002
     
@@ -223,17 +274,36 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho):
                       the form (Z,charge,n)
         rho - actual or initial estimate of atomic density in atoms/Angstrom^3
 	'''
-    N = len(composition)
-    Z_tot = calc_Z_sum(composition)
-    J = calc_J(composition, Q_cor)
-    S_inf = calc_S_inf(composition,Q_cor)
-    effective_ff, _ = calc_effective_ff(composition,Q_cor)
-    alpha = calc_alpha(Q_cor, I_cor, Z_tot, rho, J, S_inf, effective_ff)
-    coherent_scattering = calc_coherent_scattering(Q_cor, I_cor, composition, alpha)
-    
-    structure_factor = coherent_scattering / (N * Z_tot**2 * effective_ff**2)
-    return structure_factor
-    
+    if method == 'ashcroft-langreth':
+        N = len(composition)
+        Z_tot = calc_Z_sum(composition)
+        J = calc_J(composition, Q_cor)
+        S_inf = calc_S_inf(composition,Q_cor)
+        effective_ff, _ = calc_effective_ff(composition,Q_cor)
+        alpha = calc_alpha(Q_cor, I_cor, rho, 
+                           Z_tot=Z_tot, J=J, S_inf=S_inf, 
+                           effective_ff=effective_ff, method='ashcroft-langreth')
+        coherent_scattering = calc_coherent_scattering(Q_cor, I_cor, composition, alpha)
+        structure_factor = coherent_scattering / (N * Z_tot**2 * effective_ff**2)
+        return structure_factor
+
+    elif method == 'faber-ziman':
+        average_scattering = calc_average_scattering(composition, Q_cor)    
+        compton_intensity=0
+        for element in composition:
+            compton_intensity += calc_compton_scattering(element,Q_cor)
+        alpha = calc_alpha(Q_cor, I_cor, rho, 
+                           average_scattering=average_scattering, 
+                           compton_intensity=compton_intensity, 
+                           method='faber-ziman')
+        # for monatomic case:
+        structure_factor = ((alpha * I_cor - compton_intensity) - (0))/average_scattering
+        return structure_factor
+
+    else:
+        raise ValueError
+
+
 
 def calc_F_r(x, y, rho, dx='check', N=12, lorch=False, function='density_func'):
     '''
@@ -327,11 +397,15 @@ def calc_F_r(x, y, rho, dx='check', N=12, lorch=False, function='density_func'):
         F_r = fft_z * 2/np.pi
         return r, F_r
     elif function == 'pair_dist_func':
-        sf = 1 / (2 * r * rho * np.pi**2)
-        g_r = fft_z * sf
+        fft_z *= 4 * np.pi**2
+        with np.errstate(divide='ignore', invalid='ignore'):
+            sf = 1 / (2 * r * rho * np.pi**2)
+            g_r = fft_z * sf
+        #g_r = np.nan_to_num(g_r)
         g_r += 1
         return r, g_r
     elif function == 'radial_dist_func':
+        fft_z *= 4*np.pi**2
         RDF_r = (2 * r * fft_z / np.pi) + (4 * np.pi * rho * r**2)
         return r, RDF_r        
     else:
@@ -380,6 +454,7 @@ def calc_model_F_intra_r(Q, r, composition, rho, d_pq):
                     ((np.sin(r_minus_d*Q_max)/r_minus_d) - 
                      (np.sin(r_plus_d*Q_max)/r_plus_d))
         model_F_intra_r = F_intra_r - (4*np.pi*r*rho)
+        model_F_intra_r = - 4*np.pi*r*rho
         model_F_intra_r /= (4*np.pi**2)
         return model_F_intra_r
     
@@ -455,11 +530,13 @@ def calc_impr_interference_func(rho, *args):
     # Unpack static parameters & arguments
     *_, opt_flag = args
     if opt_flag == False:
-        (q_dat, interference_func, composition, r_min, d_pq, iter_limit, opt_flag) = args
+        (q_dat, interference_func, composition, r_min, d_pq, iter_limit, method, opt_flag) = args
     elif opt_flag == True:
-        (q_dat, I_dat, composition, r_min, d_pq, iter_limit, opt_flag) = args
+        (q_dat, I_dat, composition, r_min, d_pq, iter_limit, method, opt_flag) = args
         # Calculate initial interference func for rho value
-        structure_factor = calc_structure_factor(q_dat,I_dat, composition, rho)
+        structure_factor = calc_structure_factor(q_dat, I_dat, 
+                                                 composition, rho, 
+                                                 method=method)
         interference_func = structure_factor - calc_S_inf(composition, q_dat)
     else:
         raise ValueError('Arg - opt_flag - must be boolean')
@@ -468,7 +545,6 @@ def calc_impr_interference_func(rho, *args):
     r, F_r = calc_F_r(q_dat, interference_func, rho)
     # Calculate expected behaviour of F(r) for intramolecular distances (r<r_min)
     model_F_intra_r = calc_model_F_intra_r(q_dat, r, composition, rho, d_pq)
-    
     # Calculate static terms of iterative proceduce
     with np.errstate(divide='ignore', invalid='ignore'):
         t1 = 1 / q_dat
@@ -491,15 +567,21 @@ def calc_impr_interference_func(rho, *args):
         r_intra = r[np.where(r<r_min)]
         chi_squared = calc_chi_squared(r_intra, delta_F_r)
         
-        t2 = (interference_func/t2_divisor) + 1
-        t3 = calc_F_r_iteration_term(delta_F_r)[:len(interference_func)]
-        with np.errstate(invalid='ignore'):
-            interference_func_impr = interference_func - (t1 * t2 * t3)
+        if method == 'ashcroft-langreth':
+            t2 = (interference_func/t2_divisor) + 1
+            t3 = calc_F_r_iteration_term(delta_F_r)[:len(interference_func)]
+            with np.errstate(invalid='ignore'):
+                interference_func_impr = interference_func - (t1 * t2 * t3)
+        elif method == 'faber-ziman':
+            t2 = calc_F_r_iteration_term(delta_F_r)[:len(interference_func)]
+            interference_func_impr = ((interference_func+1) * (1 - t1*t2)) - 1
+
         count+=1
 
     if opt_flag == True:
         return chi_squared
     elif opt_flag == False:
+        #interference_func_impr[0] = -1#np.nan_to_num(interference_func_impr)
         return interference_func_impr, chi_squared
     else:
         raise ValueError('Argument - opt_flag - must be boolean')

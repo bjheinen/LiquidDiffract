@@ -3,9 +3,10 @@ __author__ = "Benedict J Heinen"
 __copyright__ = "Copyright 2018, Benedict J Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 import pyqtgraph as pg
+import numpy as np
                 
 pg_options = {'leftButtonPan': False, 'background': 0.9, 'foreground': 0.15,
               'antialias': True}
@@ -179,11 +180,13 @@ class OptimPlotWidget(QWidget):
         except AttributeError:
             pass
 
+        _window = len(_data['cor_x_cut'])
+
         self.p1 = self.data_plot.plot(x=_data['cor_x_cut'], y=_data['cor_y_cut'], pen={'color': 0.1, 'width': 1.2})
         self.p2_a = self.iq_plot.plot(x=_data['iq_x'], y=_data['int_func'], pen={'color': 0.1, 'width': 1.2})
         self.p2_b = self.iq_plot.plot(x=_data['impr_iq_x'], y=_data['impr_int_func'], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
-        self.p3_a = self.fr_plot.plot(x=_data['fr_x'], y=_data['fr_y'], pen={'color': 0.1, 'width': 1.2})
-        self.p3_b = self.fr_plot.plot(x=_data['impr_fr_x'], y=_data['impr_fr_y'], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
+        self.p3_a = self.fr_plot.plot(x=_data['fr_x'][:_window], y=_data['fr_y'][:_window], pen={'color': 0.1, 'width': 1.2})
+        self.p3_b = self.fr_plot.plot(x=_data['impr_fr_x'][:_window], y=_data['impr_fr_y'][:_window], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
     
         self.data_plot.vb.autoRange()
         self.iq_plot.vb.autoRange()
@@ -264,8 +267,8 @@ class ResultsPlotWidget(QWidget):
         self.pg_layout_widget.setContentsMargins(0, 0, 0, 0)
 
         self.sq_plot = CustomPlotItem()
-        self.gr_plot = CustomPlotItem()
-        self.rdf_plot = CustomPlotItem()
+        self.gr_plot = WindowedPlotItem()
+        self.rdf_plot = WindowedPlotItem()
         
         self.sq_plot.plot(x=[], y=[])
         self.gr_plot.plot(x=[], y=[])
@@ -304,17 +307,47 @@ class ResultsPlotWidget(QWidget):
         except AttributeError:
             pass
 
+        # Determine data window for length of sq (pre fft)
+        _window = len(_data['sq_x'])
+
         self.p1 = self.sq_plot.plot(x=_data['sq_x'], y=_data['sq_y'], pen={'color': 0.1, 'width': 1.2})
-        self.p2 = self.gr_plot.plot(x=_data['gr_x'], y=_data['gr_y'], pen={'color': 0.1, 'width': 1.2})
-        self.p3 = self.rdf_plot.plot(x=_data['rdf_x'], y=_data['rdf_y'], pen={'color': 0.1, 'width': 1.2})
-    
+        self.p2 = self.gr_plot.plot(x=_data['gr_x'][:_window], y=_data['gr_y'][:_window], pen={'color': 0.1, 'width': 1.2})
+        self.p3 = self.rdf_plot.plot(x=_data['rdf_x'][:_window], y=_data['rdf_y'][:_window], pen={'color': 0.1, 'width': 1.2})
+            
+        
+        self.x_max_gr = 12
+        _gr_cut = np.nan_to_num(_data['gr_y'][np.where(_data['gr_x']<self.x_max_gr)])
+        self.y_min_gr = np.min(_gr_cut)
+        self.y_max_gr = np.max(_gr_cut)
+        
+        self.x_max_rdf = 8
+        _rdf_cut =  np.nan_to_num(_data['rdf_y'][np.where(_data['rdf_x']<self.x_max_rdf)])
+        self.y_min_rdf = np.min(_rdf_cut)
+        self.y_max_rdf = np.max(_rdf_cut)
+        
+        self.set_gr_window()
+        self.set_rdf_window()
+        
         self.sq_plot.vb.autoRange()
-        self.gr_plot.vb.autoRange()
-        self.rdf_plot.vb.autoRange()
+
+    def set_gr_window(self):
+        try:
+            self.gr_plot.vb.setRange(xRange=(0, self.x_max_gr), 
+                                     yRange=(self.y_min_gr, self.y_max_gr))
+        except:
+            return
     
-    
+    def set_rdf_window(self):
+        try:
+            self.rdf_plot.vb.setRange(xRange=(0, self.x_max_rdf), 
+                                      yRange=(self.y_min_rdf, self.y_max_rdf))
+        except:
+            return
+
     def create_signals(self):
         self.mouse_proxy = pg.SignalProxy(self.pg_layout.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved)
+        self.gr_plot.reset_window.connect(self.set_gr_window)
+        self.rdf_plot.reset_window.connect(self.set_rdf_window)
 
         
     def mouse_moved(self, __evt):
@@ -366,6 +399,8 @@ class ResultsPlotWidget(QWidget):
 
 
 
+
+
 class CustomPlotItem(pg.PlotItem):
     
     def __init__(self, *args, **kwargs):
@@ -393,3 +428,11 @@ class CustomPlotItem(pg.PlotItem):
             #self.vb.enableAutoRange()
             #self._auto_range = True
             #self.vb.sigRangeChangedManually.emit(self.vb.state['mouseEnabled'])
+            
+            
+class WindowedPlotItem(CustomPlotItem):
+
+    reset_window = pyqtSignal()
+    
+    def autoBtnClicked(self):
+        self.reset_window.emit()

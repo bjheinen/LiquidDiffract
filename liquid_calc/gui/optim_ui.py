@@ -8,13 +8,14 @@ from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QHBoxLayout, QGroupBox, QPushButton, QLineEdit, \
                             QComboBox, QTableWidget, QTableWidgetItem, \
-                            QLabel, QCheckBox
+                            QLabel, QCheckBox, QButtonGroup, QRadioButton
 import numpy as np
 from scipy.optimize import minimize
 import os
 
 from . import plot_widgets
 from . import utility
+#from core import data_manip
 import core.core as core
 
 
@@ -24,7 +25,7 @@ class OptimUI(QWidget):
     results_changed = pyqtSignal()
 
     
-    minimisation_options = {'disp': 0,
+    minimisation_options = {'disp': 1,
                             'maxiter': 15000,
                             'maxfun': 15000,
                             'ftol': 2.22e-8,
@@ -117,13 +118,23 @@ class OptimUI(QWidget):
         self.data['impr_fr_x'] = np.asarray([])
         self.data['impr_fr_y'] = np.asarray([])
         self.data['impr_int_func'] = np.asarray([])
+        # Get S(Q) method
+        if self.optim_config_widget.data_options_gb.al_btn.isChecked():
+            _method = 'ashcroft-langreth'
+        elif self.optim_config_widget.data_options_gb.fb_btn.isChecked():
+            _method='faber-ziman'
+        # Get rho 0
         _rho_0 = np.float(self.optim_config_widget.composition_gb.density_input.text())
         self.data['iq_x'] = self.data['cor_x_cut']
         self.data['sq_y'] = core.calc_structure_factor(self.data['cor_x_cut'], 
                                                        self.data['cor_y_cut'], 
-                                                       _composition, _rho_0)
+                                                       _composition, _rho_0,
+                                                       method=_method)
         _S_inf = core.calc_S_inf(_composition, self.data['cor_x_cut'])
         self.data['int_func'] = self.data['sq_y'] - _S_inf
+        #print(self.data['int_func'][0])
+        #self.data['int_func'] = data_manip.zero_norm(self.data['int_func'], _S_inf)
+        #print(self.data['int_func'][0])
         self.data['fr_x'], self.data['fr_y'] = core.calc_F_r(self.data['iq_x'], self.data['int_func'], _rho_0)
         self.optim_plot_widget.update_plots(self.data)
 
@@ -142,6 +153,11 @@ class OptimUI(QWidget):
         # Don't run if no composition set
         if not _composition:
             return
+        # Get S(Q) method
+        if self.optim_config_widget.data_options_gb.al_btn.isChecked():
+            _method = 'ashcroft-langreth'
+        elif self.optim_config_widget.data_options_gb.fb_btn.isChecked():
+            _method='faber-ziman'
         # Get density
         _rho_0 = np.float(self.optim_config_widget.composition_gb.density_input.text())
         # Get r_min, d_pq
@@ -158,7 +174,7 @@ class OptimUI(QWidget):
                 return
             _bounds = ((_lb, _ub),)
             _args = (self.data['cor_x_cut'], self.data['cor_y_cut'],
-                     _composition, _r_min, _d_pq, _n_iter, 1)
+                     _composition, _r_min, _d_pq, _n_iter, _method, 1)
             print('\n*************************\n')
             print('Finding optimal density...')
             _opt_result = minimize(core.calc_impr_interference_func,
@@ -170,11 +186,13 @@ class OptimUI(QWidget):
             print('Refined density = ', _rho_temp)
             print('Chi^2 = ', _opt_result.fun, '\n')
             self.optim_config_widget.optim_results_gb.density_output.setText('{:.4e}'.format(self.data['refined_rho']))
+            _mass_density = core.conv_density(_rho_temp, _composition)
+            self.optim_config_widget.optim_results_gb.mass_density.setText('{0:.3f}'.format(_mass_density))
         else:
             _rho_temp = _rho_0
                 
         _args = (self.data['cor_x_cut'], self.data['int_func'],
-                 _composition, _r_min, _d_pq, _n_iter, 0)
+                 _composition, _r_min, _d_pq, _n_iter, _method, 0)
         self.data['impr_int_func'], self.data['chi_sq'] = core.calc_impr_interference_func(_rho_temp, *_args)
         self.optim_config_widget.optim_results_gb.chi_sq_output.setText('{:.4e}'.format(self.data['chi_sq']))
         # Calculated improved F_r
@@ -217,6 +235,8 @@ class OptimConfigWidget(QWidget):
     def _toggle_density_refine(self, state):
         self.optim_results_gb.density_output.setEnabled(state)
         self.optim_results_gb.density_output_label.setEnabled(state)
+        self.optim_results_gb.mass_density.setEnabled(state)
+        self.optim_results_gb.mass_density_label.setEnabled(state)
     
 class CompositionGroupBox(QGroupBox):
     
@@ -243,6 +263,9 @@ class CompositionGroupBox(QGroupBox):
         self.density_lbl = QLabel("Density:")
         self.density_input = QLineEdit("1.0")
         
+        self.mass_density_label = QLabel('g/cm<sup>3</sup>')
+        self.mass_density = QLineEdit('')
+        
         self.composition_table = QTableWidget()
         
         
@@ -253,6 +276,12 @@ class CompositionGroupBox(QGroupBox):
         self.density_input.setAlignment(Qt.AlignRight)
         self.density_input.setValidator(QDoubleValidator())
         self.density_input.setMaximumWidth(100)
+        
+        self.mass_density.setAlignment(Qt.AlignRight)
+        self.mass_density.setMaximumWidth(100)
+        
+        self.mass_density.setReadOnly(True)
+        self.mass_density.isReadOnly()
 
         self.composition_table.setColumnCount(4)
         self.composition_table.horizontalHeader().setVisible(True)
@@ -293,10 +322,12 @@ class CompositionGroupBox(QGroupBox):
         self.button_layout.addWidget(self.add_element_btn)
         self.button_layout.addWidget(self.delete_element_btn)
 
-        self.density_layout = QHBoxLayout()
-        self.density_layout.addWidget(self.density_lbl)
-        self.density_layout.addWidget(self.density_input)
-        self.density_layout.addWidget(QLabel('??at/A^3'))
+        self.density_layout = QGridLayout()
+        self.density_layout.addWidget(self.density_lbl, 0, 0)
+        self.density_layout.addWidget(self.density_input, 0, 1)
+        self.density_layout.addWidget(QLabel('atoms/A<sup>3</sup>'), 0, 2)
+        self.density_layout.addWidget(self.mass_density, 1, 1)
+        self.density_layout.addWidget(self.mass_density_label, 1, 2)
         
         self.main_layout.addLayout(self.button_layout)
         self.main_layout.addWidget(self.composition_table)
@@ -309,6 +340,7 @@ class CompositionGroupBox(QGroupBox):
     def create_signals(self):
         self.delete_element_btn.clicked.connect(self.delete_row)
         self.add_element_btn.clicked.connect(self.add_row)
+        self.density_input.textChanged.connect(self.update_mass_density)
 
      
     def add_row(self):
@@ -335,6 +367,8 @@ class CompositionGroupBox(QGroupBox):
         
         # Create Signal
         _element_editor.currentIndexChanged.connect(self.update_cb_val)
+        
+        self.update_mass_density()
 
     def delete_row(self):
         # Selects last row if none selected by user
@@ -344,6 +378,7 @@ class CompositionGroupBox(QGroupBox):
         else:
             pass
         self.composition_table.removeRow(_selected_row)
+        self.update_mass_density()
         
       
     def update_cb_val(self):
@@ -352,6 +387,7 @@ class CompositionGroupBox(QGroupBox):
         _new_element = str(_cb_widget.currentText())
         _new_Z_val = str(CompositionGroupBox._element_dict[_new_element])
         self.composition_table.item(_current_row, 1).setText(_new_Z_val)
+        self.update_mass_density()
       
     def get_composition_dict(self):
         '''Return composition dictionary'''
@@ -367,7 +403,13 @@ class CompositionGroupBox(QGroupBox):
             _dict_entry = {_key: (_Z, _charge, _n)}
             _composition_dict.update(_dict_entry)
         return _composition_dict
-
+    
+    
+    def update_mass_density(self):
+        _composition = self.get_composition_dict()
+        _atomic_density = np.float(self.density_input.text())
+        _mass_density = core.conv_density(_atomic_density, _composition)
+        self.mass_density.setText('{0:.3f}'.format(_mass_density))
 
 class DataOptionsGroupBox(QGroupBox):
     
@@ -392,6 +434,14 @@ class DataOptionsGroupBox(QGroupBox):
         self.smooth_label = QLabel('Smooth Data? ')
         self.smooth_data_check = QCheckBox()
         
+        self.method_button_group = QButtonGroup()
+        self.al_btn = QRadioButton('Ashcroft-Langreth')
+        self.fb_btn = QRadioButton('Faber-Ziman')
+        self.method_button_group.addButton(self.al_btn)
+        self.method_button_group.addButton(self.fb_btn)
+        
+        self.method_lbl = QLabel('S(Q) formulation: ')
+                
         self.calc_sq_btn = QPushButton('Calc S(Q)')
         
     def style_widgets(self):  
@@ -403,9 +453,9 @@ class DataOptionsGroupBox(QGroupBox):
         self.qmax_input.setEnabled(False)
         self.qmax_check.setChecked(False)
         self.qmax_label.setEnabled(False)
-        #self.smooth_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.smooth_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.smooth_data_check.setChecked(False)
- 
+        self.al_btn.setChecked(True)
     
     def create_layout(self):
         self.main_layout = QVBoxLayout()
@@ -428,7 +478,14 @@ class DataOptionsGroupBox(QGroupBox):
         #self.grid_layout.addWidget(QW('-'), 1, 1)
         self.grid_layout.addWidget(self.smooth_data_check, 1, 2)
         
+        self.grid_layout.addWidget(self.method_lbl, 2, 0)
+        
+        self.hbtn_layout = QHBoxLayout()
+        self.hbtn_layout.addWidget(self.al_btn)
+        self.hbtn_layout.addWidget(self.fb_btn)
+        
         self.main_layout.addLayout(self.grid_layout)
+        self.main_layout.addLayout(self.hbtn_layout)
         self.main_layout.addWidget(self.calc_sq_btn)
 
         self.setLayout(self.main_layout)      
@@ -589,24 +646,33 @@ class OptimResultsGroupBox(QGroupBox):
         self.chi_sq_label = QLabel('Final Chi-squared: ')
         self.chi_sq_output = QLineEdit()
         
-        self.density_output_label = QLabel('Refined density: ')
+        self.density_output_label = QLabel('Refined density (at/A<sup>3</sup>): ')
         self.density_output = QLineEdit()
+        
+        self.mass_density_label = QLabel('(g/cm<sup>3</sup>): ')
+        self.mass_density = QLineEdit()
         
     def style_widgets(self):
         
         self.chi_sq_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.density_output_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.mass_density_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
 
         self.chi_sq_output.isReadOnly()
         self.density_output.isReadOnly()
+        self.mass_density.isReadOnly()
         self.chi_sq_output.setMaximumWidth(82)
         self.density_output.setMaximumWidth(82)
+        self.mass_density.setMaximumWidth(82)
         
         self.density_output.setEnabled(False)
         self.density_output_label.setEnabled(False)
+        self.mass_density.setEnabled(False)
+        self.mass_density_label.setEnabled(False)
         
         self.density_output.setReadOnly(True)
         self.chi_sq_output.setReadOnly(True)
+        self.mass_density.setReadOnly(True)
 
     def create_layout(self):
         
@@ -621,6 +687,8 @@ class OptimResultsGroupBox(QGroupBox):
         self.grid_layout.addWidget(self.chi_sq_output, 0, 1)
         self.grid_layout.addWidget(self.density_output_label, 1, 0)
         self.grid_layout.addWidget(self.density_output, 1, 1)
+        self.grid_layout.addWidget(self.mass_density_label, 2, 0)
+        self.grid_layout.addWidget(self.mass_density, 2, 1)
         
         self.main_layout.addLayout(self.grid_layout)
         
