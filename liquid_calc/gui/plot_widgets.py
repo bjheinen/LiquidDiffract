@@ -67,16 +67,28 @@ class BkgPlotWidget(QWidget):
         self.pos_label = pg.LabelItem(justify='right')
         self.pg_layout.addItem(self.pos_label,col=0, row=0)
     
-    def update_plots(self, _data):
+    def update_plots(self, _data, _plot_raw):
         try:
-            self.p1.clear()
-            self.p2.clear()
+            self.p1_a.clear()
+            self.p2_a.clear()
             self.p3.clear()
         except AttributeError:
             pass
-        self.p1 = self.data_plot.plot(x=_data['data_x'], y=_data['data_y'], pen={'color': 0.1, 'width': 1.2})
-        self.p2 = self.data_plot.plot(x=_data['bkg_x'], y=_data['bkg_y_sc'], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
+        try:
+            self.p1_b.clear()
+            self.p2_b.clear()
+        except AttributeError:
+            pass
+        
+        self.p1_a = self.data_plot.plot(x=_data['data_x'], y=_data['data_y'], pen={'color': 0.1, 'width': 1.2})
+        self.p2_a = self.data_plot.plot(x=_data['bkg_x'], y=_data['bkg_y_sc'], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
         self.p3 = self.bkg_corrected_plot.plot(x=_data['cor_x'], y=_data['cor_y'], pen={'color': 0.1, 'width': 1.2})
+        
+        if _plot_raw:
+            self.p1_b = self.data_plot.plot(x=_data['data_raw_x'], y=_data['data_raw_y'], pen=None, symbolPen={'color': 0.1}, symbolBrush=0.1, symbol='x', symbolSize=7)
+            self.p2_b = self.data_plot.plot(x=_data['bkg_raw_x'], y=_data['bkg_raw_y_sc'], pen=None, symbolPen={'color': '#342256'}, symbolBrush='#342256', symbol='x', symbolSize=7)
+
+        
         self.data_plot.vb.autoRange()
         self.bkg_corrected_plot.vb.autoRange()
     
@@ -179,6 +191,10 @@ class OptimPlotWidget(QWidget):
             self.p3_b.clear()
         except AttributeError:
             pass
+        try:
+            self.p2_c.clear()
+        except AttributeError:
+            pass
 
         _window = len(_data['cor_x_cut'])
 
@@ -188,10 +204,13 @@ class OptimPlotWidget(QWidget):
         self.p3_a = self.fr_plot.plot(x=_data['fr_x'][:_window], y=_data['fr_y'][:_window], pen={'color': 0.1, 'width': 1.2})
         self.p3_b = self.fr_plot.plot(x=_data['impr_fr_x'][:_window], y=_data['impr_fr_y'][:_window], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
     
+        if _data['mod_func'] != 'None':
+            self.p2_c = self.iq_plot.plot(x=_data['iq_x'], y=_data['modification']*_data['int_func'], pen={'color': '#342256', 'width': 0.8, 'style': Qt.DashLine})
+
         self.data_plot.vb.autoRange()
         self.iq_plot.vb.autoRange()
         self.fr_plot.vb.autoRange()
-    
+
     
     def create_signals(self):
         self.mouse_proxy = pg.SignalProxy(self.pg_layout.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved)

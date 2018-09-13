@@ -8,8 +8,10 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QHBoxLayout, QGroupBox, QPushButton, QLineEdit, \
-                            QDoubleSpinBox, QLabel, QScrollArea, QMessageBox
+                            QDoubleSpinBox, QLabel, QScrollArea, QMessageBox, \
+                            QCheckBox
 import numpy as np
+from scipy.optimize import minimize
 import os
 # Local relative imports
 from . import plot_widgets
@@ -48,22 +50,29 @@ class BkgUI(QWidget):
 
         self.setLayout(self.layout)
 
-        self.create_signals()
-
-        self.data = {'data_x': np.asarray([]), 'data_y': np.asarray([]),
-                     'bkg_x':  np.asarray([]), 'bkg_y':  np.asarray([]),
-                     'bkg_y_sc': np.asarray([]),
-                     'cor_x':  np.asarray([]), 'cor_y':  np.asarray([])
+        
+        
+        __a = np.asarray([])
+        self.data = {'data_raw_x': __a, 'data_raw_y':   __a,
+                     'data_x':     __a, 'data_y':       __a,
+                     'bkg_raw_x':  __a, 'bkg_raw_y':    __a,
+                     'bkg_x':      __a, 'bkg_y':        __a,
+                     'bkg_y_sc':   __a, 'bkg_raw_y_sc': __a,
+                     'cor_x':      __a, 'cor_y':        __a
                      }
         self.bkg_file = None
         self.data_file = None
+        
+        self.create_signals()
 
     def create_signals(self):
         self.bkg_config_widget.data_files_gb.load_data_btn.clicked.connect(self.load_data)
         self.bkg_config_widget.data_files_gb.load_bkg_btn.clicked.connect(self.load_bkg)
+        self.bkg_config_widget.data_files_gb.plot_raw_check.stateChanged.connect(self.plot_data)
         self.bkg_config_widget.bkg_subtract_gb.bkg_sub_btn.clicked.connect(self.sub_bkg)
         self.bkg_config_widget.bkg_subtract_gb.scale_sb.valueChanged.connect(self.plot_data)
         self.bkg_config_widget.bkg_subtract_gb.toggled.connect(self.sub_bkg)
+        self.bkg_config_widget.bkg_subtract_gb.auto_sc_btn.clicked.connect(self.auto_scale_bkg)
         
     def load_data(self):
         __file_name = utility.get_filename(io='open')
@@ -73,10 +82,17 @@ class BkgUI(QWidget):
             return
         self.bkg_config_widget.data_files_gb.data_filename_lbl.setText(self.data_file.split('/')[-1])
         try:
-            self.data['data_x'], self.data['data_y'] = np.loadtxt(self.data_file, unpack=True)
+            self.data['data_raw_x'], self.data['data_raw_y'] = np.loadtxt(self.data_file, unpack=True)
         except ValueError as e:
             print('Please check header lines in data file')
-        self.data['data_x'], self.data['data_y'] = data_manip.rebin_data(self.data['data_x'], self.data['data_y'])
+            
+        # Delete any processed data when loading new file            
+        self.data['cor_x'] = np.asarray([])
+        self.data['cor_y'] = np.asarray([])
+        self.plots_changed.emit()    
+        
+        self.data['data_x'], self.data['data_y'] = data_manip.rebin_data(self.data['data_raw_x'], self.data['data_raw_y'])
+
         self.plot_data()
 
     def load_bkg(self):
@@ -87,16 +103,17 @@ class BkgUI(QWidget):
             return
         self.bkg_config_widget.data_files_gb.bkg_filename_lbl.setText(self.bkg_file.split('/')[-1])
         try:
-            self.data['bkg_x'], self.data['bkg_y'] = np.loadtxt(self.bkg_file, unpack=True)
+            self.data['bkg_raw_x'], self.data['bkg_raw_y'] = np.loadtxt(self.bkg_file, unpack=True)
         except ValueError as e:
             print('Please check header lines in data file')
-        self.data['bkg_x'], self.data['bkg_y'] = data_manip.rebin_data(self.data['bkg_x'], self.data['bkg_y'])
+        self.data['bkg_x'], self.data['bkg_y'] = data_manip.rebin_data(self.data['bkg_raw_x'], self.data['bkg_raw_y'])
         self.plot_data()
 
     def plot_data(self):
         if self.data['bkg_y'].size:
             # First scale bkg data
             _bkg_scaling = self.bkg_config_widget.bkg_subtract_gb.scale_sb.value()
+            self.data['bkg_raw_y_sc'] = self.data['bkg_raw_y'] * _bkg_scaling
             self.data['bkg_y_sc'] = self.data['bkg_y'] * _bkg_scaling
         if self.data['cor_x'].size:
             # Only re-subtract if already subtract button clicked
@@ -105,8 +122,11 @@ class BkgUI(QWidget):
                 self.data['cor_y'] = self.data['data_y'] - self.data['bkg_y_sc']
             else:
                 self.data['cor_y'] = self.data['data_y']
-            
-        self.bkg_plot_widget.update_plots(self.data)
+        if self.bkg_config_widget.data_files_gb.plot_raw_check.isChecked():
+            _plot_raw = 1
+        else:
+            _plot_raw = 0
+        self.bkg_plot_widget.update_plots(self.data, _plot_raw)
         # emit signal that data has changed to be picked up by tab2
         self.plots_changed.emit()
 
@@ -114,7 +134,14 @@ class BkgUI(QWidget):
         # Cor x = data x        
         self.data['cor_x'] = self.data['data_x']
         self.plot_data()
-
+        
+    def auto_scale_bkg(self):
+        bkg_scaling = minimize(data_manip.bkg_scaling_residual, 1, 
+                               args=(self.data['data_y'], self.data['bkg_y']), 
+                               method='nelder-mead', 
+                               options={'xtol': 1e-8, 'disp': False})
+        bkg_scaling = bkg_scaling.x
+        self.bkg_config_widget.bkg_subtract_gb.scale_sb.setValue(bkg_scaling)
 
 class BkgConfigWidget(QWidget):
 
@@ -169,10 +196,17 @@ class DataFilesGroupBox(QGroupBox):
         self.data_lbl_frame.setWidget(self.data_filename_lbl)
         self.bkg_lbl_frame.setWidget(self.bkg_filename_lbl)
         
+        
+        self.plot_raw_check = QCheckBox()
+        self.plot_raw_lbl = QLabel('Plot raw (unbinned) data?')
+        self.plot_raw_check.setChecked(False)
+        
         self.grid_layout.addWidget(self.load_data_btn, 0, 0)
         self.grid_layout.addWidget(self.data_lbl_frame, 0, 1)
         self.grid_layout.addWidget(self.load_bkg_btn, 1, 0)
         self.grid_layout.addWidget(self.bkg_lbl_frame, 1, 1)
+        self.grid_layout.addWidget(self.plot_raw_lbl, 2, 0)
+        self.grid_layout.addWidget(self.plot_raw_check, 2, 1)
 
         self.setLayout(self.grid_layout)
 
@@ -196,6 +230,7 @@ class BkgSubtractGroupBox(QGroupBox):
         self.scale_lbl = QLabel('Bkg Scaling: ')      
         self.scale_sb = QDoubleSpinBox()        
         self.scale_step = QLineEdit('0.01')      
+        self.auto_sc_btn = QPushButton('Auto-scale Bkg')
         self.bkg_sub_btn = QPushButton('Subtract Background')
 
     def style_widgets(self):
@@ -224,6 +259,7 @@ class BkgSubtractGroupBox(QGroupBox):
         self.inner_layout.addWidget(self.scale_step, 2)
 
         self.outer_layout.addLayout(self.inner_layout)
+        self.outer_layout.addWidget(self.auto_sc_btn)
         self.outer_layout.addWidget(self.bkg_sub_btn)
 
         self.setLayout(self.outer_layout)
@@ -233,7 +269,7 @@ class BkgSubtractGroupBox(QGroupBox):
 
     def scale_step_changed(self):
         self.scale_sb.setSingleStep(float(str(self.scale_step.text())))
-
+        
 
 class DataConvertGroupBox(QGroupBox):
 

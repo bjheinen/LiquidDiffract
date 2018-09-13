@@ -15,22 +15,27 @@ import os
 
 from . import plot_widgets
 from . import utility
-#from core import data_manip
+from core import data_manip
 import core.core as core
 
 
 
 class OptimUI(QWidget):
     
+    # Create custom signal to link Optim/Results UI
     results_changed = pyqtSignal()
 
-    
-    minimisation_options = {'disp': 1,
+    # Options to pass to scipy.optimise.minimize solver
+    # Set disp to 1 for verbose output of solver progress
+    # See SciPy docs for further info
+    minimisation_options = {'disp': 0,
                             'maxiter': 15000,
                             'maxfun': 15000,
                             'ftol': 2.22e-8,
                             'gtol': 1e-10
                             }
+    # Use limited-memory BFGS code for optimising rho
+    # See http://users.iems.northwestern.edu/~nocedal/lbfgsb.html for details
     op_method = 'L-BFGS-B'
     
     def __init__(self, parent):
@@ -66,43 +71,80 @@ class OptimUI(QWidget):
                      'fr_x':  np.asarray([]), 'fr_y':  np.asarray([]),
                      'int_func': np.asarray([]), 'impr_int_func': np.asarray([]),
                      'impr_fr_x': np.asarray([]), 'impr_fr_y': np.asarray([]),
-                     'impr_iq_x': np.asarray([])}
-
+                     'impr_iq_x': np.asarray([]), 'mod_func': 'None'}
+        
         self.create_signals()
 
     def create_signals(self):        
         self.optim_config_widget.data_options_gb.qmax_check.stateChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.qmax_input.textChanged.connect(self.plot_data)
+        self.optim_config_widget.data_options_gb.qmin_check.stateChanged.connect(self.plot_data)
+        self.optim_config_widget.data_options_gb.qmin_input.textChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.calc_sq_btn.clicked.connect(self.on_click_calc_sq)
+        self.optim_config_widget.data_options_gb.smooth_data_check.toggled.connect(self.smooth_check_toggled)
+        self.optim_config_widget.data_options_gb.window_length_input.textChanged.connect(self.smooth_check_toggled)
+        self.optim_config_widget.data_options_gb.poly_order_input.textChanged.connect(self.smooth_check_toggled)
         self.optim_config_widget.optim_options_gb.opt_button.clicked.connect(self.on_click_refine)
-        
+      
 
     def plot_data(self):
         # Plots the data, no through update when this is changed
         # so the other data (S(Q) & F(r)) are cleared first
-        self.data['iq_x'] = np.asarray([])
-        self.data['impr_iq_x'] = np.asarray([])
-        self.data['sq_y'] = np.asarray([])
-        self.data['fr_x'] = np.asarray([]) 
-        self.data['fr_y'] = np.asarray([])
-        self.data['int_func'] = np.asarray([])
-        self.data['impr_int_func'] = np.asarray([])
-        self.data['impr_fr_x'] = np.asarray([])
-        self.data['impr_fr_y'] = np.asarray([])
+        _ea = np.asarray([])
+        self.data['iq_x'] = _ea
+        self.data['impr_iq_x'] = _ea
+        self.data['sq_y'] = _ea
+        self.data['fr_x'] = _ea 
+        self.data['fr_y'] = _ea
+        self.data['int_func'] = _ea
+        self.data['impr_int_func'] = _ea
+        self.data['impr_fr_x'] = _ea
+        self.data['impr_fr_y'] = _ea
+        self.data['cor_x_cut'] = _ea
+        self.data['cor_y_cut'] = _ea
         
-        if (
-            self.optim_config_widget.data_options_gb.qmax_check.isChecked()
-            and
-            self.optim_config_widget.data_options_gb.qmax_input.text()):
+        qmax_cut = (
+                self.optim_config_widget.data_options_gb.qmax_check.isChecked() 
+                and self.optim_config_widget.data_options_gb.qmax_input.text()
+                )
+        
+        qmin_cut = (
+                self.optim_config_widget.data_options_gb.qmin_check.isChecked()
+                and self.optim_config_widget.data_options_gb.qmin_input.text())
+        
+        # Cut q at qman first (if selected) and define cor_x_cut
+        if qmax_cut:
+            # Get q_max to cut at 
+            _qmax = np.float(self.optim_config_widget.data_options_gb.qmax_input.text())
             # cut q data at qmax
-            self.data['cor_x_cut'] = self.data['cor_x'][self.data['cor_x'] 
-                                 < np.float(self.optim_config_widget.data_options_gb.qmax_input.text())]
-            self.data['cor_y_cut'] = self.data['cor_y'][self.data['cor_x']
-                                 < np.float(self.optim_config_widget.data_options_gb.qmax_input.text())]
+            _cut = np.where(self.data['cor_x'] < _qmax)
+            self.data['cor_x_cut'] = self.data['cor_x'][_cut]
+            self.data['cor_y_cut'] = self.data['cor_y'][_cut]
+        
+        # Define cor_x_cut = cor_x for simpler plotting logic
         else:
             self.data['cor_x_cut'] = self.data['cor_x']
             self.data['cor_y_cut'] = self.data['cor_y']
-        self.optim_plot_widget.update_plots(self.data)
+        
+        # Cut at qmin if selected
+        if qmin_cut:
+            _qmin = np.float(self.optim_config_widget.data_options_gb.qmin_input.text())
+            # Take first intensity value after q_min 
+            # Catch empty array error caused by no data:
+            try:
+                _fill_val = self.data['cor_y'][np.argmax(self.data['cor_x_cut'] > _qmin)]
+                _cut = self.data['cor_y'][np.where(self.data['cor_x_cut'] > _qmin)]
+                _padding = np.asarray([_fill_val]*(len(self.data['cor_x_cut']) - len(_cut)))
+                self.data['cor_y_cut'] = np.concatenate((_padding, _cut))
+            #print('corycut', self.data['cor_y_cut'])
+            except ValueError:
+                pass
+            #self.data['cor_y_cut'] = self.data['cor_y_cut'][_cut]
+        self.data['modification'] = 1
+        if self.optim_config_widget.data_options_gb.smooth_data_check.isChecked():
+            self.smooth_check_toggled()
+        else:
+            self.optim_plot_widget.update_plots(self.data)
     
 
     def on_click_calc_sq(self):
@@ -118,6 +160,16 @@ class OptimUI(QWidget):
         self.data['impr_fr_x'] = np.asarray([])
         self.data['impr_fr_y'] = np.asarray([])
         self.data['impr_int_func'] = np.asarray([])
+        # Get modification function to use
+        self.data['mod_func'] = self.optim_config_widget.data_options_gb.mod_func_input.currentText()
+        if self.data['mod_func'] == 'Cosine-window':
+            try:
+                self.data['window_start'] = np.float(self.optim_config_widget.data_options_gb.window_start_input.text())
+            except ValueError:
+                print('Please set limit for Cosine-window function')
+                return
+        else:
+            self.data['window_start']=None
         # Get S(Q) method
         if self.optim_config_widget.data_options_gb.al_btn.isChecked():
             _method = 'ashcroft-langreth'
@@ -132,10 +184,9 @@ class OptimUI(QWidget):
                                                        method=_method)
         _S_inf = core.calc_S_inf(_composition, self.data['cor_x_cut'])
         self.data['int_func'] = self.data['sq_y'] - _S_inf
-        #print(self.data['int_func'][0])
-        #self.data['int_func'] = data_manip.zero_norm(self.data['int_func'], _S_inf)
-        #print(self.data['int_func'][0])
-        self.data['fr_x'], self.data['fr_y'] = core.calc_F_r(self.data['iq_x'], self.data['int_func'], _rho_0)
+        self.data['fr_x'], self.data['fr_y'] = core.calc_F_r(self.data['iq_x'], self.data['int_func'], _rho_0,
+                                                             mod_func=self.data['mod_func'], window_start=self.data['window_start'])
+        self.data['modification'] = core.get_mod_func(self.data['iq_x'], self.data['mod_func'], self.data['window_start'])
         self.optim_plot_widget.update_plots(self.data)
 
 
@@ -149,6 +200,14 @@ class OptimUI(QWidget):
         # Don't run if sq/int_func not calculated yet
         if not self.data['int_func'].size:
             return
+        # Get modification function to use again
+        self.data['mod_func'] = self.optim_config_widget.data_options_gb.mod_func_input.currentText()
+        if self.data['mod_func'] == 'Cosine-window':
+            try:
+                self.data['window_start'] = np.float(self.optim_config_widget.data_options_gb.window_start_input.text())
+            except ValueError:
+                print('Please set limit for Cosine-window function')
+                return
         _composition = self.optim_config_widget.composition_gb.get_composition_dict()
         # Don't run if no composition set
         if not _composition:
@@ -174,7 +233,8 @@ class OptimUI(QWidget):
                 return
             _bounds = ((_lb, _ub),)
             _args = (self.data['cor_x_cut'], self.data['cor_y_cut'],
-                     _composition, _r_min, _d_pq, _n_iter, _method, 1)
+                     _composition, _r_min, _d_pq, _n_iter, _method, 
+                     self.data['mod_func'], self.data['window_start'], 1)
             print('\n*************************\n')
             print('Finding optimal density...')
             _opt_result = minimize(core.calc_impr_interference_func,
@@ -192,15 +252,53 @@ class OptimUI(QWidget):
             _rho_temp = _rho_0
                 
         _args = (self.data['cor_x_cut'], self.data['int_func'],
-                 _composition, _r_min, _d_pq, _n_iter, _method, 0)
+                 _composition, _r_min, _d_pq, _n_iter, _method, 
+                 self.data['mod_func'], self.data['window_start'], 0)
         self.data['impr_int_func'], self.data['chi_sq'] = core.calc_impr_interference_func(_rho_temp, *_args)
         self.optim_config_widget.optim_results_gb.chi_sq_output.setText('{:.4e}'.format(self.data['chi_sq']))
         # Calculated improved F_r
-        self.data['impr_fr_x'], self.data['impr_fr_y'] = core.calc_F_r(self.data['iq_x'], self.data['impr_int_func'], _rho_temp)
+        self.data['impr_fr_x'], self.data['impr_fr_y'] = core.calc_F_r(self.data['iq_x'], self.data['impr_int_func'], _rho_temp,
+                                                                       mod_func = self.data['mod_func'], window_start=self.data['window_start'])
         self.data['impr_iq_x'] = self.data['iq_x']
+        # Set modification function to None so it is not plotted this time
+        _mod_func = self.data['mod_func']
+        self.data['mod_func'] = 'None'
         #Plot data
         self.optim_plot_widget.update_plots(self.data)
+        self.data['mod_func'] = _mod_func
         self.results_changed.emit()
+
+
+    def smooth_check_toggled(self):
+        if self.optim_config_widget.data_options_gb.smooth_data_check.isChecked():
+            self.optim_config_widget.data_options_gb.window_length_lbl.setEnabled(True)
+            self.optim_config_widget.data_options_gb.window_length_input.setEnabled(True)
+            self.optim_config_widget.data_options_gb.poly_order_lbl.setEnabled(True)
+            self.optim_config_widget.data_options_gb.poly_order_input.setEnabled(True)
+            if not self.data['cor_y_cut'].size:
+                return
+            try:
+                _window_length = np.int(self.optim_config_widget.data_options_gb.window_length_input.text()) 
+                _poly_order = np.int(self.optim_config_widget.data_options_gb.poly_order_input.text())
+            except ValueError:
+                return
+
+            if _poly_order >= _window_length:
+                print('Warning: polyorder must be less than window_length')
+                return
+            
+            self.data['cor_y_cut'] = data_manip.smooth_data(self.data['cor_y_cut'],
+                                                            window_length = _window_length,
+                                                            poly_order = _poly_order)
+        else:
+            self.optim_config_widget.data_options_gb.window_length_lbl.setEnabled(False)
+            self.optim_config_widget.data_options_gb.window_length_input.setEnabled(False)
+            self.optim_config_widget.data_options_gb.poly_order_lbl.setEnabled(False)
+            self.optim_config_widget.data_options_gb.poly_order_input.setEnabled(False)
+            # If removing the smoothing - replot and calculate data
+            self.plot_data()
+        # Update the plots
+        self.optim_plot_widget.update_plots(self.data)
 
 
 class OptimConfigWidget(QWidget):
@@ -400,8 +498,13 @@ class CompositionGroupBox(QGroupBox):
             _charge = np.int(self.composition_table.item(_row_index, 2).text())
             _n = np.float(self.composition_table.item(_row_index, 3).text())
             _key = str(_key_list[_val_list.index(_Z)])
-            _dict_entry = {_key: (_Z, _charge, _n)}
+            _dict_entry = {_key: [_Z, _charge, _n]}
             _composition_dict.update(_dict_entry)
+        
+        _n_total = sum([_composition_dict[_el][2] for _el in _composition_dict])
+        for _el in _composition_dict:
+            _composition_dict[_el][2] /= _n_total
+            _composition_dict[_el] = tuple(_composition_dict[_el])
         return _composition_dict
     
     
@@ -431,8 +534,27 @@ class DataOptionsGroupBox(QGroupBox):
         self.qmax_input = QLineEdit()
         self.qmax_check = QCheckBox()
         
+        self.qmin_label = QLabel('Q-Min cutoff: ')
+        self.qmin_input = QLineEdit()
+        self.qmin_check = QCheckBox()
+        
         self.smooth_label = QLabel('Smooth Data? ')
         self.smooth_data_check = QCheckBox()
+        
+        self.window_length_lbl = QLabel('Window size')
+        self.window_length_input = QLineEdit('5')
+        self.poly_order_lbl = QLabel('Poly order')
+        self.poly_order_input = QLineEdit('3')
+        
+        
+        self.mod_func_lbl = QLabel('Use modification function?')
+        self.mod_func_input = QComboBox()   
+        self.mod_func_input.insertItem(0, 'None')
+        self.mod_func_input.insertItem(1, 'Lorch')
+        self.mod_func_input.insertItem(2, 'Cosine-window')
+        self.mod_func_input.setCurrentIndex(0)
+
+        self.window_start_input = QLineEdit()
         
         self.method_button_group = QButtonGroup()
         self.al_btn = QRadioButton('Ashcroft-Langreth')
@@ -453,8 +575,34 @@ class DataOptionsGroupBox(QGroupBox):
         self.qmax_input.setEnabled(False)
         self.qmax_check.setChecked(False)
         self.qmax_label.setEnabled(False)
+        
+        
+        self.qmin_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.qmin_input.setAlignment(Qt.AlignRight)
+        self.qmin_input.setValidator(QDoubleValidator())
+        self.qmin_input.setMaximumWidth(70)
+        self.qmin_input.setEnabled(False)
+        self.qmin_check.setChecked(False)
+        self.qmin_label.setEnabled(False)
+        
         self.smooth_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.smooth_data_check.setChecked(False)
+        
+        self.window_length_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.poly_order_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.window_length_input.setMaximumWidth(70)
+        self.poly_order_input.setMaximumWidth(70)
+        self.window_length_input.setValidator(QIntValidator())
+        self.poly_order_input.setValidator(QIntValidator())     
+        
+        self.window_length_lbl.setEnabled(False)
+        self.window_length_input.setEnabled(False)
+        self.poly_order_lbl.setEnabled(False)
+        self.poly_order_input.setEnabled(False)
+        
+        
+        self.window_start_input.setValidator(QDoubleValidator())
+        self.window_start_input.setEnabled(False)
         self.al_btn.setChecked(True)
     
     def create_layout(self):
@@ -462,23 +610,34 @@ class DataOptionsGroupBox(QGroupBox):
         self.main_layout.setContentsMargins(20, 10, 20, 7)
         self.main_layout.setSpacing(5)
 
-
         self.grid_layout = QGridLayout()
         self.grid_layout.setSpacing(15)
         self.grid_layout.setColumnStretch(0, 4)
         self.grid_layout.setColumnStretch(1, 4)
         self.grid_layout.setColumnStretch(2, 2)
-
         
         self.grid_layout.addWidget(self.qmax_label, 0, 0)
         self.grid_layout.addWidget(self.qmax_input, 0, 1)
         self.grid_layout.addWidget(self.qmax_check, 0, 2)
-               
-        self.grid_layout.addWidget(self.smooth_label, 1, 0)
-        #self.grid_layout.addWidget(QW('-'), 1, 1)
-        self.grid_layout.addWidget(self.smooth_data_check, 1, 2)
         
-        self.grid_layout.addWidget(self.method_lbl, 2, 0)
+        self.grid_layout.addWidget(self.qmin_label, 1, 0)
+        self.grid_layout.addWidget(self.qmin_input, 1, 1)
+        self.grid_layout.addWidget(self.qmin_check, 1, 2)        
+               
+        self.grid_layout.addWidget(self.smooth_label, 2, 0)
+        #self.grid_layout.addWidget(QW('-'), 1, 1)
+        self.grid_layout.addWidget(self.smooth_data_check, 2, 2)
+        
+        self.grid_layout.addWidget(self.window_length_lbl, 3, 1)
+        self.grid_layout.addWidget(self.window_length_input, 3, 2)
+        self.grid_layout.addWidget(self.poly_order_lbl, 4, 1)
+        self.grid_layout.addWidget(self.poly_order_input, 4, 2)
+        
+
+        self.grid_layout.addWidget(self.mod_func_lbl, 5, 0, 1, 2)
+        self.grid_layout.addWidget(self.mod_func_input, 6, 0, 1, 2)
+        self.grid_layout.addWidget(self.window_start_input, 6, 2)
+        self.grid_layout.addWidget(self.method_lbl, 7, 0)
         
         self.hbtn_layout = QHBoxLayout()
         self.hbtn_layout.addWidget(self.al_btn)
@@ -494,6 +653,8 @@ class DataOptionsGroupBox(QGroupBox):
     def create_signals(self):
 
         self.qmax_check.stateChanged.connect(self.qmax_state_changed)
+        self.qmin_check.stateChanged.connect(self.qmin_state_changed)
+        self.mod_func_input.currentIndexChanged.connect(self.mod_func_changed)
         
         
     def qmax_state_changed(self):
@@ -504,6 +665,19 @@ class DataOptionsGroupBox(QGroupBox):
             self.qmax_input.setEnabled(False)
             self.qmax_label.setEnabled(False)
     
+    def qmin_state_changed(self):
+        if self.qmin_check.isChecked():
+            self.qmin_input.setEnabled(True)
+            self.qmin_label.setEnabled(True)
+        else:
+            self.qmin_input.setEnabled(False)
+            self.qmin_label.setEnabled(False)
+    
+    def mod_func_changed(self):
+        if self.mod_func_input.currentText() == 'Cosine-window':
+            self.window_start_input.setEnabled(True)
+        else:
+            self.window_start_input.setEnabled(False)
         
 class OptimOptionsGroupBox(QGroupBox):
     

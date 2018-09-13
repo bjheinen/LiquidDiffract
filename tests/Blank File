@@ -1,0 +1,33 @@
+Polyatomic case works?
+>> work through eggert and double check all the stages
+
+
+Compute error on the density refinement?
+> can get estimate from the inverse hessian (i.e. > how sharp the minimum in the function is)
+
+
+check other methods of doing this
+
+
+
+Work through faber-ziman - try other paper to see what goes on
+
+
+add legends to plots >> refined one is dashed line!
+change color or S(Q)*M(Q)
+
+
+On save out files >> add info about refined density used for measurement
+change name to whatver going for etc.
+
+
+
+
+
+add options for data smoothing
+window length & poly order
+
+
+
+when composition deleted, clear plots
+when new data file loaded, clear data from other uis as well

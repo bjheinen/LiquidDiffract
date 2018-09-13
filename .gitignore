@@ -2,3 +2,5 @@
 *.pyc
 # Temp files
 *~
+# Test directory
+./tests*

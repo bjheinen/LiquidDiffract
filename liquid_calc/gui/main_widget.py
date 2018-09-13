@@ -73,7 +73,8 @@ class MainContainer(QWidget):
         self.optim_ui.data = {'cor_x': np.asarray([]), 'cor_y': np.asarray([]),
                               'cor_x_cut': np.asarray([]), 'cor_y_cut': np.asarray([]),
                               'sq_x':  np.asarray([]), 'sq_y':  np.asarray([]),
-                              'fr_x':  np.asarray([]), 'fr_y':  np.asarray([])
+                              'fr_x':  np.asarray([]), 'fr_y':  np.asarray([]),
+                              'mod_func': 'None'
                               }
         # Pass data to Optim UI
         self.optim_ui.data['cor_x'] = self.bkg_ui.data['cor_x']
@@ -91,4 +92,6 @@ class MainContainer(QWidget):
         self.results_ui.data['int_func'] = self.optim_ui.data['impr_int_func']
         self.results_ui.data['sq_x'] = self.optim_ui.data['impr_iq_x']
         self.results_ui.data['composition'] = self.optim_ui.optim_config_widget.composition_gb.get_composition_dict()
+        self.results_ui.data['mod_func'] = self.optim_ui.data['mod_func']
+        self.results_ui.data['window_start'] = self.optim_ui.data['window_start']
         self.results_ui.plot_data()
