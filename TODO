@@ -1,0 +1,10 @@
+Add error handling messages - e.g. warning message when trying to load bad data etc.
+Fix polyatomic case
+Fix d_pq stuff etc.
+Add options to change solver, change log mode 
+Options to change smoothing settings?
+Write README
+Include refs
+Fix docs/comments
+Fix API frontend
+

@@ -8,10 +8,12 @@ from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QHBoxLayout, QGroupBox, QPushButton, QLineEdit, \
                             QComboBox, QTableWidget, QTableWidgetItem, \
-                            QLabel, QCheckBox, QButtonGroup, QRadioButton
+                            QLabel, QCheckBox, QButtonGroup, QRadioButton, \
+                            QScrollArea
 import numpy as np
 from scipy.optimize import minimize
 import os
+import datetime
 
 from . import plot_widgets
 from . import utility
@@ -53,14 +55,26 @@ class OptimUI(QWidget):
         self.vline.setObjectName("vline")
         
         self.optim_plot_widget = plot_widgets.OptimPlotWidget()
+        self.plot_scroll_area = QScrollArea()
+        self.plot_scroll_area.setWidget(self.optim_plot_widget)
+        self.plot_scroll_area.setWidgetResizable(True)
+        self.plot_scroll_area.setFrameShape(QFrame.NoFrame)
+
+        self.config_scroll_area = QScrollArea()
+        self.config_scroll_area.setFrameShape(QFrame.NoFrame)
+        self.config_scroll_area.setWidget(self.optim_config_widget)
+        self.config_scroll_area.setWidgetResizable(True)
+        #self.scroll_area.setFixedHeight(1080)
         
-        self.layout.addWidget(self.optim_config_widget)        
+        
+        self.layout.addWidget(self.config_scroll_area)        
         self.layout.addWidget(self.vline)
-        self.layout.addWidget(self.optim_plot_widget)
+        self.layout.addWidget(self.plot_scroll_area)
 
         self.layout.setStretch(0,1)
         self.layout.setStretch(1,0)
         self.layout.setStretch(2,5)
+
 
         self.setLayout(self.layout)
 
@@ -221,7 +235,9 @@ class OptimUI(QWidget):
         _rho_0 = np.float(self.optim_config_widget.composition_gb.density_input.text())
         # Get r_min, d_pq
         _r_min = np.float(self.optim_config_widget.optim_options_gb.rmin_input.text())
-        _d_pq = np.float(self.optim_config_widget.optim_options_gb.d_pq_input.text())
+        #_d_pq = np.float(self.optim_config_widget.optim_options_gb.d_pq_input.text())
+        # Functionality for d_pq removed for now
+        _d_pq = 2.9
         # Get no. iterations for Eggert refinement
         _n_iter = np.int(self.optim_config_widget.optim_options_gb.niter_input.text())
         if self.optim_config_widget.optim_options_gb.opt_check.isChecked():
@@ -266,8 +282,67 @@ class OptimUI(QWidget):
         #Plot data
         self.optim_plot_widget.update_plots(self.data)
         self.data['mod_func'] = _mod_func
+        
+        # Save refinement parameters to file
+        if self.optim_config_widget.data_options_gb.smooth_data_check.isChecked():
+            _smooth_bool = 'Y'
+        else:
+            _smooth_bool = 'N'
+        
+        if self.optim_config_widget.optim_options_gb.opt_check.isChecked():
+            _refine_density_bool = 'Y'
+            _refine_density_log = (
+                                   'Solver : ' + self.op_method + '\n' +
+                                   'Lower bound : ' + str(_lb) + '\n' +
+                                   'Upper bound : ' + str(_ub) + '\n' +
+                                   '*'*25 + '\n' +
+                                   str(_opt_result) + '\n' +
+                                   '*'*25 + '\n\n' +
+                                   'Refined density : ' + str(self.data['refined_rho']) + ' (at/A^3)\n' +
+                                   '                  ' + str(_mass_density) + ' (g/cm3)\n' +
+                                   'Chi^2 : ' + str(self.data['chi_sq']) + '\n'
+                                   )
+        else:
+            _refine_density_bool = 'N'
+            _refine_density_log = ('Chi^2 : ' + str(self.data['chi_sq']) + '\n')
+        
+        log_string = (
+                      'refinement_log\n' +
+                      core.__name__ + ' v' + core.__version__ + '\n\n' +
+                      '-'*25 + '\n' +
+                      'Data File : ' + self.base_filename + '\n' +
+                      'Composition [Element: (Z, Charge, n)]: ' + str(_composition) + '\n' +
+                      'Q_min : ' + self.optim_config_widget.data_options_gb.qmin_input.text() + '\n' +
+                      'Q_max : ' + self.optim_config_widget.data_options_gb.qmax_input.text() + '\n' +
+                      'Data smoothing? : ' + _smooth_bool + '\n' +
+                      'Modification function : ' + self.data['mod_func'] + '\n' +
+                      'Cosine window start : ' + str(self.data['window_start']) + '\n' +
+                      'S(Q) formulation : ' + _method + '\n' +
+                      'Density : ' + str(_rho_0) + '\n' +
+                      'r_min : ' + str(_r_min) + '\n' + 
+                      'Number iterations (Eggert) : ' + str(_n_iter) + '\n' +
+                      '*'*25 + '\n' +
+                      'Density refined? : ' + _refine_density_bool + '\n' +
+                      _refine_density_log
+                      )
+        # Append log mode
+        append_log_mode = 1
+        # Append to log file or overwrite?
+        if append_log_mode:
+            _log_file = open(os.path.join(os.path.dirname(self.base_filename), 'refinement.log'),'ab')
+            # Add timestamp to top of log_string
+            log_string = ('#'*30 + '\n' + 
+                          str(datetime.datetime.now()) + '\n' + 
+                          '#'*30 + '\n' +
+                          log_string
+                          )
+            np.savetxt(_log_file, [log_string], fmt='%s')
+            _log_file.close()
+        else:
+            _log_file = self.base_filename + '_refinement.log'
+            np.savetxt(_log_file, [log_string], fmt='%s')
+        
         self.results_changed.emit()
-
 
     def smooth_check_toggled(self):
         if self.optim_config_widget.data_options_gb.smooth_data_check.isChecked():
@@ -628,16 +703,16 @@ class DataOptionsGroupBox(QGroupBox):
         #self.grid_layout.addWidget(QW('-'), 1, 1)
         self.grid_layout.addWidget(self.smooth_data_check, 2, 2)
         
-        self.grid_layout.addWidget(self.window_length_lbl, 3, 1)
-        self.grid_layout.addWidget(self.window_length_input, 3, 2)
-        self.grid_layout.addWidget(self.poly_order_lbl, 4, 1)
-        self.grid_layout.addWidget(self.poly_order_input, 4, 2)
+        #self.grid_layout.addWidget(self.window_length_lbl, 3, 1)
+        #self.grid_layout.addWidget(self.window_length_input, 3, 2)
+        #self.grid_layout.addWidget(self.poly_order_lbl, 4, 1)
+        #self.grid_layout.addWidget(self.poly_order_input, 4, 2)
         
 
-        self.grid_layout.addWidget(self.mod_func_lbl, 5, 0, 1, 2)
-        self.grid_layout.addWidget(self.mod_func_input, 6, 0, 1, 2)
-        self.grid_layout.addWidget(self.window_start_input, 6, 2)
-        self.grid_layout.addWidget(self.method_lbl, 7, 0)
+        self.grid_layout.addWidget(self.mod_func_lbl, 3, 0, 1, 2)
+        self.grid_layout.addWidget(self.mod_func_input, 4, 0, 1, 2)
+        self.grid_layout.addWidget(self.window_start_input, 4, 2)
+        self.grid_layout.addWidget(self.method_lbl, 5, 0)
         
         self.hbtn_layout = QHBoxLayout()
         self.hbtn_layout.addWidget(self.al_btn)
@@ -698,8 +773,8 @@ class OptimOptionsGroupBox(QGroupBox):
     def create_widgets(self):
         self.rmin_label = QLabel('R-Min cutoff: ')
         self.rmin_input = QLineEdit('2.3')
-        self.d_pq_label = QLabel('Atomic distances: ')
-        self.d_pq_input = QLineEdit('2.9')
+        #self.d_pq_label = QLabel('Atomic distances: ')
+        #self.d_pq_input = QLineEdit('2.9')
         self.niter_label = QLabel('No. iterations: ')        
         self.niter_input = QLineEdit('5')
         self.opt_check = QCheckBox('Refine density? ')
@@ -712,7 +787,7 @@ class OptimOptionsGroupBox(QGroupBox):
     def style_widgets(self):
         
         self.rmin_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
-        self.d_pq_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        #self.d_pq_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.niter_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.lb_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.ub_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
@@ -725,11 +800,11 @@ class OptimOptionsGroupBox(QGroupBox):
         self.rmin_label.setToolTip('Intramolecular distance cut-off')
 
         
-        self.d_pq_input.setAlignment(Qt.AlignRight)
-        self.d_pq_input.setValidator(QDoubleValidator())
-        self.d_pq_input.setMaximumWidth(70)
-        self.d_pq_input.setToolTip('Inter-atomic distances for modelled behaviour')
-        self.d_pq_label.setToolTip('Inter-atomic distances for modelled behaviour')
+        #self.d_pq_input.setAlignment(Qt.AlignRight)
+        #self.d_pq_input.setValidator(QDoubleValidator())
+        #self.d_pq_input.setMaximumWidth(70)
+        #self.d_pq_input.setToolTip('Inter-atomic distances for modelled behaviour')
+        #self.d_pq_label.setToolTip('Inter-atomic distances for modelled behaviour')
 
         self.niter_input.setAlignment(Qt.AlignRight)
         self.niter_input.setValidator(QIntValidator())
@@ -764,10 +839,10 @@ class OptimOptionsGroupBox(QGroupBox):
         #self.grid_layout.setColumnStretch(2, 2)
         self.top_grid.addWidget(self.rmin_label, 0, 0)
         self.top_grid.addWidget(self.rmin_input, 0, 1)
-        self.top_grid.addWidget(self.d_pq_label, 1, 0)
-        self.top_grid.addWidget(self.d_pq_input, 1, 1)
-        self.top_grid.addWidget(self.niter_label, 2, 0)
-        self.top_grid.addWidget(self.niter_input, 2, 1)
+        #self.top_grid.addWidget(self.d_pq_label, 1, 0)
+        #self.top_grid.addWidget(self.d_pq_input, 1, 1)
+        self.top_grid.addWidget(self.niter_label, 1, 0)
+        self.top_grid.addWidget(self.niter_input, 1, 1)
         
         self.bottom_grid = QGridLayout()
         self.bottom_grid.setSpacing(15)

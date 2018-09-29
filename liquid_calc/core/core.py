@@ -4,10 +4,11 @@
 Python implementation of Eggert method for estimating liquid structure factor
 by optimising rho/alpha.
 """
-__author__ = "Benedict J Heinen"
-__copyright__ = "Copyright 2018, Benedict J Heinen"
-__email__ = "benedict.heinen@gmail.com"
-
+__author__ = 'Benedict J Heinen'
+__copyright__ = 'Copyright 2018, Benedict J Heinen'
+__email__ = 'benedict.heinen@gmail.com'
+__name__ = 'LiquidDiffract'
+__version__= '0.1'
 # debugging
 #from sys import getsizeof
 

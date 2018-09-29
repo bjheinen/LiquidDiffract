@@ -6,7 +6,6 @@ __license__ = 'Gnu GPL v3'
 __email__ = 'benedict.heinen@gmail.com'
 
 
-
 import sys
 from PyQt5.QtWidgets import QApplication
 import gui.main_widget

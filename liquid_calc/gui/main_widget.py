@@ -22,26 +22,23 @@ class App(QMainWindow):
     def __init__(self, screen_size):
         super().__init__()
         # Set options here before running initUI to initialise
-        self.title = 'LiquidCalc v0.1'
         # Get primary (current) screen dimensions
         self.screen_size = screen_size
-        self.left = 0
-        self.top = 0
+        #self.left = 0
+        #self.top = 0
         self.width = self.screen_size.width()
         self.height = self.screen_size.height()
-        
-        self.setWindowIcon(QIcon(os.path.join(os.path.abspath(os.getcwd()), 'data', 'icons', 'gs_icon.png')))
-
         self.initUI()
         
     def initUI(self):
+        self.title = 'LiquidDiffract v0.1'
         self.setWindowTitle(self.title)
-        self.setGeometry(self.left,self.top,self.width,self.height)
-        
+        self.setWindowIcon(QIcon(os.path.join(os.path.abspath(os.getcwd()), 'data', 'icons', 'gs_icon.png')))        
+        self.setGeometry(0, 0, self.width, self.height)
         self.table_widget = MainContainer(self)
         self.setCentralWidget(self.table_widget)
+        
         self.showMaximized()
-
 
 class MainContainer(QWidget):
     
@@ -67,6 +64,7 @@ class MainContainer(QWidget):
     def create_signal_tab_links(self):
         self.bkg_ui.plots_changed.connect(self.bkg_plots_changed_slot)
         self.optim_ui.results_changed.connect(self.results_changed_slot)
+        self.bkg_ui.file_name_changed.connect(self.update_filename)
         
     def bkg_plots_changed_slot(self):
         # Clear data from Optim UI (as S(Q) etc. need to be recalculated)
@@ -95,3 +93,10 @@ class MainContainer(QWidget):
         self.results_ui.data['mod_func'] = self.optim_ui.data['mod_func']
         self.results_ui.data['window_start'] = self.optim_ui.data['window_start']
         self.results_ui.plot_data()
+        
+    def update_filename(self):
+        _base_name = os.path.splitext(self.bkg_ui.data_file)[0]
+        self.results_ui.base_filename = _base_name
+        self.optim_ui.base_filename = _base_name
+        
+

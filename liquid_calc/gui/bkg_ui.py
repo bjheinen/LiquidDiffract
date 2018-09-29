@@ -21,6 +21,7 @@ from core import data_manip
 class BkgUI(QWidget):
     
     plots_changed = pyqtSignal()
+    file_name_changed = pyqtSignal()
     
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
@@ -29,6 +30,10 @@ class BkgUI(QWidget):
         
         # Make Config Widget
         self.bkg_config_widget = BkgConfigWidget()
+        self.config_scroll_area = QScrollArea()
+        self.config_scroll_area.setFrameShape(QFrame.NoFrame)
+        self.config_scroll_area.setWidget(self.bkg_config_widget)
+        self.config_scroll_area.setWidgetResizable(True)
         
         # Make vertical line separator
         self.vline = QFrame()
@@ -38,11 +43,15 @@ class BkgUI(QWidget):
         
         # Make Plot Widget
         self.bkg_plot_widget = plot_widgets.BkgPlotWidget()
+        self.plot_scroll_area = QScrollArea()
+        self.plot_scroll_area.setWidget(self.bkg_plot_widget)
+        self.plot_scroll_area.setWidgetResizable(True)
+        self.plot_scroll_area.setFrameShape(QFrame.NoFrame)
         
-        self.layout.addWidget(self.bkg_config_widget)        
+        self.layout.addWidget(self.config_scroll_area)        
         self.layout.addWidget(self.vline)
         #self.layout.addWidget(QWidget())
-        self.layout.addWidget(self.bkg_plot_widget)
+        self.layout.addWidget(self.plot_scroll_area)
 
         self.layout.setStretch(0,1)
         self.layout.setStretch(1,0)
@@ -50,7 +59,8 @@ class BkgUI(QWidget):
 
         self.setLayout(self.layout)
 
-        
+        self.data_file = os.path.abspath(os.getcwd())
+        self.file_name_changed.emit()
         
         __a = np.asarray([])
         self.data = {'data_raw_x': __a, 'data_raw_y':   __a,
@@ -85,20 +95,22 @@ class BkgUI(QWidget):
             self.data['data_raw_x'], self.data['data_raw_y'] = np.loadtxt(self.data_file, unpack=True)
         except ValueError as e:
             print('Please check header lines in data file')
-            
+        self.file_name_changed.emit()
         # Delete any processed data when loading new file            
         self.data['cor_x'] = np.asarray([])
         self.data['cor_y'] = np.asarray([])
         self.plots_changed.emit()    
-        
         self.data['data_x'], self.data['data_y'] = data_manip.rebin_data(self.data['data_raw_x'], self.data['data_raw_y'])
-
+        if not self.bkg_config_widget.bkg_subtract_gb.isChecked():
+            self.sub_bkg()
+            self.plots_changed.emit()
         self.plot_data()
 
     def load_bkg(self):
         __file_name = utility.get_filename(io='open', caption='Load Background File')
         if __file_name:
             self.bkg_file = __file_name
+            self.file_name_changed.emit()
         else:
             return
         self.bkg_config_widget.data_files_gb.bkg_filename_lbl.setText(self.bkg_file.split('/')[-1])
