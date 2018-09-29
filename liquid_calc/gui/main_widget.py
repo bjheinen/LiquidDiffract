@@ -15,6 +15,7 @@ import os
 from . import bkg_ui
 from . import optim_ui
 from . import results_ui
+from core.core import __name__, __version__
 
 
 class App(QMainWindow):
@@ -31,7 +32,7 @@ class App(QMainWindow):
         self.initUI()
         
     def initUI(self):
-        self.title = 'LiquidDiffract v0.1'
+        self.title = __name__ + ' v' + __version__
         self.setWindowTitle(self.title)
         self.setWindowIcon(QIcon(os.path.join(os.path.abspath(os.getcwd()), 'data', 'icons', 'gs_icon.png')))        
         self.setGeometry(0, 0, self.width, self.height)

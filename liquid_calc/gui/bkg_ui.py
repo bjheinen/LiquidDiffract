@@ -17,6 +17,7 @@ import os
 from . import plot_widgets
 from . import utility
 from core import data_manip
+from core.core import __name__, __version__
 
 class BkgUI(QWidget):
     
@@ -371,7 +372,7 @@ class DataConvertGroupBox(QGroupBox):
         self.success_msg.setStandardButtons(QMessageBox.Ok)
         self.success_msg.setText('Data converted to Q-Space!')
         self.success_msg.setInformativeText(('Lambda: ' + str(__lambda) + '\nConverted data: ' + self.convert_filename))
-        self.success_msg.setWindowTitle("LiquidCalc v0.1")
+        self.success_msg.setWindowTitle(__name__ + ' v' + __version__)
         self.success_msg.adjustSize()
         self.success_msg.show()
         # Clear variables
