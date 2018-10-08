@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QHBoxLayout, QGroupBox, QPushButton, QLineEdit, \
                             QComboBox, QTableWidget, QTableWidgetItem, \
                             QLabel, QCheckBox, QButtonGroup, QRadioButton, \
-                            QScrollArea
+                            QScrollArea, QSplitter
 import numpy as np
 from scipy.optimize import minimize
 import os
@@ -67,9 +67,15 @@ class OptimUI(QWidget):
         #self.scroll_area.setFixedHeight(1080)
         
         
-        self.layout.addWidget(self.config_scroll_area)        
-        self.layout.addWidget(self.vline)
-        self.layout.addWidget(self.plot_scroll_area)
+        self.hsplitter = QSplitter(Qt.Horizontal)
+        
+        self.hsplitter.addWidget(self.config_scroll_area)
+        self.hsplitter.addWidget(self.plot_scroll_area)
+        
+        self.layout.addWidget(self.hsplitter)
+        #self.layout.addWidget(self.config_scroll_area)        
+        #self.layout.addWidget(self.vline)
+        #self.layout.addWidget(self.plot_scroll_area)
 
         self.layout.setStretch(0,1)
         self.layout.setStretch(1,0)
