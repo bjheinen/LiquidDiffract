@@ -93,6 +93,7 @@ class MainContainer(QWidget):
         self.results_ui.data['composition'] = self.optim_ui.optim_config_widget.composition_gb.get_composition_dict()
         self.results_ui.data['mod_func'] = self.optim_ui.data['mod_func']
         self.results_ui.data['window_start'] = self.optim_ui.data['window_start']
+        self.results_ui.data['sq_method'] = self.optim_ui.data['sq_method']
         self.results_ui.plot_data()
         
     def update_filename(self):

@@ -25,25 +25,24 @@ def calc_mol_mass(composition):
     the average molecular mass for one atom
     
     composition is dictionary in the form: (Z, charge, n)
-    where n is n atoms / total atoms
-    
+    where n is number of atoms in formula unit
     '''
     _data_path = os.path.join(os.path.abspath(os.getcwd()), 'data')
     mass_dict = np.load(os.path.join(_data_path, 'mass_data.npy')).item()
-    #tot_n = np.sum([composition[element][2] for element in composition])
     mol_mass = np.sum([mass_dict[element]*composition[element][2] for element in composition])
     return mol_mass
 
 def conv_density(rho, composition):
     '''
-    Converts atomic number density - atoms/cubic angstrom
+    Converts atomic number density - atoms/angstrom^3
     to mass density in g/cm^3
     '''
     # Calculate molecular mass g/mole
     mol_mass = calc_mol_mass(composition)
     # Calculate atoms/cm3 > then moles/cm3
-    mass_density = (rho * 10 / 6.0221409) * mol_mass
+    mass_density = (rho * 10 / 6.0221408) * mol_mass
     return mass_density
+
 
 def calc_Z_sum(composition):
     '''
@@ -64,14 +63,19 @@ def calc_Z_sum(composition):
     #    O - 8
     #Z_tot = 12*0.2 + 14*0.2 + 8*0.6 = 10
     
+    FIXME!!!!
+    
+    IS THIS CORRECT OR SHOULD IT BE THE ACTUAL TOTAL Z VALUE OF FORMULA UNIT?
+    
     '''
-    modifier = 1/np.min([composition[el][2] for el in composition])
+    #modifier = 1/np.min([composition[el][2] for el in composition])
+    #modifier = 1
     Z_tot = 0
     for element in composition:
-        #Z, _, _ = composition[element]
-        #Z_tot += Z
+        # Unpack Z and n
         Z, _, n = composition[element]
-        Z_tot += (Z * n * modifier)
+        Z_tot += (Z * n)
+    #Z_tot = np.sum([composition[species][0]*composition[species][2] for species in composition])
     return Z_tot
 
 
@@ -81,11 +85,16 @@ def calc_atomic_ff(element,Q):
     of ...???....
     
     Args:
-        element - tuple of form (Z,charge)
+        element - tuple of form (Z, charge, *_)
         Q - Data in Q space and units Angstroms^-1
     
     Returns: 
         form_factor - NumPy array of atomic form factors at each Q value
+ 
+    note: calc_atomic_ff ignores n values - atomic fractions or number of
+          atoms in formula unit must be treated elsewhere as the function
+          calculates form factor for 1 atom in the compositional unit.
+    
     '''
     atomic_number, charge, *_ = element
     __data_path = os.path.join(os.path.abspath(os.getcwd()), 'data')
@@ -121,25 +130,66 @@ def calc_effective_ff(composition,Q):
         atomic_ff - atomic form factors at Q values for each element
     '''    
     Z_tot = calc_Z_sum(composition)
+    # Expand composition dictionary to list of tuples with entries repeated
+    # where n>1
+    composition_atoms = [element for expanded in 
+                         [[composition[species]]*composition[species][2] 
+                          for species in composition] 
+                         for element in expanded]
     atomic_ff = []       
-    for element in composition:
-        atomic_ff.append(calc_atomic_ff(composition[element],Q))
+    for atom in composition_atoms:
+        atomic_ff.append(calc_atomic_ff(atom,Q))
     atomic_ff = np.asarray(atomic_ff)
     effective_ff = np.sum(atomic_ff,0) / Z_tot
     return effective_ff, atomic_ff
 
 def calc_average_scattering(composition,Q):
     '''
+    for <f2> need to loop over every atom and get fp for them
+    then square the fps, then sum
+    then normalise
+    is this q dependent then? - yes seems so
+    
+    
+    for <f>2 need to loop over every combination of atoms in the list
+    
+    both start with making a nice list of the tuples
+    
+    then the function if f_p / f_q
+    
+    f_i is atomic form factor
+    
+    call calc_atomic_ff directly as it takes tuple as argument
+    
+    
+    
     Calculates <f2> which is equal to <f>2 for monatomic case
-    '''    
-    # for a4 equation:
-    ff_array = []
-    for element in composition:
-        # Calculate atomic form factors, square and multiply by proportion
-        ff_array.append(calc_atomic_ff(composition[element], Q)**2 * composition[element][2])
-    ff_array = np.asarray(ff_array)
-    average_scattering = np.sum(ff_array, 0)
-    return average_scattering#above a4 thing  
+    '''
+    # Expand composition dictionary to list of tuples with entries repeated
+    # where n>1
+    composition_atoms = [element for expanded in 
+                         [[composition[species]]*composition[species][2] 
+                          for species in composition] 
+                         for element in expanded]
+    N = len(composition_atoms)
+    atomic_ff = []       
+    for atom in composition_atoms:
+        atomic_ff.append(calc_atomic_ff(atom,Q))
+    atomic_ff = np.asarray(atomic_ff)
+    
+    # Create list to hold both function
+    average_scattering = []
+    
+    # 1st function
+    average_scattering.append(
+            1/N * np.sum(atomic_ff**2, 0)
+            )
+    # 2nd function
+    average_scattering.append(
+            1/N**2 *
+            np.sum(np.asarray([x*y for x in atomic_ff for y in atomic_ff]), 0)
+            )
+    return average_scattering
         
 
 def calc_compton_scattering(element, Q):
@@ -159,6 +209,22 @@ def calc_compton_scattering(element, Q):
     finterp = scipy.interpolate.interp1d(cs_Q, cs_comp, kind='cubic', fill_value='extrapolate')
     return finterp(Q)
 
+def calc_total_compton_scattering(composition, Q):
+    '''
+    Helper function to calculate total compton (incoherent) scattering for
+    all atoms in a formula unit (composition)
+    
+    See function core.calc_compton_scattering for details on data used
+    '''
+    compton_scattering = []
+    for element in composition:
+        compton_scattering.append(calc_compton_scattering(element,Q) *
+                                     composition[element][2])
+    compton_scattering = np.sum(np.asarray(compton_scattering),0)
+    return compton_scattering
+
+
+
 
 def calc_J(composition, Q):
     '''
@@ -173,31 +239,40 @@ def calc_J(composition, Q):
         
         Q - Q values to evaluate
     '''
-
     effective_ff, _ = calc_effective_ff(composition,Q)
-    Z_tot = calc_Z_sum(composition)
-    compton_intensity_total=0
-    for element in composition:
-        compton_intensity_total += calc_compton_scattering(element,Q)
-    J = compton_intensity_total / (Z_tot**2 * effective_ff**2)
+    Z_tot = calc_Z_sum(composition)        
+    compton_scattering = calc_total_compton_scattering(composition,Q)
+    J = compton_scattering / (Z_tot**2 * effective_ff**2)
     return J
 
  
 def calc_K_p(composition, Q):
     '''
-    Calculates effective average effective atomic numbers of each atomic
-    element in the composition as defined in Eqs 14 & 11 of Eggert et al., 2002
+    Calculates average effective atomic numbers of each atomic element 
+    in a formula unit over a set Q range as defined in Eqs 11 & 14 of 
+    Eggert et al., 2002.
     
     i.e.
     
     K_p(Q) for each element = f_p(Q)/f_e(Q)
     K_p for each element = <K_p(Q)>_Q
     
+    Where:
+        f_e(Q) is the effective electronic form factor of the total composition
+        f_p(Q) are the atomic form factors for each atom, p, in the formula unit
+        K_p(Q) is the Q-dependent effective atomic number for each atom, p
+        K_p is the average effective atomic number 
+        
+    
     Args:
         composition - dictionary of elements in composition where values
         are tuples of the form (Z, charge, n)
         
         Q - Q range to evaluate over
+        
+    Returns:
+        K_p - numpy array of K_p values with length equal to number of atoms
+              in a formula unit of the composition
     '''
     effective_ff, atomic_ff = calc_effective_ff(composition,Q)
     K_p = atomic_ff / effective_ff
@@ -205,24 +280,41 @@ def calc_K_p(composition, Q):
     return K_p  
     
 
-def calc_S_inf(composition, Q):
+def calc_S_inf(composition, Q, method='ashcroft-langreth'):
     '''
     Caclulates the value S_inf as defined in Eq 19 of Eggert et al., 2002
     i.e. S_inf = SUM K^2_p / Z_tot^2
     S_inf defaults to 1 if the composition is monatomic
+    
+    For the Faber-Ziman structure factor formulation, the interference
+    function, i(Q) is defined as S(Q) - 1. calc_S_inf is still called in the
+    program to aid readability and avoid too many if statement blocks in the
+    main code, though there is a slight performance decrease.
     '''
-    if len(composition) == 1:
+    if method == 'faber-ziman':
         S_inf = 1.0
+    
+    elif method == 'ashcroft-langreth':    
+        N = np.sum([composition[el][2] for el in composition])
+        if N == 1:
+            S_inf = 1.0
+        elif N > 1:
+            K_p = calc_K_p(composition,Q)
+            Z_tot = calc_Z_sum(composition)
+            S_inf = np.sum(K_p**2) / Z_tot**2
+        else:
+            raise ValueError('Error in composition - n value < 1')
+
     else:
-        K_p = calc_K_p(composition,Q)
-        Z_tot = calc_Z_sum(composition)
-        S_inf = np.sum(K_p**2) / Z_tot**2
+        raise ValueError('Please select a valid method for structure factor')
+    
+    print('S_inf = ', S_inf)
     return S_inf
 
 
 def calc_alpha(Q_cor, I_cor, rho, 
                Z_tot=None, J=None, S_inf=None, effective_ff=None,
-               average_scattering=None, compton_intensity=None,
+               average_scattering=None, compton_scattering=None,
                method='ashcroft-langreth'):
     '''
     Calculates 'alpha' - the normalisation factor 
@@ -269,8 +361,8 @@ def calc_alpha(Q_cor, I_cor, rho,
         return alpha
     elif method == 'faber-ziman':
         # define the two integrals in the equation    
-        int_1 = simps(((compton_intensity + average_scattering)/average_scattering) * Q_cor**2, Q_cor)
-        int_2 = simps(Q_cor**2 * I_cor / average_scattering, Q_cor)
+        int_1 = simps(((compton_scattering + average_scattering[0])/average_scattering[1]) * Q_cor**2, Q_cor)
+        int_2 = simps(((Q_cor**2 * I_cor) / average_scattering[1]), Q_cor)
         # Calculate alpha
         alpha = ((-2 * np.pi**2 * rho) + int_1)/int_2
         return alpha
@@ -279,7 +371,7 @@ def calc_alpha(Q_cor, I_cor, rho,
 
 
 
-def calc_coherent_scattering(Q_cor, I_cor, composition, alpha):
+def calc_coherent_scattering(Q_cor, I_cor, composition, alpha, compton_scattering=None, method='ashcroft-langreth'):
     '''
     Calculates coherent for a given composition
     
@@ -293,16 +385,20 @@ def calc_coherent_scattering(Q_cor, I_cor, composition, alpha):
 		composition
 		alpha
     '''
-    # First calculate incoherent (compton) scattering
-    incoherent_scattering = []
-    for element in composition:
-        incoherent_scattering.append(calc_compton_scattering(element,Q_cor))
-    incoherent_scattering = np.sum(np.asarray(incoherent_scattering),0)
-    # Next calculate coherent scattering
-    # N - number of atoms in compositional unit (molecule)        
-    N = np.sum([composition[el][2]/np.min([composition[el][2] for el in composition]) for el in composition])
-    #N = len(composition)
-    coherent_scattering = N * ((alpha * I_cor) - incoherent_scattering)
+    # If compton scattering data is not provided, retrieve it now
+    if compton_scattering is None:
+        compton_scattering = calc_total_compton_scattering(composition,Q_cor)
+    else:
+        pass
+    coherent_scattering = (alpha * I_cor) - compton_scattering
+    if method=='ashcroft-langreth':
+        # N - number of atoms in compositional unit (molecule)        
+        N = np.sum([composition[el][2] for el in composition])
+        # Normalise coherent scattering
+        coherent_scattering *= N
+    else:
+        pass
+
     return coherent_scattering
 
 
@@ -316,40 +412,83 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langr
         composition - dictionary of atomic elements, with values as tuples in 
                       the form (Z,charge,n)
         rho - actual or initial estimate of atomic density in atoms/Angstrom^3
+        
+        
+    The code provides an option to use either the Ashcroft-Langreth or
+    Faber-Ziman formulation of the structure factor S(Q)
+    
+    S_AL(Q) = I^COHERENT(Q) / N * Z_TOT^2 * f_e^2(Q)
+            
+    S_FZ(Q) = I^COHERENT(Q) - (<f^2> - <f>^2 ) / <f>^2
+    
+    
+    I^COHERENT (the coherent scattering component of measured scattering 
+    intensity) has a different formulation for AL & FZ methods.
+
+    I^COH_AL = N [alpha_AL * I^SAMPLE(Q) - SUM_p[I^COMPTON_p(Q)] ]
+    
+    I^COH_FZ = alpha_FZ * I^SAMPLE(Q) - SUM_p[I^COMPTON_p(Q)]
+    
+    I^COMPTON_p is the compton (incoherent) scattering of each atom 
+    (see core.calc_compton_scattering)
+    
+    alpha is the normalisation factor (see core.calc_alpha)
+    
+    N is the total number of atomic species in a formula unit 
+    (e.g. for SiO2 N=3)
+    
+    Z_TOT is the total Z number of a formula unit
+    
+    f_e(Q) is the effective electronic form factor
+    
+    <f^2> and <f>^2 are intermediate functions which quantify average 
+    scattering in a similar way to the effective electronic form factor used
+    in the Ashcroft-Langreth formulation
+    
+    
+    
 	'''
     if method == 'ashcroft-langreth':
-        #N = len(composition)
-        N = np.sum([composition[el][2]/np.min([composition[el][2] for el in composition]) for el in composition])
+        # N is number of atoms in 1 formula unit
+        N = np.sum([composition[el][2] for el in composition])
+        # Z is total atomic number of formula unit
         Z_tot = calc_Z_sum(composition)
+        # Calculate intermediate functions for alpha/coherent scattering for
+        # computational efficiency
         J = calc_J(composition, Q_cor)
-        S_inf = calc_S_inf(composition,Q_cor)
+        S_inf = calc_S_inf(composition,Q_cor, method=method)
+        # effective electronic form factor also used to calculate alpha
         effective_ff, _ = calc_effective_ff(composition,Q_cor)
         alpha = calc_alpha(Q_cor, I_cor, rho, 
                            Z_tot=Z_tot, J=J, S_inf=S_inf, 
                            effective_ff=effective_ff, method='ashcroft-langreth')
-        coherent_scattering = calc_coherent_scattering(Q_cor, I_cor, composition, alpha)
+        coherent_scattering = calc_coherent_scattering(Q_cor, I_cor, composition, alpha, method=method)
         structure_factor = coherent_scattering / (N * Z_tot**2 * effective_ff**2)
         return structure_factor
 
     elif method == 'faber-ziman':
-        # Calculate average scattering intensity
-        average_scattering = calc_average_scattering(composition, Q_cor)    
-        # Calculate incoherent (compton) scattering
-        compton_scattering = []
-        for element in composition:
-            compton_scattering.append(calc_compton_scattering(element,Q_cor))
-        compton_scattering = np.sum(np.asarray(compton_scattering), 0)
+        # Calculate average scattering functions <f^2> & <f>^2
+        avg_scattering_f = calc_average_scattering(composition, Q_cor)    
+        # Calculate compton (incoherent scattering) used in alpha_FZ
+        compton_scattering = calc_total_compton_scattering(composition, Q_cor)
         # Calculate alpha
         alpha = calc_alpha(Q_cor, I_cor, rho, 
-                           average_scattering=average_scattering, 
-                           compton_intensity=compton_scattering, 
+                           average_scattering=avg_scattering_f, 
+                           compton_scattering=compton_scattering, 
                            method='faber-ziman')
-        # for monatomic case:
-        structure_factor = ((alpha * I_cor - compton_scattering) - (0))/average_scattering
+        # Calculate coherent scattering
+        coherent_scattering = calc_coherent_scattering(Q_cor, I_cor, 
+                                                       composition, alpha, 
+                                                       compton_scattering=compton_scattering, 
+                                                       method=method)
+        # Calculate structure factor
+        structure_factor = (coherent_scattering - 
+                            (avg_scattering_f[0] - avg_scattering_f[1])
+                           ) / avg_scattering_f[1]
         return structure_factor
 
     else:
-        raise ValueError
+        raise ValueError('Please select a valid method for structure factor')
 
 def get_mod_func(q, mod_func, window_start):
     '''
@@ -537,30 +676,35 @@ def calc_model_F_intra_r(Q, r, composition, rho, d_pq, use_intra_model=False):
     divide by 4pi^2 ??? why!?
     
     '''
-    # Monatomic case:
-    if len(composition) == 1:
-        d = d_pq
-        r_minus_d = r - d
-        r_plus_d = r + d
-        K_p = calc_K_p(composition,Q)[0]
-        Z_tot = calc_Z_sum(composition)
-        Q_max = np.max(Q)
-        F_intra_r = K_p**2/(np.pi*d*Z_tot**2) *\
-                    ((np.sin(r_minus_d*Q_max)/r_minus_d) - 
-                     (np.sin(r_plus_d*Q_max)/r_plus_d))
-        if use_intra_model:
-            model_F_intra_r = F_intra_r - (4*np.pi*r*rho)
-        else:
-            model_F_intra_r = - 4*np.pi*r*rho
-        model_F_intra_r /= (4*np.pi**2)
-        return model_F_intra_r
+    model_F_intra_r = -4 * np.pi * r * rho
+    model_F_intra_r /= (4*np.pi**2)
+    return model_F_intra_r
     
-    else:
-        if use_intra_model:
-            print('Cannot calculate F_intra(r) for polaytomic species')
-        else:
-            model_F_intra_r = -4 * np.pi * r * rho
-            return model_F_intra_r
+    
+    ## Monatomic case:
+    #if len(composition) == 1:
+    #    d = d_pq
+    #    r_minus_d = r - d
+    #    r_plus_d = r + d
+    #    K_p = calc_K_p(composition,Q)[0]
+    #    Z_tot = calc_Z_sum(composition)
+    #    Q_max = np.max(Q)
+    #    F_intra_r = K_p**2/(np.pi*d*Z_tot**2) *\
+    #                ((np.sin(r_minus_d*Q_max)/r_minus_d) - 
+    #                 (np.sin(r_plus_d*Q_max)/r_plus_d))
+    #    if use_intra_model:
+    #        model_F_intra_r = F_intra_r - (4*np.pi*r*rho)
+    #    else:
+    #        model_F_intra_r = - 4*np.pi*r*rho
+    #    model_F_intra_r /= (4*np.pi**2)
+    #    return model_F_intra_r
+    # 
+    #else:
+    #    if use_intra_model:
+    #        print('Cannot calculate F_intra(r) for polaytomic species')
+    #    else:
+    #        model_F_intra_r = -4 * np.pi * r * rho
+    #        return model_F_intra_r
 
 def calc_chi_squared(r_intra, delta_F_r, method='simps'):
     '''
@@ -639,7 +783,7 @@ def calc_impr_interference_func(rho, *args):
         structure_factor = calc_structure_factor(q_dat, I_dat, 
                                                  composition, rho, 
                                                  method=method)
-        interference_func = structure_factor - calc_S_inf(composition, q_dat)
+        interference_func = structure_factor - calc_S_inf(composition, q_dat, method=method)
     else:
         raise ValueError('Arg - opt_flag - must be boolean')
 
@@ -650,7 +794,7 @@ def calc_impr_interference_func(rho, *args):
     # Calculate static terms of iterative proceduce
     with np.errstate(divide='ignore', invalid='ignore'):
         t1 = 1 / q_dat
-    t2_divisor = calc_S_inf(composition,q_dat) + calc_J(composition,q_dat)
+    t2_divisor = calc_S_inf(composition,q_dat, method=method) + calc_J(composition,q_dat)
 
     # Count no. iterations for verbosity or control
     # Function set up to call stop_looping func in case want to modify

@@ -9,7 +9,7 @@ from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QHBoxLayout, QGroupBox, QPushButton, QLineEdit, \
                             QDoubleSpinBox, QLabel, QScrollArea, QMessageBox, \
-                            QCheckBox
+                            QCheckBox, QSplitter
 import numpy as np
 from scipy.optimize import minimize
 import os
@@ -49,14 +49,23 @@ class BkgUI(QWidget):
         self.plot_scroll_area.setWidgetResizable(True)
         self.plot_scroll_area.setFrameShape(QFrame.NoFrame)
         
-        self.layout.addWidget(self.config_scroll_area)        
-        self.layout.addWidget(self.vline)
+        
+        self.hsplitter = QSplitter(Qt.Horizontal)
+        self.hsplitter.addWidget(self.config_scroll_area)
+        self.hsplitter.addWidget(self.plot_scroll_area)
+        self.hsplitter.setStretchFactor(0, 2)
+        self.hsplitter.setStretchFactor(1, 5)
+        self.layout.addWidget(self.hsplitter)
+        
+        
+        #self.layout.addWidget(self.config_scroll_area)        
+        #self.layout.addWidget(self.vline)
         #self.layout.addWidget(QWidget())
-        self.layout.addWidget(self.plot_scroll_area)
+        #self.layout.addWidget(self.plot_scroll_area)
 
-        self.layout.setStretch(0,1)
-        self.layout.setStretch(1,0)
-        self.layout.setStretch(2,5)
+        #self.layout.setStretch(0,1)
+        #self.layout.setStretch(1,0)
+        #self.layout.setStretch(2,5)
 
         self.setLayout(self.layout)
 
@@ -91,11 +100,14 @@ class BkgUI(QWidget):
             self.data_file = __file_name
         else:
             return
-        self.bkg_config_widget.data_files_gb.data_filename_lbl.setText(self.data_file.split('/')[-1])
         try:
             self.data['data_raw_x'], self.data['data_raw_y'] = np.loadtxt(self.data_file, unpack=True)
         except ValueError as e:
             print('Please check header lines in data file')
+            self.data_file = None
+            self.load_file_error()
+            return
+        self.bkg_config_widget.data_files_gb.data_filename_lbl.setText(self.data_file.split('/')[-1])
         self.file_name_changed.emit()
         # Delete any processed data when loading new file            
         self.data['cor_x'] = np.asarray([])
@@ -114,11 +126,14 @@ class BkgUI(QWidget):
             self.file_name_changed.emit()
         else:
             return
-        self.bkg_config_widget.data_files_gb.bkg_filename_lbl.setText(self.bkg_file.split('/')[-1])
         try:
             self.data['bkg_raw_x'], self.data['bkg_raw_y'] = np.loadtxt(self.bkg_file, unpack=True)
         except ValueError as e:
             print('Please check header lines in data file')
+            self.data_file = None
+            self.load_file_error()
+            return
+        self.bkg_config_widget.data_files_gb.bkg_filename_lbl.setText(self.bkg_file.split('/')[-1])
         self.data['bkg_x'], self.data['bkg_y'] = data_manip.rebin_data(self.data['bkg_raw_x'], self.data['bkg_raw_y'])
         self.plot_data()
 
@@ -155,6 +170,17 @@ class BkgUI(QWidget):
                                options={'xtol': 1e-8, 'disp': False})
         bkg_scaling = bkg_scaling.x
         self.bkg_config_widget.bkg_subtract_gb.scale_sb.setValue(bkg_scaling)
+        
+        
+    def load_file_error(self):
+        self.error_msg = QMessageBox()
+        self.error_msg.setIcon(QMessageBox.Warning)
+        self.error_msg.setStandardButtons(QMessageBox.Ok)
+        self.error_msg.setText('Error loading file!')
+        self.error_msg.setInformativeText(('Unable to load file.\nPlease check filename is correct and make sure header lines are commented (#)'))
+        self.error_msg.setWindowTitle(__name__ + ' v' + __version__)
+        self.error_msg.adjustSize()
+        self.error_msg.show()
 
 class BkgConfigWidget(QWidget):
 
@@ -379,3 +405,6 @@ class DataConvertGroupBox(QGroupBox):
         self.data_filename_lbl.setText('None')       
         del __lambda, __q_data, __out_data, self.convert_filename, self.default_fname
         
+
+
+#If data is bad rebin function throws an IndexError > handle this

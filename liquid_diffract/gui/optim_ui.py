@@ -68,18 +68,22 @@ class OptimUI(QWidget):
         
         
         self.hsplitter = QSplitter(Qt.Horizontal)
-        
         self.hsplitter.addWidget(self.config_scroll_area)
         self.hsplitter.addWidget(self.plot_scroll_area)
+        self.hsplitter.setStretchFactor(0, 2)
+        self.hsplitter.setStretchFactor(1, 5)
         
         self.layout.addWidget(self.hsplitter)
         #self.layout.addWidget(self.config_scroll_area)        
         #self.layout.addWidget(self.vline)
         #self.layout.addWidget(self.plot_scroll_area)
+        
 
-        self.layout.setStretch(0,1)
-        self.layout.setStretch(1,0)
-        self.layout.setStretch(2,5)
+
+        
+        #self.layout.setStretch(0,1)
+        #self.layout.setStretch(1,0)
+        #self.layout.setStretch(2,5)
 
 
         self.setLayout(self.layout)
@@ -202,7 +206,7 @@ class OptimUI(QWidget):
                                                        self.data['cor_y_cut'], 
                                                        _composition, _rho_0,
                                                        method=_method)
-        _S_inf = core.calc_S_inf(_composition, self.data['cor_x_cut'])
+        _S_inf = core.calc_S_inf(_composition, self.data['cor_x_cut'], method=_method)
         self.data['int_func'] = self.data['sq_y'] - _S_inf
         self.data['fr_x'], self.data['fr_y'] = core.calc_F_r(self.data['iq_x'], self.data['int_func'], _rho_0,
                                                              mod_func=self.data['mod_func'], window_start=self.data['window_start'])
@@ -252,6 +256,7 @@ class OptimUI(QWidget):
                 _lb = np.float(self.optim_config_widget.optim_options_gb.lb_input.text())
                 _ub = np.float(self.optim_config_widget.optim_options_gb.ub_input.text())
             except ValueError:
+                print('Warning: Must set bounds to refine density!')
                 return
             _bounds = ((_lb, _ub),)
             _args = (self.data['cor_x_cut'], self.data['cor_y_cut'],
@@ -288,6 +293,7 @@ class OptimUI(QWidget):
         #Plot data
         self.optim_plot_widget.update_plots(self.data)
         self.data['mod_func'] = _mod_func
+        self.data['sq_method'] = _method
         
         # Save refinement parameters to file
         if self.optim_config_widget.data_options_gb.smooth_data_check.isChecked():
@@ -577,15 +583,18 @@ class CompositionGroupBox(QGroupBox):
         for _row_index in range(self.composition_table.rowCount()):
             _Z = np.int(self.composition_table.item(_row_index, 1).text())
             _charge = np.int(self.composition_table.item(_row_index, 2).text())
-            _n = np.float(self.composition_table.item(_row_index, 3).text())
+            _n = np.int(self.composition_table.item(_row_index, 3).text())
             _key = str(_key_list[_val_list.index(_Z)])
             _dict_entry = {_key: [_Z, _charge, _n]}
             _composition_dict.update(_dict_entry)
         
-        _n_total = sum([_composition_dict[_el][2] for _el in _composition_dict])
-        for _el in _composition_dict:
-            _composition_dict[_el][2] /= _n_total
-            _composition_dict[_el] = tuple(_composition_dict[_el])
+        #This code snippet convert _n from integer number of atoms in the
+        #formula unit to a fraction of the total - e.g. SiO2 from Si=1 >> 1/3
+        #_n_total = sum([_composition_dict[_el][2] for _el in _composition_dict])
+        #for _el in _composition_dict:
+        #    _composition_dict[_el][2] /= _n_total
+        #    _composition_dict[_el] = tuple(_composition_dict[_el])
+        print(_composition_dict)
         return _composition_dict
     
     

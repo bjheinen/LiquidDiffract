@@ -44,7 +44,7 @@ class ValidatedItemDelegate(QStyledItemDelegate):
         elif index.column() == 3:
             _editor = QLineEdit(parent)
             _editor.setFrame(False)
-            _validator = QDoubleValidator()
+            _validator = QIntValidator()
             _editor.setValidator(_validator)
         else:
             return 0

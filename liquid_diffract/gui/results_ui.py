@@ -63,7 +63,7 @@ class ResultsUI(QWidget):
     def plot_data(self):
         self.data['mod_int_func'] = self.data['int_func'] * core.get_mod_func(self.data['sq_x'], self.data['mod_func'], self.data['window_start'])
         # Re-calculate S(Q) from interference func
-        self.data['S_inf'] = core.calc_S_inf(self.data['composition'], self.data['sq_x'])
+        self.data['S_inf'] = core.calc_S_inf(self.data['composition'], self.data['sq_x'], method=self.data['sq_method'])
         self.data['sq_y'] = self.data['int_func'] + self.data['S_inf']
         # Calculate g(r) & rdf(r) from s(q)
         # Calculate g(r) - pair-distribution function
