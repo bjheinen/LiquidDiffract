@@ -102,8 +102,8 @@ class BkgUI(QWidget):
             return
         try:
             self.data['data_raw_x'], self.data['data_raw_y'] = np.loadtxt(self.data_file, unpack=True)
+            self.data['data_x'], self.data['data_y'] = data_manip.rebin_data(self.data['data_raw_x'], self.data['data_raw_y'])
         except ValueError as e:
-            print('Please check header lines in data file')
             self.data_file = None
             self.load_file_error()
             return
@@ -113,7 +113,6 @@ class BkgUI(QWidget):
         self.data['cor_x'] = np.asarray([])
         self.data['cor_y'] = np.asarray([])
         self.plots_changed.emit()    
-        self.data['data_x'], self.data['data_y'] = data_manip.rebin_data(self.data['data_raw_x'], self.data['data_raw_y'])
         if not self.bkg_config_widget.bkg_subtract_gb.isChecked():
             self.sub_bkg()
             self.plots_changed.emit()
@@ -129,7 +128,6 @@ class BkgUI(QWidget):
         try:
             self.data['bkg_raw_x'], self.data['bkg_raw_y'] = np.loadtxt(self.bkg_file, unpack=True)
         except ValueError as e:
-            print('Please check header lines in data file')
             self.data_file = None
             self.load_file_error()
             return
@@ -164,23 +162,34 @@ class BkgUI(QWidget):
         self.plot_data()
         
     def auto_scale_bkg(self):
+        if self.bkg_file == None:
+            self.auto_scale_bkg_error()
+            return
         bkg_scaling = minimize(data_manip.bkg_scaling_residual, 1, 
                                args=(self.data['data_y'], self.data['bkg_y']), 
                                method='nelder-mead', 
                                options={'xtol': 1e-8, 'disp': False})
         bkg_scaling = bkg_scaling.x
         self.bkg_config_widget.bkg_subtract_gb.scale_sb.setValue(bkg_scaling)
-        
-        
+
     def load_file_error(self):
+        message = ['Error loading file!', 'Unable to load file.\nPlease check filename is correct and make sure header lines are commented (#)']
+        self.warning_message(message)
+        
+    def auto_scale_bkg_error(self):
+        message = ['No background file!', 'Please load a background file']
+        self.warning_message(message)
+        
+    def warning_message(self, message):
         self.error_msg = QMessageBox()
         self.error_msg.setIcon(QMessageBox.Warning)
         self.error_msg.setStandardButtons(QMessageBox.Ok)
-        self.error_msg.setText('Error loading file!')
-        self.error_msg.setInformativeText(('Unable to load file.\nPlease check filename is correct and make sure header lines are commented (#)'))
+        self.error_msg.setText(message[0])
+        self.error_msg.setInformativeText((message[1]))
         self.error_msg.setWindowTitle(__name__ + ' v' + __version__)
         self.error_msg.adjustSize()
         self.error_msg.show()
+
 
 class BkgConfigWidget(QWidget):
 
@@ -320,6 +329,8 @@ class DataConvertGroupBox(QGroupBox):
         self.setCheckable(True)
         self.setChecked(False)
 
+        self.data_file = None
+        self.two_theta_data = None
         
         self.load_conv_data_btn = QPushButton('2 theta Data')
         self.data_filename_lbl = QLabel('None')
@@ -366,15 +377,43 @@ class DataConvertGroupBox(QGroupBox):
         if not __file_name:
             return
         self.data_file = __file_name
+        try:
+            self.two_theta_data = np.loadtxt(self.data_file, unpack=False)
+        except ValueError:
+            _message = ['Error loading file!', 'Unable to load file.\nPlease check filename is correct and make sure header lines are commented (#)']
+            self.error_msg = QMessageBox()
+            self.error_msg.setIcon(QMessageBox.Warning)
+            self.error_msg.setStandardButtons(QMessageBox.Ok)
+            self.error_msg.setText(_message[0])
+            self.error_msg.setInformativeText((_message[1]))
+            self.error_msg.setWindowTitle(__name__ + ' v' + __version__)
+            self.error_msg.adjustSize()
+            self.error_msg.show()
+            self.data_file = None
+            self.two_theta_data = None
+            return
         self.data_filename_lbl.setText(self.data_file.split('/')[-1])
         __split_path = os.path.splitext(self.data_file)
         self.default_fname = __split_path[0] + '_qspace' + __split_path[1]        
-        try:
-            self.two_theta_data = np.loadtxt(self.data_file, unpack=False)
-        except ValueError as e:
-            print('Please check header lines in data file')
+
         
     def save_q_space(self):
+        if self.data_file is None or self.two_theta_data is None:
+            return
+        try:
+            __lambda = np.float(self.lambda_input.text())
+        # Return if no wavelength set
+        except ValueError:
+            _message = ['No Wavelength Set!', 'Please set wavelength value']
+            self.error_msg = QMessageBox()
+            self.error_msg.setIcon(QMessageBox.Warning)
+            self.error_msg.setStandardButtons(QMessageBox.Ok)
+            self.error_msg.setText(_message[0])
+            self.error_msg.setInformativeText((_message[1]))
+            self.error_msg.setWindowTitle(__name__ + ' v' + __version__)
+            self.error_msg.adjustSize()
+            self.error_msg.show()
+            return
         try:
             # Get out filename
             self.convert_filename = utility.get_filename(io='save', caption='Save Q-space Data', directory=self.default_fname)
@@ -383,12 +422,6 @@ class DataConvertGroupBox(QGroupBox):
         if not self.convert_filename:
             return
         # Convert 2theta data
-        try:
-            __lambda = np.float(self.lambda_input.text())
-        # Return if no wavelength set
-        except ValueError:
-            print('Must set wavelength value')
-            return
         __q_data = data_manip.convert_two_theta(self.two_theta_data[0], __lambda)
         __out_data = np.column_stack((__q_data, self.two_theta_data[1]))
         np.savetxt(self.convert_filename, __out_data)
@@ -402,9 +435,4 @@ class DataConvertGroupBox(QGroupBox):
         self.success_msg.adjustSize()
         self.success_msg.show()
         # Clear variables
-        self.data_filename_lbl.setText('None')       
-        del __lambda, __q_data, __out_data, self.convert_filename, self.default_fname
-        
-
-
-#If data is bad rebin function throws an IndexError > handle this
+        del __lambda, __q_data, __out_data, self.convert_filename

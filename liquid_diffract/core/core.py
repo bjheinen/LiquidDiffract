@@ -662,7 +662,7 @@ def calc_F_r_iteration_term(delta_F_r, N=12):
     z = np.concatenate((delta_F_r, 
                         np.zeros(padding_zeros), 
                         -np.flip(delta_F_r[1::],0)))
-    fft_z = -np.imag(scipy.fftpack.fft(z))
+    fft_z = np.imag(scipy.fftpack.fft(z))
     
     return fft_z
 
@@ -676,7 +676,7 @@ def calc_model_F_intra_r(Q, r, composition, rho, d_pq, use_intra_model=False):
     divide by 4pi^2 ??? why!?
     
     '''
-    model_F_intra_r = -4 * np.pi * r * rho
+    model_F_intra_r = 4 * np.pi * r * rho
     model_F_intra_r /= (4*np.pi**2)
     return model_F_intra_r
     
@@ -808,8 +808,9 @@ def calc_impr_interference_func(rho, *args):
             r, F_r = calc_F_r(q_dat, interference_func, rho, mod_func=mod_func, window_start=window_start)
         except NameError:
             pass
-                        
-        delta_F_r = (F_r - model_F_intra_r)[np.where(r<r_min)]
+                   
+        delta_F_r = (- F_r - model_F_intra_r)[np.where(r<r_min)]
+        
         r_intra = r[np.where(r<r_min)]
         chi_squared = calc_chi_squared(r_intra, delta_F_r)
         

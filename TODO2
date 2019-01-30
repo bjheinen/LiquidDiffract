@@ -1,0 +1,67 @@
+Thins to add:
+
+
+
+Option in optim_ui to use different solver
+
+	nelder-mead simplex probably best one?
+	> have an options menu with a dialog to set these things?
+
+
+Option in optim_ui to set more options of smoothing function
+	> add to another tab in extended options dialog 
+
+
+Are there any other options for the cosine-window algorithm etc. to add?
+
+
+In results UI save output > also add S_inf info for AL only, if statement to check method
+
+In extended options dialog should be option to change log style
+> + explanation of what this is
+
+
+Then README file
+
+--- should make it rich text so can see equations???
+
+- structure of package etc. where all the files are
+reference list - including for included data!!! - ask james where this from
+
+
+Then use of core program
+
+>> code example of how to set parameters, etc.
+
+
+Then walkthrough of actual gui, subtracting backgrounds, etc. etc.
+
+--------
+
+in core:
+
+test negative DELTA F(r) causes
+
+test effect of different i(Q)_1 equations?
+
+the 4pi**2 bit is still confusing, discuss FT and mathematical reasons for scaling the data etc.
+
++ how does this affect the -4pirhor bit used, having to scale this as well!!!
+> that's bad!	
+
+
+Bugs:
+
+Crash when delete contents of density input - check other fields as well
+
+When dataset too large it crashes - in fourier transform N < dataset so tries to add negative number
+of padding zeros to the array
+
+Should there be options to change this padding? - doesn't it affect resolution?
+
+
+
+
+
+
+

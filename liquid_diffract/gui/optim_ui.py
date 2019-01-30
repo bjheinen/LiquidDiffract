@@ -39,6 +39,7 @@ class OptimUI(QWidget):
     # Use limited-memory BFGS code for optimising rho
     # See http://users.iems.northwestern.edu/~nocedal/lbfgsb.html for details
     op_method = 'L-BFGS-B'
+    #op_method = 'Nelder-Mead'
     
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
@@ -130,11 +131,13 @@ class OptimUI(QWidget):
         qmax_cut = (
                 self.optim_config_widget.data_options_gb.qmax_check.isChecked() 
                 and self.optim_config_widget.data_options_gb.qmax_input.text()
+                and self.optim_config_widget.data_options_gb.qmax_input.hasAcceptableInput()
                 )
-        
         qmin_cut = (
                 self.optim_config_widget.data_options_gb.qmin_check.isChecked()
-                and self.optim_config_widget.data_options_gb.qmin_input.text())
+                and self.optim_config_widget.data_options_gb.qmin_input.text()
+                and self.optim_config_widget.data_options_gb.qmin_input.hasAcceptableInput()
+                )
         
         # Cut q at qman first (if selected) and define cor_x_cut
         if qmax_cut:
@@ -199,8 +202,11 @@ class OptimUI(QWidget):
             _method = 'ashcroft-langreth'
         elif self.optim_config_widget.data_options_gb.fb_btn.isChecked():
             _method='faber-ziman'
-        # Get rho 0
-        _rho_0 = np.float(self.optim_config_widget.composition_gb.density_input.text())
+        # Get rho 0 - Force intermediate values passed by QValidator to 0
+        try:
+            _rho_0 = np.float(self.optim_config_widget.composition_gb.density_input.text())
+        except ValueError:
+            _rho_0 = 0.0
         self.data['iq_x'] = self.data['cor_x_cut']
         self.data['sq_y'] = core.calc_structure_factor(self.data['cor_x_cut'], 
                                                        self.data['cor_y_cut'], 
@@ -221,6 +227,13 @@ class OptimUI(QWidget):
             del self.data['refined_rho']
         except KeyError:
             pass
+        # Check validity of input fields before continuing
+        if not (
+                self.optim_config_widget.composition_gb.density_input.hasAcceptableInput()
+                and self.optim_config_widget.optim_options_gb.rmin_input.hasAcceptableInput()
+                and self.optim_config_widget.optim_options_gb.niter_input.hasAcceptableInput()
+                ):
+            return
         # Don't run if sq/int_func not calculated yet
         if not self.data['int_func'].size:
             return
@@ -364,6 +377,7 @@ class OptimUI(QWidget):
             self.optim_config_widget.data_options_gb.poly_order_input.setEnabled(True)
             if not self.data['cor_y_cut'].size:
                 return
+            # Handle intermediate values passed by QValidator
             try:
                 _window_length = np.int(self.optim_config_widget.data_options_gb.window_length_input.text()) 
                 _poly_order = np.int(self.optim_config_widget.data_options_gb.poly_order_input.text())
@@ -597,10 +611,15 @@ class CompositionGroupBox(QGroupBox):
         print(_composition_dict)
         return _composition_dict
     
-    
+    QDoubleValidator
     def update_mass_density(self):
         _composition = self.get_composition_dict()
-        _atomic_density = np.float(self.density_input.text())
+        # Handle errors caused by QDoubleValidator allowing intermediate
+        # values to pass e.g. '.', ' ' etc.
+        try:
+            _atomic_density = np.float(self.density_input.text())
+        except ValueError:
+            _atomic_density = 0.0
         _mass_density = core.conv_density(_atomic_density, _composition)
         self.mass_density.setText('{0:.3f}'.format(_mass_density))
 

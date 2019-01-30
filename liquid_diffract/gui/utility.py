@@ -3,7 +3,7 @@ __author__ = "Benedict J Heinen"
 __copyright__ = "Copyright 2018, Benedict J Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
-from PyQt5.QtGui import QDoubleValidator, QIntValidator
+from PyQt5.QtGui import QIntValidator #, QDoubleValidator
 from PyQt5.QtWidgets import QFileDialog, QLineEdit, QStyledItemDelegate
 
 
