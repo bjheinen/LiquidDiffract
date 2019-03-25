@@ -1,10 +1,27 @@
-Add error handling messages - e.g. warning message when trying to load bad data etc.
-Fix polyatomic case
-Fix d_pq stuff etc.
+Add error handling messages - e.g. warning message when trying to load bad data etc. > Fixed
+Fix polyatomic case ? needs testing
+Fix d_pq stuff etc. > should it be taken out of the code???
 Add options to change solver, change log mode 
 Options to change smoothing settings?
 Write README
 Include refs
 Fix docs/comments
 Fix API frontend
+Use multiprocessing to speed up calculation of i(q) etc. >>> this will help
+speed up the refinement
+
+
+About page?
+Config/additional options dialog
+
+with tabs???
+
+Options:
+
+
+Log mode
+Data smoothing options
+Solver options
+
+
 

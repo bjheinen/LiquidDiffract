@@ -612,7 +612,7 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
     
     # check the len(z) > N or some such thing
     #!!!!!!!!!!!!
-    
+    # N=12 allows max 2048 data points (at q-spacing 0f 0.02 range is 40.94)
     padding_zeros = np.int(2**N - (len(z)*2 - 1))
     # Pad array with odd image of function
     z = np.concatenate((z, np.zeros(padding_zeros), -np.flip(z[1::],0)))
@@ -654,8 +654,7 @@ def calc_F_r_iteration_term(delta_F_r, N=12):
     i.e. Delta_alpha * Q * S_inf = INT 0>r_min [Delta_F(r) sin(Qr) dr]
     
     Delta_F(r) is the difference between F(r) and its expected behaviour
-    
-    
+
     
     '''
     padding_zeros = np.int(2**N - (len(delta_F_r)*2 - 1))

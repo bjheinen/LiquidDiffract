@@ -21,7 +21,12 @@ from core.core import __name__, __version__
 
 class BkgUI(QWidget):
     
+    # plots_changed is handled in main_widget.MainContainer and allows the 
+    # next tab to be updated
     plots_changed = pyqtSignal()
+    # file_name_changed connects to main_widget.MainContainer.update_filename
+    # this method is used to set the working directory based on the data_file
+    # that is loaded
     file_name_changed = pyqtSignal()
     
     def __init__(self, parent):
@@ -122,13 +127,12 @@ class BkgUI(QWidget):
         __file_name = utility.get_filename(io='open', caption='Load Background File')
         if __file_name:
             self.bkg_file = __file_name
-            self.file_name_changed.emit()
         else:
             return
         try:
             self.data['bkg_raw_x'], self.data['bkg_raw_y'] = np.loadtxt(self.bkg_file, unpack=True)
         except ValueError as e:
-            self.data_file = None
+            self.bkg_file = None
             self.load_file_error()
             return
         self.bkg_config_widget.data_files_gb.bkg_filename_lbl.setText(self.bkg_file.split('/')[-1])
@@ -157,13 +161,13 @@ class BkgUI(QWidget):
         self.plots_changed.emit()
 
     def sub_bkg(self):
-        # Cor x = data x        
+        # Cor x = data x
         self.data['cor_x'] = self.data['data_x']
         self.plot_data()
         
     def auto_scale_bkg(self):
         if self.bkg_file == None:
-            self.auto_scale_bkg_error()
+            self.missing_bkg_file_error()
             return
         bkg_scaling = minimize(data_manip.bkg_scaling_residual, 1, 
                                args=(self.data['data_y'], self.data['bkg_y']), 
@@ -176,7 +180,7 @@ class BkgUI(QWidget):
         message = ['Error loading file!', 'Unable to load file.\nPlease check filename is correct and make sure header lines are commented (#)']
         self.warning_message(message)
         
-    def auto_scale_bkg_error(self):
+    def missing_bkg_file_error(self):
         message = ['No background file!', 'Please load a background file']
         self.warning_message(message)
         

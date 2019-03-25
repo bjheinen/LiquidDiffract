@@ -53,11 +53,27 @@ the 4pi**2 bit is still confusing, discuss FT and mathematical reasons for scali
 Bugs:
 
 Crash when delete contents of density input - check other fields as well
+FIXED > issue with QDoubleValidator allowing intermediate fields >> e.g. '.', ' '
+
+but similar crash on converting float in rmin
+
+
+try on
+
 
 When dataset too large it crashes - in fourier transform N < dataset so tries to add negative number
 of padding zeros to the array
 
 Should there be options to change this padding? - doesn't it affect resolution?
+
+Crash when click autoscale bkg - after load data, uncheck bkg >> then check again but no load
+when check this box should blank buttons if no data loaded
+
+
+
+
+shit shouldn't you be only taking the first half of this array???
+
 
 
 
