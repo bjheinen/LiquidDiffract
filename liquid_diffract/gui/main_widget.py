@@ -7,7 +7,7 @@ __copyright__ = "Copyright 2018, Benedict J Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
 
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTabWidget
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTabWidget, QAction
 from PyQt5.QtGui import QIcon
 import numpy as np
 import os
@@ -15,6 +15,7 @@ import os
 from . import bkg_ui
 from . import optim_ui
 from . import results_ui
+from . import utility
 from core.core import __name__, __version__
 
 
@@ -34,12 +35,68 @@ class App(QMainWindow):
     def initUI(self):
         self.title = __name__ + ' v' + __version__
         self.setWindowTitle(self.title)
-        self.setWindowIcon(QIcon(os.path.join(os.path.abspath(os.getcwd()), 'data', 'icons', 'gs_icon.png')))        
+        self.icon_path = os.path.join(os.path.abspath(os.getcwd()), 'data', 'icons')
+        self.setWindowIcon(QIcon(os.path.join(self.icon_path, 'gs_icon.png')))
         self.setGeometry(0, 0, self.width, self.height)
+
+        self.menu_bar = self.menuBar()
+        self.tools_menu = self.menu_bar.addMenu('&Tools')
+        self.help_menu = self.menu_bar.addMenu('&Help')
+        
+        self.preferences_action = QAction(QIcon(os.path.join(self.icon_path, 'config.png')), 'Additional Preferences...', self)
+        self.documentation_action = QAction(QIcon(os.path.join(self.icon_path, 'browser.png')), self.title + ' Documentation', self)
+        self.about_action = QAction(QIcon(os.path.join(self.icon_path, 'info.png')), 'About', self)
+        
+        self.tools_menu.addAction(self.preferences_action)
+        self.help_menu.addAction(self.documentation_action)
+        #help_menu.addSeperator()
+        self.help_menu.addAction(self.about_action)
+        self.preferences_action.triggered.connect(self.call_preferences_dialog)
+        self.about_action.triggered.connect(self.call_about_dialog)
+        
+        
         self.table_widget = MainContainer(self)
         self.setCentralWidget(self.table_widget)
-        
+        self.set_default_preferences()
         self.showMaximized()
+        
+    def set_default_preferences(self):
+        self.preferences = {'append_log_mode': 1,
+                            'window_length': 5,
+                            'poly_order': 3,
+                            'op_method': 'L-BFGS-B',
+                            'minimisation_options': 
+                                {'disp': 0,
+                                 'maxiter': 15000,
+                                 'maxfun': 15000,
+                                 'ftol': 2.22e-8,
+                                 'gtol': 1e-10}
+                            } 
+        self.set_preferences()
+
+    def call_preferences_dialog(self):
+        self.preferences_dialog = utility.PreferencesDialog(self.preferences)
+        # set window icon
+        self.preferences_dialog.setWindowIcon(QIcon(os.path.join(self.icon_path, 'gs_icon.png')))
+        
+        if self.preferences_dialog.exec_() == utility.PreferencesDialog.Accepted:
+            self.preferences = self.preferences_dialog.get_preferences()
+            # Set preferences in OptimUI
+            self.set_preferences()
+            # Call method smooth_check_toggled to update data treatment
+            self.table_widget.optim_ui.smooth_check_toggled()
+
+    def set_preferences(self):
+        self.table_widget.optim_ui.op_method = self.preferences['op_method']
+        self.table_widget.optim_ui.minimisation_options = self.preferences['minimisation_options']
+        self.table_widget.optim_ui.append_log_mode = self.preferences['append_log_mode']
+        self.table_widget.optim_ui.window_length = self.preferences['window_length']
+        self.table_widget.optim_ui.poly_order = self.preferences['poly_order']
+
+    def call_about_dialog(self):
+        self.about_dialog = utility.AboutDialog()
+        self.about_dialog.exec_()
+
 
 class MainContainer(QWidget):
     

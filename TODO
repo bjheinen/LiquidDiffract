@@ -24,4 +24,22 @@ Data smoothing options
 Solver options
 
 
+Here is a raw data file "CaAl2O4_2000_raw.dat" for liquid CaAl2O4 at 2000 degC and a normalised S(Q) "CA_2000_SQ.dat".
 
+
+I also attach simulated S(Q) functions generated from A-L and F-Z formulisms. You'll notice the experimental and simulated S(Q) are not perfect at low-Q, but they should be closer to agreement at mid to higher Q-values.
+
+
+The density of liquid CaAl2O4 is about 0.0734 A**-3.
+
+
+I hope that helps?
+
+
+
+-----------------------------------------
+
+Less important:
+
+combine warning message boxes from class in utility
+how to update preferences

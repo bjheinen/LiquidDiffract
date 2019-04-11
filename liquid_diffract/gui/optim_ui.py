@@ -26,21 +26,7 @@ class OptimUI(QWidget):
     
     # Create custom signal to link Optim/Results UI
     results_changed = pyqtSignal()
-
-    # Options to pass to scipy.optimise.minimize solver
-    # Set disp to 1 for verbose output of solver progress
-    # See SciPy docs for further info
-    minimisation_options = {'disp': 0,
-                            'maxiter': 15000,
-                            'maxfun': 15000,
-                            'ftol': 2.22e-8,
-                            'gtol': 1e-10
-                            }
-    # Use limited-memory BFGS code for optimising rho
-    # See http://users.iems.northwestern.edu/~nocedal/lbfgsb.html for details
-    op_method = 'L-BFGS-B'
-    #op_method = 'Nelder-Mead'
-    
+   
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
         self.layout = QHBoxLayout(self)
@@ -107,8 +93,6 @@ class OptimUI(QWidget):
         self.optim_config_widget.data_options_gb.qmin_input.textChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.calc_sq_btn.clicked.connect(self.on_click_calc_sq)
         self.optim_config_widget.data_options_gb.smooth_data_check.toggled.connect(self.smooth_check_toggled)
-        self.optim_config_widget.data_options_gb.window_length_input.textChanged.connect(self.smooth_check_toggled)
-        self.optim_config_widget.data_options_gb.poly_order_input.textChanged.connect(self.smooth_check_toggled)
         self.optim_config_widget.optim_options_gb.opt_button.clicked.connect(self.on_click_refine)
       
 
@@ -169,7 +153,7 @@ class OptimUI(QWidget):
             #self.data['cor_y_cut'] = self.data['cor_y_cut'][_cut]
         self.data['modification'] = 1
         if self.optim_config_widget.data_options_gb.smooth_data_check.isChecked():
-            self.smooth_check_toggled()
+            self.smooth_data()
         else:
             self.optim_plot_widget.update_plots(self.data)
     
@@ -233,6 +217,7 @@ class OptimUI(QWidget):
                 and self.optim_config_widget.optim_options_gb.rmin_input.hasAcceptableInput()
                 and self.optim_config_widget.optim_options_gb.niter_input.hasAcceptableInput()
                 ):
+            print('Error: Please ensure values are set for density, r_min, and n_iterations')
             return
         # Don't run if sq/int_func not calculated yet
         if not self.data['int_func'].size:
@@ -263,6 +248,8 @@ class OptimUI(QWidget):
         _d_pq = 2.9
         # Get no. iterations for Eggert refinement
         _n_iter = np.int(self.optim_config_widget.optim_options_gb.niter_input.text())
+        if _n_iter < 2:
+            print('Warning: n_iter >= 2 is reccomended for convergence!')
         if self.optim_config_widget.optim_options_gb.opt_check.isChecked():
             # Get bounds but don't continue if none set
             try:
@@ -350,10 +337,9 @@ class OptimUI(QWidget):
                       'Density refined? : ' + _refine_density_bool + '\n' +
                       _refine_density_log
                       )
-        # Append log mode
-        append_log_mode = 1
+
         # Append to log file or overwrite?
-        if append_log_mode:
+        if self.append_log_mode:
             _log_file = open(os.path.join(os.path.dirname(self.base_filename), 'refinement.log'),'ab')
             # Add timestamp to top of log_string
             log_string = ('#'*30 + '\n' + 
@@ -371,35 +357,20 @@ class OptimUI(QWidget):
 
     def smooth_check_toggled(self):
         if self.optim_config_widget.data_options_gb.smooth_data_check.isChecked():
-            self.optim_config_widget.data_options_gb.window_length_lbl.setEnabled(True)
-            self.optim_config_widget.data_options_gb.window_length_input.setEnabled(True)
-            self.optim_config_widget.data_options_gb.poly_order_lbl.setEnabled(True)
-            self.optim_config_widget.data_options_gb.poly_order_input.setEnabled(True)
             if not self.data['cor_y_cut'].size:
-                return
-            # Handle intermediate values passed by QValidator
-            try:
-                _window_length = np.int(self.optim_config_widget.data_options_gb.window_length_input.text()) 
-                _poly_order = np.int(self.optim_config_widget.data_options_gb.poly_order_input.text())
-            except ValueError:
-                return
+                return         
+            self.smooth_data()
 
-            if _poly_order >= _window_length:
-                print('Warning: polyorder must be less than window_length')
-                return
-            
-            self.data['cor_y_cut'] = data_manip.smooth_data(self.data['cor_y_cut'],
-                                                            window_length = _window_length,
-                                                            poly_order = _poly_order)
-        else:
-            self.optim_config_widget.data_options_gb.window_length_lbl.setEnabled(False)
-            self.optim_config_widget.data_options_gb.window_length_input.setEnabled(False)
-            self.optim_config_widget.data_options_gb.poly_order_lbl.setEnabled(False)
-            self.optim_config_widget.data_options_gb.poly_order_input.setEnabled(False)
-            # If removing the smoothing - replot and calculate data
-            self.plot_data()
+        # Replot and calculate data
+        self.plot_data()
         # Update the plots
         self.optim_plot_widget.update_plots(self.data)
+        
+    def smooth_data(self):
+        self.data['cor_y_cut'] = data_manip.smooth_data(self.data['cor_y_cut'],
+                                                        window_length = self.window_length,
+                                                        poly_order = self.poly_order)
+        
 
 
 class OptimConfigWidget(QWidget):
@@ -650,12 +621,6 @@ class DataOptionsGroupBox(QGroupBox):
         self.smooth_label = QLabel('Smooth Data? ')
         self.smooth_data_check = QCheckBox()
         
-        self.window_length_lbl = QLabel('Window size')
-        self.window_length_input = QLineEdit('5')
-        self.poly_order_lbl = QLabel('Poly order')
-        self.poly_order_input = QLineEdit('3')
-        
-        
         self.mod_func_lbl = QLabel('Use modification function?')
         self.mod_func_input = QComboBox()   
         self.mod_func_input.insertItem(0, 'None')
@@ -697,19 +662,6 @@ class DataOptionsGroupBox(QGroupBox):
         self.smooth_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.smooth_data_check.setChecked(False)
         
-        self.window_length_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
-        self.poly_order_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
-        self.window_length_input.setMaximumWidth(70)
-        self.poly_order_input.setMaximumWidth(70)
-        self.window_length_input.setValidator(QIntValidator())
-        self.poly_order_input.setValidator(QIntValidator())     
-        
-        self.window_length_lbl.setEnabled(False)
-        self.window_length_input.setEnabled(False)
-        self.poly_order_lbl.setEnabled(False)
-        self.poly_order_input.setEnabled(False)
-        
-        
         self.window_start_input.setValidator(QDoubleValidator())
         self.window_start_input.setEnabled(False)
         self.al_btn.setChecked(True)
@@ -737,12 +689,6 @@ class DataOptionsGroupBox(QGroupBox):
         #self.grid_layout.addWidget(QW('-'), 1, 1)
         self.grid_layout.addWidget(self.smooth_data_check, 2, 2)
         
-        #self.grid_layout.addWidget(self.window_length_lbl, 3, 1)
-        #self.grid_layout.addWidget(self.window_length_input, 3, 2)
-        #self.grid_layout.addWidget(self.poly_order_lbl, 4, 1)
-        #self.grid_layout.addWidget(self.poly_order_input, 4, 2)
-        
-
         self.grid_layout.addWidget(self.mod_func_lbl, 3, 0, 1, 2)
         self.grid_layout.addWidget(self.mod_func_input, 4, 0, 1, 2)
         self.grid_layout.addWidget(self.window_start_input, 4, 2)
