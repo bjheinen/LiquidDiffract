@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTabWidget, QActi
 from PyQt5.QtGui import QIcon
 import numpy as np
 import os
+import webbrowser
 
 from . import bkg_ui
 from . import optim_ui
@@ -53,6 +54,7 @@ class App(QMainWindow):
         self.help_menu.addAction(self.about_action)
         self.preferences_action.triggered.connect(self.call_preferences_dialog)
         self.about_action.triggered.connect(self.call_about_dialog)
+        self.documentation_action.triggered.connect(self.open_docs)
         
         
         self.table_widget = MainContainer(self)
@@ -96,6 +98,9 @@ class App(QMainWindow):
     def call_about_dialog(self):
         self.about_dialog = utility.AboutDialog()
         self.about_dialog.exec_()
+        
+    def open_docs(self):
+        webbrowser.open_new('https://github.com/bjheinen/LiquidDiffract')
 
 
 class MainContainer(QWidget):

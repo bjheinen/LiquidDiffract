@@ -29,7 +29,7 @@ def calc_mol_mass(composition):
     '''
     _data_path = os.path.join(os.path.abspath(os.getcwd()), 'data')
     mass_dict = np.load(os.path.join(_data_path, 'mass_data.npy')).item()
-    mol_mass = np.sum([mass_dict[element]*composition[element][2] for element in composition])
+    mol_mass = np.sum([mass_dict[element]*(composition[element][2]) for element in composition])
     return mol_mass
 
 def conv_density(rho, composition):
@@ -39,8 +39,10 @@ def conv_density(rho, composition):
     '''
     # Calculate molecular mass g/mole
     mol_mass = calc_mol_mass(composition)
-    # Calculate atoms/cm3 > then moles/cm3
-    mass_density = (rho * 10 / 6.0221408) * mol_mass
+    # Calculate number of atoms and scale mol_mass
+    N = np.sum(composition[el][2] for el in composition)
+    # Calculate atoms/cm3 > then moles/cm3 
+    mass_density = (rho * 10 / 6.0221408) * (mol_mass/N)
     return mass_density
 
 
