@@ -73,6 +73,7 @@ def calc_Z_sum(composition):
     #modifier = 1/np.min([composition[el][2] for el in composition])
     #modifier = 1
     Z_tot = 0
+    # np.sum([c[el][0]*c[el][2] for el in c])
     for element in composition:
         # Unpack Z and n
         Z, _, n = composition[element]
