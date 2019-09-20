@@ -1,45 +1,48 @@
-Add error handling messages - e.g. warning message when trying to load bad data etc. > Fixed
-Fix polyatomic case ? needs testing
-Fix d_pq stuff etc. > should it be taken out of the code???
-Add options to change solver, change log mode 
-Options to change smoothing settings?
-Write README
-Include refs
-Fix docs/comments
-Fix API frontend
-Use multiprocessing to speed up calculation of i(q) etc. >>> this will help
-speed up the refinement
+Fix polyatomic case > Unsure
+Comment code
+Fix API/using without gui
+Documentation/README file
+Add functionality for other solvers (L-BFGS-B & SLSQP working so far)
+Use multiprocessing to speed up calculations
+Code efficiency - combine warning message boxes with inherited class (in gui.utility)
+Install script for release?
+Remove references to d_pq in core.core? > or add functionality
 
-
-About page?
-Config/additional options dialog
-
-with tabs???
-
-Options:
-
-
-Log mode
-Data smoothing options
-Solver options
-
-
-Here is a raw data file "CaAl2O4_2000_raw.dat" for liquid CaAl2O4 at 2000 degC and a normalised S(Q) "CA_2000_SQ.dat".
-
-
-I also attach simulated S(Q) functions generated from A-L and F-Z formulisms. You'll notice the experimental and simulated S(Q) are not perfect at low-Q, but they should be closer to agreement at mid to higher Q-values.
-
-
-The density of liquid CaAl2O4 is about 0.0734 A**-3.
-
-
-I hope that helps?
+Are there any other options for the cosine-window algorithm etc. to add?
 
 
 
------------------------------------------
 
-Less important:
+When dataset too large it crashes - in fourier transform N < dataset so tries to add negative number
+of padding zeros to the array
 
-combine warning message boxes from class in utility
-how to update preferences
+Should there be options to change this padding? - doesn't it affect resolution?
+
+> maybe handle error if a crash when first loaded >> probably means not in Q Space???
+
+
+
+
+
+
+-------------------------------------------------
+
+
+Causes of problems:
+(possible places)
+
+
+
+fft scaling (e.g. in calc_F_r) > currently multiplying by 4*np.pi**2 ? 
+(check Keen)
+
+
+
+
+unikely to be in calc_structure_factor > more likely one of the smaller functions it calls:
+
+calc_coherent_scattering > *=N?
+
+Z_tot?
+
+K_p or one of the averages probably

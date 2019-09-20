@@ -1,24 +1,12 @@
-Thins to add:
 
 
 
-Option in optim_ui to use different solver
 
-	nelder-mead simplex probably best one?
-	> have an options menu with a dialog to set these things?
-
-
-Option in optim_ui to set more options of smoothing function
-	> add to another tab in extended options dialog 
-
-
-Are there any other options for the cosine-window algorithm etc. to add?
 
 
 In results UI save output > also add S_inf info for AL only, if statement to check method
 
-In extended options dialog should be option to change log style
-> + explanation of what this is
+
 
 
 Then README file
@@ -61,10 +49,6 @@ but similar crash on converting float in rmin
 try on
 
 
-When dataset too large it crashes - in fourier transform N < dataset so tries to add negative number
-of padding zeros to the array
-
-Should there be options to change this padding? - doesn't it affect resolution?
 
 Crash when click autoscale bkg - after load data, uncheck bkg >> then check again but no load
 when check this box should blank buttons if no data loaded
@@ -73,6 +57,16 @@ when check this box should blank buttons if no data loaded
 
 
 shit shouldn't you be only taking the first half of this array???
+
+
+-----------------------------------------------------------------
+
+
+Add option to add mod function when one hasn;t been used in the final tab
+Check solver options working? + look at adding global min finder?
+check crash when keep clicking refine?
+
+
 
 
 

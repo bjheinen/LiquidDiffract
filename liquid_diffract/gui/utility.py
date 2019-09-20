@@ -103,16 +103,17 @@ class PreferencesDialog(QDialog):
 
         try:
             _window_length = np.int(self.data_settings_gb.window_length_input.text())
-
             _poly_order = np.int(self.data_settings_gb.poly_order_input.text())
             _op_method = self.refine_settings_gb.op_method_input.currentText()
-        
             _disp = np.int(self.refine_settings_gb.disp_check.isChecked())
             _maxiter =  np.int(self.refine_settings_gb.maxiter_input.text())
-            _maxfun = np.int(self.refine_settings_gb.maxfun_input.text())
             _ftol = np.float(self.refine_settings_gb.ftol_input.text())
-            _gtol = np.float(self.refine_settings_gb.gtol_input.text())
-
+            # Get l_bfgs_b specific options
+            if _op_method == 'L-BFGS-B':
+                _maxfun = np.int(self.refine_settings_gb.maxfun_input.text())
+                _gtol = np.float(self.refine_settings_gb.gtol_input.text())
+        
+        # Handle for missing values 
         except ValueError:
             _message = ['Missing Values!', 'Please ensures all values are set properly']
             self.error_msg = ErrorMessageBox(_message)
@@ -120,7 +121,6 @@ class PreferencesDialog(QDialog):
             return
         
         if not _window_length%2:
-            #replace with a warning messagebox
             _message = ['Error!', 'Please ensure window_length is positive odd integer!']
             self.error_msg = ErrorMessageBox(_message)
             self.error_msg.show()
