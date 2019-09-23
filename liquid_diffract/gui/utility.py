@@ -8,7 +8,7 @@ import numpy as np
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIntValidator, QDoubleValidator, QDialog, QPixmap
 from PyQt5.QtWidgets import QFileDialog, QStyledItemDelegate, \
-                            QMessageBox, QFrame, QGroupBox, \
+                            QMessageBox, QFrame, QGroupBox, QToolButton, \
                             QVBoxLayout, QGridLayout, QDialogButtonBox, \
                             QLabel, QLineEdit, QCheckBox, QComboBox, QTextBrowser
 from core.core import __name__, __version__
@@ -74,7 +74,8 @@ class PreferencesDialog(QDialog):
 
         self.app_settings_gb = AppSettingsGroupBox(preferences)
         self.data_settings_gb = DataSettingsGroupBox(preferences)
-        self.refine_settings_gb = RefineSettingsGroupBox(preferences)
+        self.refine_settings_gb = SolverSettingsGroupBox(preferences)
+        self.global_min_settings_gb = GlobalMinSettingsGroupBox(preferences)
         
         self.button_box = QDialogButtonBox()
         self.button_box.addButton('&Cancel', QDialogButtonBox.RejectRole)
@@ -84,6 +85,7 @@ class PreferencesDialog(QDialog):
         self.vlayout.addWidget(self.app_settings_gb)           
         self.vlayout.addWidget(self.data_settings_gb)
         self.vlayout.addWidget(self.refine_settings_gb)
+        self.vlayout.addWidget(self.global_min_settings_gb)
         self.vlayout.addWidget(self.button_box)
         self.setLayout(self.vlayout)
         
@@ -112,6 +114,12 @@ class PreferencesDialog(QDialog):
             if _op_method == 'L-BFGS-B':
                 _maxfun = np.int(self.refine_settings_gb.maxfun_input.text())
                 _gtol = np.float(self.refine_settings_gb.gtol_input.text())
+            # Get globam minimisation (basin-hopping) options
+            _bh_disp = np.int(self.global_min_settings_gb.disp_check.isChecked())
+            _bh_niter = np.int(self.global_min_settings_gb.niter_basin_input.text())
+            _bh_temp = np.float(self.global_min_settings_gb.temp_basin_input.text())
+            _bh_step_size = np.float(self.global_min_settings_gb.stepsize_basin_input.text())
+            _bh_interval = np.int(self.global_min_settings_gb.interval_basin_input.text())
         
         # Handle for missing values 
         except ValueError:
@@ -143,13 +151,23 @@ class PreferencesDialog(QDialog):
             _minimisation_options['maxfun'] = _maxfun
             _minimisation_options['gtol'] = _gtol
         
+        _global_minimisation = self.global_min_settings_gb.isChecked()
+        _global_min_options = {'disp': _bh_disp,
+                               'niter': _bh_niter,
+                               'T': _bh_temp,
+                               'stepsize': _bh_step_size,
+                               'interval': _bh_interval
+                               } 
+ 
         # Set preferences dictionary to return
         self._preferences = {'append_log_mode': _append_log_mode,
                              'window_length': _window_length,
                              'poly_order': _poly_order,
                              'op_method': _op_method,
-                             'minimisation_options': _minimisation_options}
-        #print(_preferences)
+                             'minimisation_options': _minimisation_options,
+                             'global_minimisation': _global_minimisation,
+                             'global_min_options': _global_min_options
+                             }
 
         # handle for ValueError if nothing entered
         self.done(1)
@@ -265,12 +283,11 @@ class DataSettingsGroupBox(QGroupBox):
         self.setLayout(self.main_layout) 
 
 
-
-class RefineSettingsGroupBox(QGroupBox):
+class SolverSettingsGroupBox(QGroupBox):
     
     def __init__(self, preferences):
-        super(RefineSettingsGroupBox, self).__init__()
-        self.setTitle('Optimisation Options')
+        super(SolverSettingsGroupBox, self).__init__()
+        self.setTitle('Solver Options')
         self.setAlignment(Qt.AlignLeft)
         self.setStyleSheet('GroupBox::title{subcontrol-origin: margin; subcontrol-position: top left;}')
         
@@ -283,18 +300,21 @@ class RefineSettingsGroupBox(QGroupBox):
 
     def create_widgets(self):
         
+        #
         self.op_method_label = QLabel('Minimisation Algorithm: ')
         self.op_method_input = QComboBox()
         # Use limited-memory BFGS code for optimising rho
         # See http://users.iems.northwestern.edu/~nocedal/lbfgsb.html for details
         self.op_method_input.insertItem(0, 'L-BFGS-B')
         self.op_method_input.insertItem(1, 'SLSQP')
-        #self.op_method_input.insertItem(2, 'COBYLA')
-        self.op_method_input.insertItem(2, 'Nelder-Mead')
-        #self.op_method_input.insertItem(3, 'Basin Hopping')
-        #self.op_method_input.insertItem(4, 'Brute')
+        self.op_method_input.insertItem(2, 'COBYLA')
         
-        
+        self.solver_info_link = QLabel('<a href="https://github.com/bjheinen/LiquidDiffract"><span style="color: #0c0263;"><span lang="zxx"><u>More information...</u></span></span></a>')
+        self.solver_info_link.setOpenExternalLinks(True)
+        #self.text_display.setTextInteractionFlags(Qt.LinksAccessibleByMouse)
+            
+            
+            
         self.disp_label = QLabel('Output convergence information? ')
         self.disp_check = QCheckBox()
         
@@ -312,9 +332,6 @@ class RefineSettingsGroupBox(QGroupBox):
         self.gtol_label = QLabel('Gradient convergence limit (gtol): ')
         self.gtol_input = QLineEdit()
         
-        #self.xatol for nelder-mead
-        #bfgsb > all of them
-        #slsqp > grey out gtol, maxfun
         self.hline = QFrame()
         self.hline.setFrameShape(QFrame.HLine)
         self.hline.setFrameShadow(QFrame.Sunken)
@@ -337,9 +354,12 @@ class RefineSettingsGroupBox(QGroupBox):
     def style_widgets(self):  
         
         self.op_method_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.op_method_label.setToolTip('Solver to use when refining density.')
+                                             
+        self.solver_info_link.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         
         self.disp_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
-
+        self.disp_label.setToolTip('Print solver specific convergence messages?')
              
         self.maxiter_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         self.maxiter_input.setAlignment(Qt.AlignRight)
@@ -352,16 +372,18 @@ class RefineSettingsGroupBox(QGroupBox):
         self.maxfun_input.setMaximumWidth(70)
 
         self.ftol_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.ftol_label.setToolTip('The function convergence limit is the precision goal for the function value in the stopping criterion. \nFor the L-BFGS-B method the iteration stops when (f^k - f^{k+1})/max{|f^k|,|f^{k+1}|,1} <= ftol). \nFor the COBYLA method ftol is a lower bound on the trust region and is not precisely guaranteed.')
         self.ftol_input.setAlignment(Qt.AlignRight)
         self.ftol_input.setValidator(QDoubleValidator())
         self.ftol_input.setMaximumWidth(70)
         
         self.gtol_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.gtol_label.setToolTip('Gradient limit for stopping criterion. \nThe iteration will stop when max{|proj g_i | i = 1, ..., n} <= gtol \nwhere pg_i is the i-th component of the projected gradient.')
         self.gtol_input.setAlignment(Qt.AlignRight)
         self.gtol_input.setValidator(QDoubleValidator())
         self.gtol_input.setMaximumWidth(70)
         
-        if self.op_method_input.currentText() == 'SLSQP':
+        if self.op_method_input.currentText() != 'L-BFGS-B':
             self.maxfun_label.setEnabled(False)
             self.maxfun_input.setEnabled(False)
             self.gtol_label.setEnabled(False)
@@ -377,18 +399,19 @@ class RefineSettingsGroupBox(QGroupBox):
         self.grid_layout = QGridLayout()
         self.grid_layout.setSpacing(15)
         self.grid_layout.addWidget(self.op_method_label, 0, 0)
-        self.grid_layout.addWidget(self.op_method_input, 0, 1)        
-        self.grid_layout.addWidget(self.hline, 1, 0)
-        self.grid_layout.addWidget(self.disp_label, 2, 0)
-        self.grid_layout.addWidget(self.disp_check, 2, 1)
-        self.grid_layout.addWidget(self.maxiter_label, 3, 0)
-        self.grid_layout.addWidget(self.maxiter_input, 3, 1)
-        self.grid_layout.addWidget(self.maxfun_label, 4, 0)
-        self.grid_layout.addWidget(self.maxfun_input, 4, 1)
-        self.grid_layout.addWidget(self.ftol_label, 5, 0)
-        self.grid_layout.addWidget(self.ftol_input, 5, 1)
-        self.grid_layout.addWidget(self.gtol_label, 6, 0)
-        self.grid_layout.addWidget(self.gtol_input, 6, 1)        
+        self.grid_layout.addWidget(self.op_method_input, 0, 1)
+        self.grid_layout.addWidget(self.solver_info_link, 1, 0)
+        self.grid_layout.addWidget(self.hline, 2, 0)
+        self.grid_layout.addWidget(self.disp_label, 3, 0)
+        self.grid_layout.addWidget(self.disp_check, 3, 1)
+        self.grid_layout.addWidget(self.maxiter_label, 4, 0)
+        self.grid_layout.addWidget(self.maxiter_input, 4, 1)
+        self.grid_layout.addWidget(self.maxfun_label, 5, 0)
+        self.grid_layout.addWidget(self.maxfun_input, 5, 1)
+        self.grid_layout.addWidget(self.ftol_label, 6, 0)
+        self.grid_layout.addWidget(self.ftol_input, 6, 1)
+        self.grid_layout.addWidget(self.gtol_label, 7, 0)
+        self.grid_layout.addWidget(self.gtol_input, 7, 1)        
 
         self.main_layout.addLayout(self.grid_layout)
 
@@ -422,10 +445,123 @@ class RefineSettingsGroupBox(QGroupBox):
             self.maxiter_input.setText('200')
             self.ftol_input.setText('1e-6')
 
-        elif self.op_method_input.currentText() == 'Nelder-Mead':
-            pass
+        elif self.op_method_input.currentText() == 'COBYLA':
+            self.maxfun_label.setEnabled(False)
+            self.maxfun_input.setEnabled(False)
+            self.gtol_label.setEnabled(False)
+            self.gtol_input.setEnabled(False)
+            # Set default values when the method is changed
+            self.disp_check.setChecked(False)
+            self.maxiter_input.setText('1000')
+            self.ftol_input.setText('1e-7')
+
         else:
             pass
+
+class GlobalMinSettingsGroupBox(QGroupBox):
+    
+    def __init__(self, preferences):
+        super(GlobalMinSettingsGroupBox, self).__init__()
+
+        self.setTitle('Global Minimisation?')
+        self.setAlignment(Qt.AlignLeft)
+        self.setStyleSheet('GroupBox::title{subcontrol-origin: margin; subcontrol-position: top left;}')
+        
+        self.setCheckable(True)
+        #self.setChecked(False)
+       
+        self.create_widgets()
+        self.set_data(preferences)
+        self.style_widgets()
+        self.create_layout()
+        #self.create_signals()
+
+
+    def create_widgets(self):
+
+        self.disp_label = QLabel('Output convergence information? ')
+        self.disp_check = QCheckBox()
+        
+        self.niter_basin_label = QLabel('Number of basin-hopping iterations: ')
+        self.niter_basin_input = QLineEdit()     
+        
+        self.temp_basin_label = QLabel('Basin-hopping temperature parameter (T): ')
+        self.temp_basin_input = QLineEdit()
+        
+        self.stepsize_basin_label = QLabel('Initial step size for basin-hopping algorithm: ')
+        self.stepsize_basin_input = QLineEdit()   
+        
+        self.interval_basin_label = QLabel('Update interval: ')
+        self.interval_basin_input = QLineEdit()
+        
+        self.hline = QFrame()
+        self.hline.setFrameShape(QFrame.HLine)
+        self.hline.setFrameShadow(QFrame.Sunken)
+        self.hline.setObjectName("hline")
+
+    def set_data(self, preferences):
+        
+        self.setChecked(preferences['global_minimisation'])
+        _global_min_options = preferences['global_min_options']
+        self.disp_check.setChecked(_global_min_options['disp'])
+
+        self.niter_basin_input.setText(np.str(_global_min_options['niter']))
+        self.temp_basin_input.setText(np.str(_global_min_options['T']))
+        self.stepsize_basin_input.setText(np.str(_global_min_options['stepsize']))
+        self.interval_basin_input.setText(np.str(_global_min_options['interval']))
+        
+
+    def style_widgets(self):  
+
+        self.disp_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.disp_label.setToolTip('Print basin-hopping status messages?')
+        
+        self.niter_basin_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.niter_basin_input.setAlignment(Qt.AlignRight)
+        self.niter_basin_input.setValidator(QIntValidator())
+        self.niter_basin_input.setMaximumWidth(70)
+
+        self.temp_basin_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.temp_basin_input.setAlignment(Qt.AlignRight)
+        self.temp_basin_input.setValidator(QDoubleValidator())
+        self.temp_basin_input.setMaximumWidth(70)
+
+        self.stepsize_basin_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.stepsize_basin_input.setAlignment(Qt.AlignRight)
+        self.stepsize_basin_input.setValidator(QDoubleValidator())
+        self.stepsize_basin_input.setMaximumWidth(70)
+        
+        self.interval_basin_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.interval_basin_input.setAlignment(Qt.AlignRight)
+        self.interval_basin_input.setValidator(QIntValidator())
+        self.interval_basin_input.setMaximumWidth(70)
+
+
+    def create_layout(self):
+        self.main_layout = QVBoxLayout()
+        self.main_layout.setContentsMargins(20, 10, 20, 7)
+        self.main_layout.setSpacing(25)
+
+
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setSpacing(15)
+        self.grid_layout.addWidget(self.disp_label, 0, 0)
+        self.grid_layout.addWidget(self.disp_check, 0, 1)        
+        self.grid_layout.addWidget(self.niter_basin_label, 1, 0)
+        self.grid_layout.addWidget(self.niter_basin_input, 1, 1)        
+        self.grid_layout.addWidget(self.temp_basin_label, 2, 0)
+        self.grid_layout.addWidget(self.temp_basin_input, 2, 1)
+        self.grid_layout.addWidget(self.stepsize_basin_label, 3, 0)
+        self.grid_layout.addWidget(self.stepsize_basin_input, 3, 1)
+        self.grid_layout.addWidget(self.interval_basin_label, 4, 0)
+        self.grid_layout.addWidget(self.interval_basin_input, 4, 1)
+     
+        self.main_layout.addLayout(self.grid_layout)
+
+        self.setLayout(self.main_layout)  
+
+
+
 
 class ErrorMessageBox(QMessageBox):
     def __init__(self, _message):
@@ -489,49 +625,3 @@ class AboutDialog(QDialog):
               
         self.setLayout(self.vlayout)
         
-   
-
-#
-#
-#    @Slot()
-#    def about(self):
-#        """About Spyder"""
-#        versions = get_versions()
-#        # Show Mercurial revision for development version
-#        revlink = ''
-#        if versions['revision']:
-#            rev = versions['revision']
-#            revlink = " (<a href='https://github.com/spyder-ide/spyder/"\
-#                      "commit/%s'>Commit: %s</a>)" % (rev, rev)
-#        QMessageBox.about(self,
-#            _("About %s") % "Spyder",
-#            """<b>Spyder %s</b> %s
-#            <br>The Scientific Python Development Environment
-#            <br>Copyright &copy; The Spyder Project Contributors
-#            <br>Licensed under the terms of the MIT License
-#            <p>Created by Pierre Raybaut.
-#            <br>Developed and maintained by the
-#            <a href="%s/blob/master/AUTHORS">Spyder Project Contributors</a>.
-#            <br>Many thanks to all the Spyder beta testers and regular users.
-#            <p>For help with Spyder errors and crashes, please read our
-#            <a href="%s">Troubleshooting page</a>, and for bug reports and
-#            feature requests, visit our <a href="%s">Github website</a>.
-#            For project discussion, see our <a href="%s">Google Group</a>.
-#            <p>This project is part of a larger effort to promote and
-#            facilitate the use of Python for scientific and engineering
-#            software development. The popular Python distributions
-#            <a href="https://www.anaconda.com/download/">Anaconda</a> and
-#            <a href="https://winpython.github.io/">WinPython</a>
-#            also contribute to this plan.
-#            <p>Python %s %dbits, Qt %s, %s %s on %s
-#            <p><small>Most of the icons for the Spyder 2 theme come from the Crystal
-#            Project (&copy; 2006-2007 Everaldo Coelho). Other icons for that
-#            theme come from <a href="http://p.yusukekamiyamane.com/"> Yusuke
-#            Kamiyamane</a> (all rights reserved) and from
-#            <a href="http://www.oxygen-icons.org/">
-#            The Oxygen icon theme</a></small>.
-#            """
-#            % (versions['spyder'], revlink, __project_url__, __trouble_url__,
-#               __project_url__, __forum_url__, versions['python'],
-#               versions['bitness'], versions['qt'], versions['qt_api'],
-#               versions['qt_api_ver'], versions['system']))

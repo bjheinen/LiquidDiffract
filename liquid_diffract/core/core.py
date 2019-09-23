@@ -311,7 +311,7 @@ def calc_S_inf(composition, Q, method='ashcroft-langreth'):
     else:
         raise ValueError('Please select a valid method for structure factor')
     
-    print('S_inf = ', S_inf)
+    #print('S_inf = ', S_inf)
     return S_inf
 
 

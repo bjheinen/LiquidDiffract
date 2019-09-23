@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QLabel, QCheckBox, QButtonGroup, QRadioButton, \
                             QScrollArea, QSplitter
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import minimize, basinhopping
 import os
 import datetime
 
@@ -258,17 +258,47 @@ class OptimUI(QWidget):
             except ValueError:
                 print('Warning: Must set bounds to refine density!')
                 return
-            _bounds = ((_lb, _ub),)
+
             _args = (self.data['cor_x_cut'], self.data['cor_y_cut'],
                      _composition, _r_min, _d_pq, _n_iter, _method, 
                      self.data['mod_func'], self.data['window_start'], 1)
+            
+            _solver_kwargs = {'args':_args, 
+                              'options':dict(self.minimisation_options), 
+                              'method':self.op_method}
+            if self.op_method == 'COBYLA':
+                # Construct constraints for COBYLA method. The COBYLA solver
+                # does not use the 'bounds' kwarg, and requires lb & ub passed
+                # as a constraint function
+                _cons = [{'type': 'ineq', 'fun': lambda x: x - _lb},
+                         {'type': 'ineq', 'fun': lambda x: _ub - x}
+                        ]
+                _solver_kwargs['constraints'] = _cons
+                # Handle different name of solver option ftol (tol)
+                _solver_kwargs['options']['tol'] = _solver_kwargs['options'].pop('ftol')
+            else:
+                _solver_kwargs['bounds'] = ((_lb, _ub),)
+           
             print('\n*************************\n')
             print('Finding optimal density...')
-            _opt_result = minimize(core.calc_impr_interference_func,
-                                   _rho_0, bounds=_bounds, args=_args,
-                                   options=self.minimisation_options,
-                                   method=self.op_method)
-            self.data['refined_rho'] = _opt_result.x[0]
+            
+            if self.global_minimisation == 1:
+                print('\nRunning basin-hopping algorithm to find global minimum')
+                _global_min_kwargs = dict(self.global_min_options)
+                _global_min_kwargs['minimizer_kwargs'] = _solver_kwargs
+                _opt_result = basinhopping(core.calc_impr_interference_func,
+                                           _rho_0,
+                                           **_global_min_kwargs)
+            else:
+                _opt_result = minimize(core.calc_impr_interference_func,
+                                       _rho_0, 
+                                       **_solver_kwargs)
+            # Handle for anomalous solver behaviour 
+            # e.g. (COBYLA opt_result.x is scalar) 
+            try:
+                self.data['refined_rho'] = _opt_result.x[0]
+            except IndexError:
+                self.data['refined_rho'] = _opt_result.x
             _rho_temp = self.data['refined_rho']
             print('Refined density = ', _rho_temp)
             print('Chi^2 = ', _opt_result.fun, '\n')
@@ -579,7 +609,7 @@ class CompositionGroupBox(QGroupBox):
         #for _el in _composition_dict:
         #    _composition_dict[_el][2] /= _n_total
         #    _composition_dict[_el] = tuple(_composition_dict[_el])
-        print(_composition_dict)
+        #print(_composition_dict)
         return _composition_dict
     
     QDoubleValidator

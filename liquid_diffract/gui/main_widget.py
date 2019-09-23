@@ -72,7 +72,14 @@ class App(QMainWindow):
                                  'maxiter': 15000,
                                  'maxfun': 15000,
                                  'ftol': 2.22e-8,
-                                 'gtol': 1e-10}
+                                 'gtol': 1e-10},
+                            'global_minimisation': 0,
+                            'global_min_options':
+                                {'disp': 0,
+                                 'niter': 100,
+                                 'T': 1.0,
+                                 'stepsize': 0.01,
+                                 'interval': 50}
                             } 
         self.set_preferences()
 
@@ -91,6 +98,8 @@ class App(QMainWindow):
     def set_preferences(self):
         self.table_widget.optim_ui.op_method = self.preferences['op_method']
         self.table_widget.optim_ui.minimisation_options = self.preferences['minimisation_options']
+        self.table_widget.optim_ui.global_minimisation = self.preferences['global_minimisation']
+        self.table_widget.optim_ui.global_min_options = self.preferences['global_min_options']
         self.table_widget.optim_ui.append_log_mode = self.preferences['append_log_mode']
         self.table_widget.optim_ui.window_length = self.preferences['window_length']
         self.table_widget.optim_ui.poly_order = self.preferences['poly_order']
