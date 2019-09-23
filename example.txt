@@ -1,0 +1,113 @@
+# Example use without GUI
+
+from scipy.signal import savgol_filter
+from scipy.optimize import minimize
+
+
+# First set composition
+# Composition dictionary should have element names as keys, with values as tuples of the form (Z, charge, fraction)
+composition = {'Ga': (31,0,1)}
+# Set initial density
+rho = 0.05
+
+
+
+# Load your background substracted data
+q_raw, I_raw = np.loadtxt('Ga_backcor_origin.dat', unpack=True, skiprows=0)
+
+# Next rebin data and trim if neccessary
+
+# Re-bin via interpolation so dq (steps of q) is consistent
+# Suggested dq = 0.02
+dq = 0.02
+# Cutoff below Q_cutoff
+q_cutoff = 9.0
+q_dat = np.arange(0, q_raw[-1], dq)
+q_dat = q_dat[q_dat<q_cutoff]
+finterp = scipy.interpolate.interp1d(q_raw, I_raw, kind='cubic', fill_value='extrapolate')
+I_dat = finterp(q_dat)
+
+# Apply any other data treatment
+# e.g. a savitsky-golay filter to smooth the data
+I_dat = savgol_filter(I_dat, window_length=31, poly_order=3)
+
+
+
+# First calculate the interference function i(Q)
+# i(Q) = S(Q) - S_inf
+structure_factor = calc_structure_factor(q_dat,I_dat, composition, rho)
+interference_func = structure_factor - calc_S_inf(composition, q_dat) 
+
+
+# store original interference function
+interference_func_0 = interference_func
+
+
+# A low r region cutoff must be chosen for the refinement method of Eggert et al. (2002)
+r_min = 2.3
+rho_0 = 0.05
+
+# The function 'calc_impr_interference_func' calculates an improved estimate of
+# the interference function via the iterative procedure described in Eggert et al., 2002.
+#
+# calc_impr_interference_func requires the following arguments:
+# q_dat - q values
+# I_dat / i(Q) - the treated intensity data or interference function (depends on opt_flag used)
+# composition - composition dictionary
+# r_min - low r cut-off
+# d_pq - unused d-value (can be set to None)
+# iter_limit - iteration limit for Eggert procedure
+# method - method of calculating S(Q) ('ashcroft-langreth' and 'faber-ziman' are currently supported)
+# mod_func - modification function to use ('None', 'Cosine-window' or 'Lorch')
+# window_start - window_start of cosine function (if in use)
+# opt_flag - set to 0 if not running from solver
+#
+# The last positional argument (opt_flag) signals that you only want the chi_squared value to be returned.
+# This is useful if using a solver to refine the density by minimising the chi_squared value
+
+# e.g.
+# Return the improved i(Q) & chi^2
+iter_limit = 5
+method = 'ashcroft-langreth'
+mod_func = 'Cosine-window'
+window_start = 8
+args = (q_dat, interference_func_0, composition, r_min, None, iter_limit, method. mof_func, window_start, 0)
+improved_interference_func = calc_impr_interference_func(rho_0, *args)
+# Store the refined interference function at rho_0
+interference_func_1 = improved_interference_func
+
+# Run from solver
+args = (q_dat, I_dat, composition, r_min, None, iter_limit, method. mof_func, window_start, 1)
+# Set-up bounds and other options according to the documentation of solver/minimisation routine
+bounds = ((0.02, 0.08),)
+op_method = 'L-BFGS-B'
+optimisation_options = {'disp': 1,
+                        'maxiter': 15000,
+                        'maxfun': 15000,
+                        'ftol': 2.22e-8,
+                        'gtol': 1e-10
+                        }
+opt_result = minimize(calc_impr_interference_func, rho_0,
+                      bounds=bounds, args=args,
+                      options=optimisation_options,
+                      method=op_method)
+# The solver finds the value of rho that gives the smallest chi^2
+rho_refined = opt_result.x[0]
+
+# The interference function can then be calculated at that value of rho and refinement with 
+# the Eggert procedure as above
+
+interference_func = (calc_structure_factor(q_dat,I_dat, composition, rho_refined) - 
+                     calc_S_inf(composition, q_dat))
+args = (q_dat, interference_func, composition, r_min, None, iter_limit, method. mof_func, window_start, 0)
+improved_interference_func = calc_impr_interference_func(rho_refined, *args)
+# Store refined interference function calculated at the opimised rho
+
+# Plot the data
+# Inital interference function calculation
+plt.plot(q_dat, interference_func_0, color='g')
+# optimised for rho_0
+plt.plot(q_dat, interference_func_1, color='r')
+# for optimised rho
+plt.plot(q_dat, interference_func_2, color='b')
+

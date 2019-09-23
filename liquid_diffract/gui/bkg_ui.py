@@ -108,7 +108,7 @@ class BkgUI(QWidget):
         try:
             self.data['data_raw_x'], self.data['data_raw_y'] = np.loadtxt(self.data_file, unpack=True)
             self.data['data_x'], self.data['data_y'] = data_manip.rebin_data(self.data['data_raw_x'], self.data['data_raw_y'])
-        except ValueError as e:
+        except ValueError:
             self.data_file = None
             self.load_file_error()
             return
@@ -131,7 +131,7 @@ class BkgUI(QWidget):
             return
         try:
             self.data['bkg_raw_x'], self.data['bkg_raw_y'] = np.loadtxt(self.bkg_file, unpack=True)
-        except ValueError as e:
+        except ValueError:
             self.bkg_file = None
             self.load_file_error()
             return

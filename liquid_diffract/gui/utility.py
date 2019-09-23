@@ -8,7 +8,7 @@ import numpy as np
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIntValidator, QDoubleValidator, QDialog, QPixmap
 from PyQt5.QtWidgets import QFileDialog, QStyledItemDelegate, \
-                            QMessageBox, QFrame, QGroupBox, QToolButton, \
+                            QMessageBox, QFrame, QGroupBox, \
                             QVBoxLayout, QGridLayout, QDialogButtonBox, \
                             QLabel, QLineEdit, QCheckBox, QComboBox, QTextBrowser
 from core.core import __name__, __version__

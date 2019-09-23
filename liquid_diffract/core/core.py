@@ -9,12 +9,9 @@ __copyright__ = 'Copyright 2018, Benedict J Heinen'
 __email__ = 'benedict.heinen@gmail.com'
 __name__ = 'LiquidDiffract'
 __version__= '0.1'
-# debugging
-#from sys import getsizeof
 
 import os
 import numpy as np
-#from scipy.optimize import minimize
 from scipy.integrate import simps
 import scipy.interpolate
 import scipy.fftpack
@@ -835,75 +832,3 @@ def calc_impr_interference_func(rho, *args):
     else:
         raise ValueError('Argument - opt_flag - must be boolean')
         
-
-
-'''
-Example use without GUI
-
-
-# Composition with element name as key, entry as tuple with Z, charge, fraction
-composition = {'Ga': (31,0,1)}
-# Set density
-rho = 0.05
-
-# Load your data
-q_raw, I_raw = np.loadtxt('Ga_backcor_origin.dat', unpack=True, skiprows=0)
-# Re-bin via interpolation so dq(steps of q) = 0.02
-# Cutoff below Q_cutoff
-q_cutoff = 9.0
-dq = 0.02
-q_dat = np.arange(0, q_raw[-1], dq)
-q_dat = q_dat[q_dat<q_cutoff]
-finterp = scipy.interpolate.interp1d(q_raw, I_raw, kind='cubic', fill_value='extrapolate')
-I_dat = finterp(q_dat)
-
-# Smooth the data > using savitsky-golay filter
-if you wish
-
-#############################################################
-
-# First calculate the interference function i(Q)
-# i(Q) = S(Q) - S_inf
-structure_factor = calc_structure_factor(q_dat,I_dat, composition, rho)
-interference_func = structure_factor - calc_S_inf(composition, q_dat) 
-# store original interference function
-interference_func_0 = interference_func
-
-r_min = 2.3
-d_pq = 2.9
-rho_0 = 0.05
-args = (q_dat, interference_func_0, composition, r_min, d_pq, 0)
-interference_func_1 = calc_impr_interference_func(rho_0, *args)density_input
-
-
-args = (q_dat, I_dat, composition, r_min, d_pq, 1)
-bounds = ((0.02, 0.08),)
-op_method = 'L-BFGS-B'
-optimisation_options = {'disp': 1,
-                        'maxiter': 15000,
-                        'maxfun': 15000,
-                        'ftol': 2.22e-8,
-                        'gtol': 1e-10
-                        }
-opt_result = minimize(calc_impr_interference_func, rho_0,
-                      bounds=bounds, args=args,
-                      options=optimisation_options,
-                      method=op_method)
-
-rho_impr = opt_result.x[0]
-
-
-
-sf = calc_structure_factor(q_dat,I_dat, composition, rho_impr)
-int_f_2 = sf - calc_S_inf(composition, q_dat) 
-args = (q_dat, int_f_2, composition, r_min, d_pq, 0)
-interference_func_2 = calc_impr_interference_func(rho_impr, *args)
-
-# inital guess
-plt.plot(q_dat, interference_func_0, color='g')
-# optimised for rho = 0.05
-plt.plot(q_dat, interference_func_1, color='r')
-# for optimised rho
-plt.plot(q_dat, interference_func_2, color='b')
-
-'''
