@@ -1,6 +1,7 @@
 <p align="center"><img src="https://github.com/bjheinen/LiquidDiffract/blob/master/liquid_diffract/data/icons/logo.png"></p>
 
-A GUI program to treat experimental X-ray diffraction data of liquid structures. LiquidDiffract can perform background subtraction, fourier transformation, data (quantitative structure factor) optimisation/normalisation, and estimation of density.
+-> A GUI program to treat experimental X-ray diffraction data of liquid structures. 
+LiquidDiffract can perform background subtraction, fourier transformation, data (quantitative structure factor) optimisation/normalisation, and estimation of density. <-
 
 
 ### Maintainer
@@ -31,6 +32,62 @@ It has been tested on Linux, Mac, and Windows.
 
 ### Loading the GUI
 
+### Basic Usage
+
+LiquidDiffract is designed to enable a streamlined and visual workflow to treat experimental X-Ray diffraction data of liquid and amorphous solids (glasses).
+
+There are three main tabs which provide a selection of toolboxes for data operations at different stages of the workflow.
+
+* Background scaling and subtraction
+* Data operations, structure factor calculation, interference function optimisation, and density refinement
+* PDF calculation and data output
+
+Data are automatically plotted and tabs updated as operations are made. The graphical plots display coordinates in the upper-right corner. Click and drag or use the scroll-wheel to zoom in on a region. Double right-click to reset the view.
+
+
+ADD SCREENSHOT HERE
+
+
+### Background Subtraction Tab
+
+This tab allows data and (optionally) background files to be loaded in. The auto-scale feature sppeds up workflow but is not reccomended for a close fit. 
+
+All data must be in Q-space. A toolbox is provided to convert raw experimental data of 2\theta values to Q-space.
+
+### Refinement Tab
+
+composition
+
+data options
+> qmax
+> qmin
+smooth data (additional options in prefs)
+modification functions
+s(q) formalisms
+
+
+Optimisation options
+r_min
+n iterations
+
+density refinement
+bounds
+different solvers and options
+
+global minimisation
+
+
+results toolbox
+
+
+logging/terminal output and logging options
+
+
+
+
+The sample composition can be set in this
+
+### PDF Calculation (Outut) Tab
 
 
 load data, scale (including autoscale) and subtract background data.
@@ -74,7 +131,6 @@ last tab displays and allows to save S(Q), g(r), and RDF(r)
 
 
 
-Click and drag or use the scroll-wheel to zoom in on a region. Double right-click to reset the view.
 
 
 
