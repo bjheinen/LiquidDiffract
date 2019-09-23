@@ -1,11 +1,7 @@
-# LiquidDiffract
+<p align="center"><img src="https://github.com/bjheinen/LiquidDiffract/blob/master/liquid_diffract/data/icons/logo.png"></p>
 
-<p align="center"><img width=12.5% src="https://github.com/bjheinen/LiquidDiffract/blob/master/liquid_diffract/data/icons/logo.png"></p>
+A GUI program to treat experimental X-ray diffraction data of liquid structures. LiquidDiffract can perform background subtraction, fourier transformation, data (quantitative structure factor) optimisation/normalisation, and estimation of density.
 
-> A GUI program
-
-
-It performs background subtraction, Fourier transform and optimization of experimental data
 
 ### Maintainer
 
@@ -13,8 +9,6 @@ Benedict J. Heinen (benedict.heinen@gmail.com)
 
 
 ## Table of Contents
-
-TOC
 
 * [Requirements](#requirements)
 * [Usage](#usage)
@@ -34,6 +28,10 @@ It has been tested on Linux, Mac, and Windows.
 
 
 ## Usage
+
+### Loading the GUI
+
+
 
 load data, scale (including autoscale) and subtract background data.
 
