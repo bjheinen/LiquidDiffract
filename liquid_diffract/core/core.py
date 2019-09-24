@@ -716,6 +716,8 @@ def calc_chi_squared(r_intra, delta_F_r, method='simps'):
     The value chi^2 is defined as the area under the curve Delta_F(r) limited
     to r_min (squared to remove negatives).
     
+    The Chi^2 value used in LiquidDiffract is scaled by 1e6 to enable easier minimisation.
+
     Args:
         delta_F_r - numpy array of delta_F_r from r=0 to r=r_min
     
@@ -727,7 +729,7 @@ def calc_chi_squared(r_intra, delta_F_r, method='simps'):
     if method == 'simps':
         # Integrate using simpson's rule
         chi_squared = simps(f, x=r_intra)
-    return chi_squared
+    return chi_squared * 1e6
 
 
 def stop_iteration(chi_squared, count, iter_limit=5):
