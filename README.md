@@ -47,7 +47,9 @@ There are three main tabs which provide a selection of toolboxes for data operat
 Data are automatically plotted and tabs updated as operations are made. The graphical plots display coordinates in the upper-right corner. Click and drag or use the scroll-wheel to zoom in on a region. Double right-click to reset the view.
 
 
-![screenshot](https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/liquid_diffract/data/icons/screenshot.png)
+![screenshot](https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/liquid_diffract/data/icons/LiquidDiffract v0.1_refinement_tab.png)
+
+
 
 
 ### Background Subtraction Tab
