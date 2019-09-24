@@ -95,11 +95,11 @@ LiquidDiffract provides the option to use either Ashcroft-Langreth [6] or Faber-
 
 Applying a modification function to S(Q) before FFT can help suppress truncation ripples amd can correct a gradient in the high-Q region. Two functions are currently implements:
 
-##### Lorch [11]
+#### Lorch [11]
 
 M(Q) = sin(pi*Q/Q_max) / (pi*Q/Q_max)
 
-##### Cosine Window (Drewitt et al.) [12]
+#### Cosine Window (Drewitt et al.) [12]
 
 	M(Q) = 1 if Q < Q1
      	M(Q) = 0.5[1 + cos(x*pi / N-1)] if Q1 <= Q <= Qmax
@@ -124,11 +124,11 @@ A &Chi;^2 figure of merit, defined as the area under the curve &Delta;F(r) for r
 
 The sample density can be determined by finding the value of &rho; that provides the best convergence of the iterative procedure described above. This is done by minimising the resultant value of &Chi;^2. LiquidDiffract supports several different solvers to do this. The solver in use, along with specific options like convergence criteria and number of iterations, can be selected from the *Additional Preferences* dialog. The solvers currently supported are:
 
-L-BFGS-B [14-15]
+* L-BFGS-B [14-15]
 
-SLSQP [16]
+* SLSQP [16]
 
-COBYLA [17-19]
+* COBYLA [17-19]
 
 All solvers require upper and lower bounds on the density to be set.
 
