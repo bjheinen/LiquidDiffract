@@ -20,13 +20,13 @@ Benedict J. Heinen (benedict.heinen@gmail.com)
   * [Basic Usage](#basic-usage)
   * [Background Subtraction Tab](#background-subtraction-tab)
   * [Refinement Tab](#refinement-tab)
-    * [Composition toolbox](#composition-toolbox)
+    * [Composition Toolbox](#composition-toolbox)
     * [Data Options](#data-options)
-    * [Iterative structure factor refinement](#iterative-structure-factor-refinement)
-    * [Density (&rho;) refinement](#density-rho-refinement)
+    * [Iterative Structure Factor Refinement](#iterative-structure-factor-refinement)
+    * [Density (&rho;) Refinement](#density-%CF%81-refinement)
       * [Global optimisation capability](#global-optimisation-capability)
-    * [Terminal & Log-file output](#terminal-log-file-output)
-  * [PDF Calculation (Outut) Tab](#pdf-calculation-output-tab)
+    * [Terminal & Log-file Output](#terminal--log-file-output)
+  * [PDF Calculation (Output) Tab](#pdf-calculation-output-tab) 
 * [References](#references)
 
 ## Requirements
@@ -46,7 +46,7 @@ It has been tested on Linux, Mac, and Windows.
 LiquidDiffract is issued under the GNU General Public Licence, v3.
 This program comes with absolutely no warranty or guarantee.
 Copyright © 2019 – Benedict J Heinen
-See the [licence file](../blob/master/LICENSE) for more information.
+See the [licence file](../master/LICENSE) for more information.
 
 ## Usage
 
@@ -79,7 +79,7 @@ All data must be in Q-space. A toolbox is provided to convert raw experimental d
 This is the tab where most of the data processing takes place.
 
 
-#### Composition toolbox
+#### Composition Toolbox
 
 The sample composition must be set before the structure factor, S(Q), can be calculated. The sample density (in atoms per cubic angstrom) should also be set here. If the density is to be refined, this is used as the initial value passed to the solver.
 
@@ -110,7 +110,7 @@ M(Q) = sin(pi*Q/Q_max) / (pi*Q/Q_max)
 After calculating the structure factor the final tab can be used to output S(Q), the pair distribution function g(r), and the radial distiribution function RDF(r), as is.
 
 
-#### Iterative structure factor refinement
+#### Iterative Structure Factor Refinement
 
 The numerical iterative procedure used by LiquidDiffract to minimize the error in the determination of g(r) follows the one proposed by Eggert et al., 2002 [1-4]. This procedure is based on the assumption that a minimum distance, r-min, can be defined, which represents the largest distance (0 -- r-min) where no atom can be found. In a liquid, this should be the distance of the 1st coordination shell. Because no atom can be present in this region, no oscillation should be observed in the g(r) function. As a result, the function F(r < r-min) = -4&pi;r&rho; However oscillations are commonly observed in this region, due to systematic errors such as the effect of an experimentally limited Q range (Q-max < &inf;) on the determination of the normalisation factor, &alpha;. The iterative procedure calculates the difference between real and model data in the low-r region and scales S(Q) accordingly to reduce this.
 
@@ -120,7 +120,7 @@ The number of iterations in the procedure can also be set; a minimum of 3 is nor
 
 A &Chi;^2 figure of merit, defined as the area under the curve &Delta;F(r) for r<r-min, is used to rate the refinement.
 
-#### Density (&rho;) refinement
+#### Density (&rho;) Refinement
 
 The sample density can be determined by finding the value of &rho; that provides the best convergence of the iterative procedure described above. This is done by minimising the resultant value of &Chi;^2. LiquidDiffract supports several different solvers to do this. The solver in use, along with specific options like convergence criteria and number of iterations, can be selected from the *Additional Preferences* dialog. The solvers currently supported are:
 
@@ -149,7 +149,7 @@ The acceptance test used here is the Metropolis criterion of standard Monte Carl
 For more information see the [SciPy documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.basinhopping.html), or consult the references listed.
 
 
-#### Terminal & Log-file output
+#### Terminal & Log-file Output
 
 An log is automatically generated for any refinement made. This log includes information on the data file, sample composition, data and refinement options used, solver ouput/convergence info (if refining density), and the final &Chi;^2 and &rho;.
 
@@ -157,7 +157,7 @@ The log for each refinement is automatically written to file. The default behavi
 
 LiquidDiffract outputs some density refinement information to the terminal. There is an option provided to print convergence progress messages to the terminal also. This can be useful for real-time monitoring (e.g. when using the slow global optimisation with a known number of iterations).
 
-### PDF Calculation (Outut) Tab
+### PDF Calculation (Output) Tab
 
 The final tab displays the optimised S(Q), g(r), and RDF(r). The buttons at the bottom of the window allow each one to be saved to a text file. If a modification function has been used in the data treatment then information on this will also be saved, along with the raw S(Q).
 
