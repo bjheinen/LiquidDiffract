@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 __author__ = 'Benedict J Heinen'
-__copyright__ = 'Copyright 2018, Benedict J Heinen'
+__copyright__ = 'Copyright 2018-2019, Benedict J Heinen'
 __license__ = 'Gnu GPL v3'
 __email__ = 'benedict.heinen@gmail.com'
 
