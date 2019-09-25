@@ -54,7 +54,7 @@ Alternatively (without git) you can download the source
 
 https://github.com/bjheinen/LiquidDiffract/archive/master.zip
 
-and install from there. We still reccomend pip for installing from a local directory.
+and install from there.
 
 ```
 $ cd /path/to/local/directory/
@@ -64,7 +64,8 @@ $ mv LiquidDiffract-*/ LiquidDiffract/
 $ pip install /path/to/local/directory/LiquidDiffract
 ```
 
-**Invoking setup.py directly is entirely at your own risk!**
+ We still reccomend pip for installing from a local directory.
+***Invoking setup.py directly is entirely at your own risk!***
 
 <details><summary><b>Testing the software or modifying source code</b></summary>
 
@@ -84,9 +85,9 @@ It is useful if you want to mess around with, or make changes to the source code
 
 To run the software use the command
 
-```LiquidDiffract```
+```$ LiquidDiffract```
 
-or run *LiquidDiffract.py* from the installation directory ```python LiquidDiffract.py```
+or run *'LiquidDiffract.py'* from the installation directory ```$ python LiquidDiffract.py```
 
 ### Basic Usage
 
