@@ -15,10 +15,10 @@ from scipy.optimize import minimize, basinhopping
 import os
 import datetime
 
-from . import plot_widgets
-from . import utility
-from core import data_manip
-import core.core as core
+from LiquidDiffract.gui import plot_widgets
+from LiquidDiffract.gui import utility
+from LiquidDiffract.core import data_manip
+import LiquidDiffract.core.core as core
 
 
 
@@ -441,7 +441,7 @@ class OptimConfigWidget(QWidget):
 class CompositionGroupBox(QGroupBox):
     
     
-    __data_path = os.path.join(os.path.abspath(os.getcwd()), 'data')
+    __data_path = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'data')
     _element_dict = np.load(os.path.join(__data_path,'pt_data.npy')).item()
     
     def __init__(self, *args):

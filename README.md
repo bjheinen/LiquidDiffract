@@ -1,4 +1,4 @@
-<p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/liquid_diffract/data/icons/logo.png"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/data/icons/logo.png"></p>
 
 <p align="center">
 A GUI program to treat experimental X-ray diffraction data of liquid structures. 
@@ -66,7 +66,7 @@ There are three main tabs which provide a selection of toolboxes for data operat
 Data are automatically plotted and tabs updated as operations are made. The graphical plots display coordinates in the upper-right corner. Click and drag or use the scroll-wheel to zoom in on a region. Double right-click to reset the view.
 
 
-<p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/liquid_diffract/data/icons/LiquidDiffract v0.1_refinement_tab.png"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/data/icons/LiquidDiffract v0.1_refinement_tab.png"></p>
 
 
 ### Background Subtraction Tab

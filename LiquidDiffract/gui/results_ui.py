@@ -8,9 +8,9 @@ from PyQt5.QtWidgets import QWidget, QFrame, QVBoxLayout, QHBoxLayout, \
                             QPushButton, QScrollArea
 
 import numpy as np
-from . import plot_widgets
-from . import utility
-import core.core as core
+from LiquidDiffract.gui import plot_widgets
+from LiquidDiffract.gui import utility
+import LiquidDiffract.core.core as core
 
 class ResultsUI(QWidget):
         

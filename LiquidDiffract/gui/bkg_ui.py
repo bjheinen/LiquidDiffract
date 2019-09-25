@@ -14,10 +14,10 @@ import numpy as np
 from scipy.optimize import minimize
 import os
 # Local relative imports
-from . import plot_widgets
-from . import utility
-from core import data_manip
-from core.core import __name__, __version__
+from LiquidDiffract.gui import plot_widgets
+from LiquidDiffract.gui import utility
+from LiquidDiffract.core import data_manip
+from LiquidDiffract.core.core import __name__, __version__
 
 class BkgUI(QWidget):
     

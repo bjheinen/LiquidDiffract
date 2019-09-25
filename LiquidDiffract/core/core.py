@@ -16,6 +16,14 @@ from scipy.integrate import simps
 import scipy.interpolate
 import scipy.fftpack
 
+
+def get_data_path():
+    '''
+    Helper function to return package data path.
+    This assumes directory structure is maintined (should test this on different platforms
+    '''
+    return os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'data')
+
 def calc_mol_mass(composition):
     '''
     Calculates the molecular mass for a given composition and returns
@@ -24,8 +32,8 @@ def calc_mol_mass(composition):
     composition is dictionary in the form: (Z, charge, n)
     where n is number of atoms in formula unit
     '''
-    _data_path = os.path.join(os.path.abspath(os.getcwd()), 'data')
-    mass_dict = np.load(os.path.join(_data_path, 'mass_data.npy')).item()
+    __data_path = get_data_path()
+    mass_dict = np.load(os.path.join(__data_path, 'mass_data.npy')).item()
     mol_mass = np.sum([mass_dict[element]*(composition[element][2]) for element in composition])
     return mol_mass
 
@@ -97,7 +105,7 @@ def calc_atomic_ff(element,Q):
     
     '''
     atomic_number, charge, *_ = element
-    __data_path = os.path.join(os.path.abspath(os.getcwd()), 'data')
+    __data_path = get_data_path()
     ff_data = np.loadtxt(os.path.join(__data_path, 'Mcad-formfactors.dat'))
     ff_data = ff_data[np.where((ff_data[:,0]==charge) & (ff_data[:,10]==atomic_number))][0,1:10]        
     s = (Q / (4 * np.pi))**2
@@ -201,7 +209,7 @@ def calc_compton_scattering(element, Q):
         element - dictionary entry from 'comp' where keys are element symbols
         Q - Q values to estimate compton scattering intensity at
     '''    
-    __data_path = os.path.join(os.path.abspath(os.getcwd()), 'data')    
+    __data_path = get_data_path()   
     filename = os.path.join(__data_path, 'hubbel-compton', (element + '.cmp'))
     cs_Q, _, cs_comp = np.loadtxt(filename, unpack=True, skiprows=1)
     cs_Q *= (np.pi * 4)

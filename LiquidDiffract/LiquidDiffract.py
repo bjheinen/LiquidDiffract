@@ -8,13 +8,13 @@ __email__ = 'benedict.heinen@gmail.com'
 
 import sys
 from PyQt5.QtWidgets import QApplication
-import gui.main_widget
+import LiquidDiffract.gui.main_widget
 
 
 def main():
     app = QApplication(sys.argv)
     screen_size = app.primaryScreen().size()
-    ex = gui.main_widget.App(screen_size)    
+    ex = LiquidDiffract.gui.main_widget.App(screen_size)    
     sys.exit(app.exec_())
 
 

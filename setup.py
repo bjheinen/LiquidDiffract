@@ -8,7 +8,7 @@
 
 
 
-from setuptools import setup, find_namespace_packages
+from setuptools import setup, find_packages
 
 with open("README.md", 'r') as f:
     long_description = f.read()
@@ -22,7 +22,20 @@ setup(
     author='Benedict J Heinen',
     author_email='benedict.heinen@gmail.com',
     url='https://github.com/bjheinen/LiquidDiffract',
-    packages=find_namespace_packages(include=['LiquidDiffract.*']),
-    install_requires=['numpy','scipy','PyQt5']
-
+    packages=find_packages(),
+    install_requires=['numpy','scipy','PyQt5'],
+    package_data={'LiquidDiffract': ['data/*', 'data/icons/*', 'data/hubbel-compton/*']},
+    entry_points={'console_scripts': ['LiquidDiffract=LiquidDiffract.LiquidDiffract:main']}
+    
 )
+
+
+
+
+
+#setup(
+#    # ...,
+#    entry_points={
+#        'console_scripts': ['my-command=exampleproject.example:main']
+#    }
+#)

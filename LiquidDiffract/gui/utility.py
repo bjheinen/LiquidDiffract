@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QFileDialog, QStyledItemDelegate, \
                             QMessageBox, QFrame, QGroupBox, \
                             QVBoxLayout, QGridLayout, QDialogButtonBox, \
                             QLabel, QLineEdit, QCheckBox, QComboBox, QTextBrowser
-from core.core import __name__, __version__
+from LiquidDiffract.core.core import __name__, __version__
 
 
 def get_filename(io='open', caption='Load Data File', directory=None):
@@ -590,7 +590,7 @@ class AboutDialog(QDialog):
         self.vlayout.setSpacing(10)
 
         self.logo_box = QLabel()
-        self.logo_path = os.path.join(os.path.abspath(os.getcwd()), 'data', 'icons', 'logo.png') 
+        self.logo_path = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'data', 'icons', 'logo.png') 
         self.logo = QPixmap(self.logo_path)
         self.logo_box.setPixmap(self.logo)
         self.logo_box.setAlignment(Qt.AlignCenter)
