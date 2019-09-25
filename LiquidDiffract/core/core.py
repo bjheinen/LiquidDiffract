@@ -5,7 +5,7 @@ Python implementation of Eggert method for estimating liquid structure factor
 by optimising rho/alpha.
 """
 __author__ = 'Benedict J Heinen'
-__copyright__ = 'Copyright 2018, Benedict J Heinen'
+__copyright__ = 'Copyright 2018-2019, Benedict J Heinen'
 __email__ = 'benedict.heinen@gmail.com'
 __name__ = 'LiquidDiffract'
 __version__= '0.1'
@@ -33,7 +33,7 @@ def calc_mol_mass(composition):
     where n is number of atoms in formula unit
     '''
     __data_path = get_data_path()
-    mass_dict = np.load(os.path.join(__data_path, 'mass_data.npy')).item()
+    mass_dict = np.load(os.path.join(__data_path, 'mass_data.npy'), allow_pickle=True).item()
     mol_mass = np.sum([mass_dict[element]*(composition[element][2]) for element in composition])
     return mol_mass
 

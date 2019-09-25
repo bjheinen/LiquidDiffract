@@ -442,7 +442,7 @@ class CompositionGroupBox(QGroupBox):
     
     
     __data_path = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'data')
-    _element_dict = np.load(os.path.join(__data_path,'pt_data.npy')).item()
+    _element_dict = np.load(os.path.join(__data_path,'pt_data.npy'), allow_pickle=True).item()
     
     def __init__(self, *args):
         super(CompositionGroupBox, self).__init__(*args)

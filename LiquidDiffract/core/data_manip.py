@@ -3,7 +3,7 @@
 Accessory functions for data manipulation
 """
 __author__ = "Benedict J Heinen"
-__copyright__ = "Copyright 2018, Benedict J Heinen"
+__copyright__ = "Copyright 2018-2019, Benedict J Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
 import numpy as np
