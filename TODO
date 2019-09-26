@@ -1,48 +1,27 @@
-Fix polyatomic case > Unsure
-Comment code
-Fix API/using without gui
-Documentation/README file
-Add functionality for other solvers (L-BFGS-B & SLSQP working so far)
-Use multiprocessing to speed up calculations
-Code efficiency - combine warning message boxes with inherited class (in gui.utility)
-Install script for release?
-Remove references to d_pq in core.core? > or add functionality
+TODO
 
-Are there any other options for the cosine-window algorithm etc. to add?
+* Fix/further testing on polyatomic (multi-component) sample
 
+* Implement multiprocessing for speedier calculations
 
+* Redundant code > multiple definitions of warning message dialog boxes?
 
+* Remove references to d_pq in core.core? > or add functionality
 
-When dataset too large it crashes - in fourier transform N < dataset so tries to add negative number
-of padding zeros to the array
+* When dataset is too large it crashes - in fourier transform N < dataset so tries to add negative number
+  of padding zeros to the array
 
-Should there be options to change this padding? - doesn't it affect resolution?
+  * Add option to change padding (N value)
 
-> maybe handle error if a crash when first loaded >> probably means not in Q Space???
+  * Error catch - check data type correct on load (its not in Q space)
 
+* Document (back)FFT scaling: 4*np.pi**2
 
+* In results UI save output > also add S_inf info for AL only, if statement to check method
 
-
-
-
--------------------------------------------------
-
-
-Causes of problems:
-(possible places)
-
-
-
-fft scaling (e.g. in calc_F_r) > currently multiplying by 4*np.pi**2 ? 
-(check Keen)
+* Add option to add mod function when one hasn't been used (in the final tab)
 
 
 
 
-unikely to be in calc_structure_factor > more likely one of the smaller functions it calls:
 
-calc_coherent_scattering > *=N?
-
-Z_tot?
-
-K_p or one of the averages probably
