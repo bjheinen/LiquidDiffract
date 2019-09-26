@@ -12,8 +12,13 @@ from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QScrollArea, QSplitter
 import numpy as np
 from scipy.optimize import minimize, basinhopping
-import os
+import os.path
 import datetime
+# importlib.resources only available in python>=3.7
+try:
+    from importlib import resources as importlib_resources
+except ImportError:
+    import importlib_resources
 
 from LiquidDiffract.gui import plot_widgets
 from LiquidDiffract.gui import utility
@@ -439,10 +444,9 @@ class OptimConfigWidget(QWidget):
         self.optim_results_gb.mass_density_label.setEnabled(state)
     
 class CompositionGroupBox(QGroupBox):
-    
-    
-    __data_path = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'data')
-    _element_dict = np.load(os.path.join(__data_path,'pt_data.npy'), allow_pickle=True).item()
+
+    with importlib_resources.open_binary('LiquidDiffract.resources', 'pt_data.npy') as fp:
+        _element_dict = np.load(fp, allow_pickle=True).item()
     
     def __init__(self, *args):
         super(CompositionGroupBox, self).__init__(*args)

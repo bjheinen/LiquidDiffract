@@ -11,8 +11,13 @@ __email__ = "benedict.heinen@gmail.com"
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTabWidget, QAction
 from PyQt5.QtGui import QIcon
 import numpy as np
-import os
+import os.path
 import webbrowser
+# importlib.resources only available in python>=3.7
+try:
+    from importlib import resources as importlib_resources
+except ImportError:
+    import importlib_resources
 
 from LiquidDiffract.gui import bkg_ui
 from LiquidDiffract.gui import optim_ui
@@ -37,17 +42,25 @@ class App(QMainWindow):
     def initUI(self):
         self.title = __appname__ + ' v' + __version__
         self.setWindowTitle(self.title)
-        self.icon_path = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'data', 'icons')
-        self.setWindowIcon(QIcon(os.path.join(self.icon_path, 'gs_icon.png')))
+        self.icon_module = 'LiquidDiffract.resources.icons'
+        with importlib_resources.path(self.icon_module, 'gs_icon.png') as path:
+            self.setWindowIcon(QIcon(str(path)))
         self.setGeometry(0, 0, self.width, self.height)
 
         self.menu_bar = self.menuBar()
         self.tools_menu = self.menu_bar.addMenu('&Tools')
         self.help_menu = self.menu_bar.addMenu('&Help')
         
-        self.preferences_action = QAction(QIcon(os.path.join(self.icon_path, 'config.png')), 'Additional Preferences...', self)
-        self.documentation_action = QAction(QIcon(os.path.join(self.icon_path, 'browser.png')), self.title + ' Documentation', self)
-        self.about_action = QAction(QIcon(os.path.join(self.icon_path, 'info.png')), 'About', self)
+        with importlib_resources.path(self.icon_module, 'config.png') as path:
+            self.preferences_action = QAction(QIcon(str(path)), 
+                                              'Additional Preferences...', self)
+            
+        with importlib_resources.path(self.icon_module, 'browser.png') as path:
+            self.documentation_action = QAction(QIcon(str(path)), 
+                                                self.title + ' Documentation', self)
+            
+        with importlib_resources.path(self.icon_module, 'info.png') as path:
+            self.about_action = QAction(QIcon(str(path)), 'About', self)
         
         self.tools_menu.addAction(self.preferences_action)
         self.help_menu.addAction(self.documentation_action)
@@ -87,7 +100,8 @@ class App(QMainWindow):
     def call_preferences_dialog(self):
         self.preferences_dialog = utility.PreferencesDialog(self.preferences)
         # set window icon
-        self.preferences_dialog.setWindowIcon(QIcon(os.path.join(self.icon_path, 'gs_icon.png')))
+        with importlib_resources.path(self.icon_module, 'gs_icon.png') as path:
+            self.preferences_dialog.setWindowIcon(QIcon(str(path)))
         
         if self.preferences_dialog.exec_() == utility.PreferencesDialog.Accepted:
             self.preferences = self.preferences_dialog.get_preferences()

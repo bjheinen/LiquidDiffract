@@ -75,6 +75,7 @@ class ResultsUI(QWidget):
         self.data['rdf_x'], self.data['rdf_y'] = core.calc_F_r(self.data['sq_x'], self.data['int_func'], self.data['rho'], 
                                                                mod_func=self.data['mod_func'], window_start=self.data['window_start'], 
                                                                function='radial_dist_func')
+
         self.results_plot_widget.update_plots(self.data)
         
         

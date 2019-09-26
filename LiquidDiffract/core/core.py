@@ -21,22 +21,19 @@ See <https://github.com/bjheinen/LiquidDiffract#using-liquiddiffract-core-librar
 __author__ = 'Benedict J Heinen'
 __copyright__ = 'Copyright 2018-2019, Benedict J Heinen'
 __email__ = 'benedict.heinen@gmail.com'
-# Get version number from version.py
-from LiquidDiffract.version import __appname__, __version__
 
-import os
 import numpy as np
 from scipy.integrate import simps
 import scipy.interpolate
 import scipy.fftpack
+# importlib.resources only available in python>=3.7
+try:
+    from importlib import resources as importlib_resources
+except ImportError:
+    import importlib_resources
 
-
-def get_data_path():
-    '''
-    Helper function to return package data path.
-    This assumes directory structure is maintined (should test this on different platforms
-    '''
-    return os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'data')
+# Get version number from version.py
+from LiquidDiffract.version import __appname__, __version__
 
 def calc_mol_mass(composition):
     '''
@@ -45,9 +42,9 @@ def calc_mol_mass(composition):
     
     composition is dictionary in the form: (Z, charge, n)
     where n is number of atoms in formula unit
-    '''
-    __data_path = get_data_path()
-    mass_dict = np.load(os.path.join(__data_path, 'mass_data.npy'), allow_pickle=True).item()
+    '''    
+    with importlib_resources.open_binary('LiquidDiffract.resources', 'mass_data.npy') as fp:
+        mass_dict = np.load(fp, allow_pickle=True).item()
     mol_mass = np.sum([mass_dict[element]*(composition[element][2]) for element in composition])
     return mol_mass
 
@@ -119,9 +116,11 @@ def calc_atomic_ff(element,Q):
     
     '''
     atomic_number, charge, *_ = element
-    __data_path = get_data_path()
-    ff_data = np.loadtxt(os.path.join(__data_path, 'Mcad-formfactors.dat'))
-    ff_data = ff_data[np.where((ff_data[:,0]==charge) & (ff_data[:,10]==atomic_number))][0,1:10]        
+    
+    with importlib_resources.open_binary('LiquidDiffract.resources', 'form_factors.npy') as fp:
+        ff_data = np.load(fp, allow_pickle=True)   
+        
+    ff_data = ff_data[np.where((ff_data[:,0]==charge) & (ff_data[:,10]==atomic_number))][0,1:10]
     s = (Q / (4 * np.pi))**2
     form_factor = (ff_data[0] * np.exp(-ff_data[1] * s) + 
                    ff_data[2] * np.exp(-ff_data[3] * s) + 
@@ -223,13 +222,16 @@ def calc_compton_scattering(element, Q):
         element - dictionary entry from 'comp' where keys are element symbols
         Q - Q values to estimate compton scattering intensity at
     '''    
-    __data_path = get_data_path()   
-    filename = os.path.join(__data_path, 'hubbel-compton', (element + '.cmp'))
-    cs_Q, _, cs_comp = np.loadtxt(filename, unpack=True, skiprows=1)
+
+    element_data = element + '.npy'
+    with importlib_resources.open_binary('LiquidDiffract.resources.hubbel_compton', element_data) as fp:
+        cs_Q, _, cs_comp = np.load(fp, allow_pickle=True)
+  
     cs_Q *= (np.pi * 4)
     # Interpolate compton scattering to required Q spacings
     finterp = scipy.interpolate.interp1d(cs_Q, cs_comp, kind='cubic', fill_value='extrapolate')
     return finterp(Q)
+
 
 def calc_total_compton_scattering(composition, Q):
     '''
@@ -244,8 +246,6 @@ def calc_total_compton_scattering(composition, Q):
                                      composition[element][2])
     compton_scattering = np.sum(np.asarray(compton_scattering),0)
     return compton_scattering
-
-
 
 
 def calc_J(composition, Q):
@@ -347,11 +347,7 @@ def calc_alpha(Q_cor, I_cor, rho,
     For the Faber-Ziman formalism this is defined in equation A13 of 
     Morard, 2013 but note there is a missing bracket - refer to the definition
     in Decremps et al., 2016 instead.
-    
-    
-    
-    
-    
+       
     Decremps, PhysRev B 93, 054209
     
     defined in Eq 34 of 
@@ -390,7 +386,6 @@ def calc_alpha(Q_cor, I_cor, rho,
         return alpha
     else:
         raise ValueError()
-
 
 
 def calc_coherent_scattering(Q_cor, I_cor, composition, alpha, compton_scattering=None, method='ashcroft-langreth'):

@@ -263,7 +263,7 @@ class OptimPlotWidget(QWidget):
             self.iq_plot.hline.setPen(None)
             self.iq_plot.vline.setPen(None)
 
-#############################################################################
+
 class ResultsPlotWidget(QWidget):
 
     def __init__(self, *args, **kwargs):
@@ -329,10 +329,17 @@ class ResultsPlotWidget(QWidget):
         # Determine data window for length of sq (pre fft)
         _window = len(_data['sq_x'])
 
+        # Needed for some version of pyqtgraph
+        _data['sq_x'] = np.nan_to_num(_data['sq_x'])
+        _data['sq_y'] = np.nan_to_num(_data['sq_y'])
+        _data['gr_x'] = np.nan_to_num(_data['gr_x'])
+        _data['gr_y'] = np.nan_to_num(_data['gr_y'])
+        _data['rdf_x'] = np.nan_to_num(_data['rdf_x'])
+        _data['rdf_y'] = np.nan_to_num(_data['rdf_y'])        
+
         self.p1 = self.sq_plot.plot(x=_data['sq_x'], y=_data['sq_y'], pen={'color': 0.1, 'width': 1.2})
         self.p2 = self.gr_plot.plot(x=_data['gr_x'][:_window], y=_data['gr_y'][:_window], pen={'color': 0.1, 'width': 1.2})
         self.p3 = self.rdf_plot.plot(x=_data['rdf_x'][:_window], y=_data['rdf_y'][:_window], pen={'color': 0.1, 'width': 1.2})
-            
         
         self.x_max_gr = 12
         _gr_cut = np.nan_to_num(_data['gr_y'][np.where(_data['gr_x']<self.x_max_gr)])

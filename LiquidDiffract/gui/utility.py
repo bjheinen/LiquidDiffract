@@ -3,7 +3,6 @@ __author__ = "Benedict J Heinen"
 __copyright__ = "Copyright 2018, Benedict J Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
-import os
 import numpy as np
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIntValidator, QDoubleValidator, QDialog, QPixmap
@@ -11,6 +10,13 @@ from PyQt5.QtWidgets import QFileDialog, QStyledItemDelegate, \
                             QMessageBox, QFrame, QGroupBox, \
                             QVBoxLayout, QGridLayout, QDialogButtonBox, \
                             QLabel, QLineEdit, QCheckBox, QComboBox, QTextBrowser
+# importlib.resources only available in python>=3.7
+try:
+    from importlib import resources as importlib_resources
+except ImportError:
+    import importlib_resources
+
+
 from LiquidDiffract.version import __appname__, __version__
 
 
@@ -590,8 +596,9 @@ class AboutDialog(QDialog):
         self.vlayout.setSpacing(10)
 
         self.logo_box = QLabel()
-        self.logo_path = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'data', 'icons', 'logo.png') 
-        self.logo = QPixmap(self.logo_path)
+
+        with importlib_resources.path('LiquidDiffract.resources.icons', 'logo.png') as path:
+            self.logo = QPixmap(str(path))
         self.logo_box.setPixmap(self.logo)
         self.logo_box.setAlignment(Qt.AlignCenter)
 

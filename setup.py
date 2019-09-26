@@ -26,7 +26,7 @@ setup(
     packages=find_packages(),
     python_requires='>=3.5',
     install_requires=['numpy','scipy','PyQt5', 'pyqtgraph'],
-    package_data={'LiquidDiffract': ['data/*', 'data/icons/*', 'data/hubbel-compton/*']},
+    package_data={'LiquidDiffract': ['resources/*', 'resources/icons/*', 'resources/hubbel_compton/*']},
     entry_points={'console_scripts': ['LiquidDiffract=LiquidDiffract.LiquidDiffract:main']}
 )
 
