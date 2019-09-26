@@ -1,5 +1,7 @@
 ```diff
-! ***LiquidDiffract is still in development. It currently works well for monatomic samples, but does not yet fully support multi-component samples!!***
+! ***LiquidDiffract is still in development.***
+! ***It currently works well for monatomic samples.*** 
+! ***It does not yet support multi-component samples!!***
 ```
 
 <p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/icons/logo.png"></p>
@@ -40,13 +42,13 @@ Benedict J. Heinen (benedict.heinen@gmail.com)
 ## Requirements
 
 * [Python >= 3.5](https://www.python.org)
-* [Scipy >= 1.2.1](https://www.scipy.org)
-* [Numpy >= 1.16.2](https://numpy.org)
+* [SciPy >= 1.2.1](https://www.scipy.org)
+* [NumPy >= 1.16.2](https://numpy.org)
 * [PyQt5 >= 5.12](https://riverbankcomputing.com/software/pyqt/intro)
 * [pyqtgraph >= 0.10.0](http://www.pyqtgraph.org)
 * [importlib_resources](https://pypi.org/project/importlib_resources/) is required if using Python<3.7
 
-LiquidDiffract should run with earlier versions of these python packages but is untested. If you do not have a python installation, we reccomend [Anaconda](https://www.anaconda.com/distribution/).
+LiquidDiffract should run with earlier versions of these python packages but is untested. If you do not have a python installation, we recommend [Anaconda](https://www.anaconda.com/distribution/).
 LiquidDiffract is system-independent and has been tested on Linux, Mac, and Windows.
 
 ## Installation
@@ -80,7 +82,7 @@ $ pip install -e /path/to/local/directory/LiquidDiffract/
 
 This will not actually install anything, but create a special .egg-link file in the deployment directory, that links to LiquidDiffract's source code.
 
-It is useful if you want to mess around with, or make changes to the source code without having to re-install. It is also good for testing the software, as it makes uninstalling simpler. Use Python's site-packages directory as the deployment directory if you want your editable install of LiquidDiffract available on your sys.path for other programs using your Python installation. To do this from thie github page us the *-t* flag ```-t /path/to/directory```
+It is useful if you want to mess around with, or make changes to the source code without having to re-install. It is also good for testing the software, as it makes uninstalling simpler. Use Python's site-packages directory as the deployment directory if you want your editable install of LiquidDiffract available on your sys.path for other programs using your Python installation. To do this from the github page use the *-t* flag ```-t /path/to/directory```
 
 </details>
 
@@ -112,7 +114,7 @@ Data are automatically plotted and tabs updated as operations are made. The grap
 
 ### Background Subtraction Tab
 
-This tab allows data and (optionally) background files to be loaded in. The auto-scale feature sppeds up workflow but is not reccomended for a close fit. 
+This tab allows data and (optionally) background files to be loaded in. The auto-scale feature speeds up workflow but is not recommended for a close fit. 
 
 All data must be in Q-space. A toolbox is provided to convert raw experimental data of 2&theta; values to Q-space.
 
@@ -123,19 +125,19 @@ This is the tab where most of the data processing takes place.
 
 #### Composition Toolbox
 
-The sample composition must be set before the structure factor, S(Q), can be calculated. The sample density (in atoms per cubic angstrom) should also be set here. If the density is to be refined, this is used as the initial value passed to the solver.
+The sample composition must be set before the structure factor, S(Q), can be calculated. The sample density (in atoms per cubic angstroms) should also be set here. If the density is to be refined, this is used as the initial value passed to the solver.
 
 #### Data Options
 
-At high Q-values experimental data often becomes increasingly noisy because the relative contribution of coherent scattering to the experimental signal decreases. This increasingly noisy signal can lead to dramatic and anomalous oscillations near the first peak in F(r). It can therefore be benificial to truncate the data at high-Q. However truncation can cause spurious peaks in F(r) as a result of the fourier transform. The positions of these peaks are a function of Q-max, so the use of different values should be investigated. Discussion on the effect of Q-max can be found in ref. [1] and [5].
+At high Q-values experimental data often becomes increasingly noisy because the relative contribution of coherent scattering to the experimental signal decreases. This increasingly noisy signal can lead to dramatic and anomalous oscillations near the first peak in F(r). It can therefore be beneficial to truncate the data at high-Q. However truncation can cause spurious peaks in F(r) as a result of the fourier transform. The positions of these peaks are a function of Q-max, so the use of different values should be investigated. Discussion on the effect of Q-max can be found in ref. [1] and [5].
 
-Spurious peaks or oscillations (e.g. from a slightly mislocated beam stop) in the low-Q region can be removed by setting a Q-min cuttoff.
+Spurious peaks or oscillations (e.g. from a slightly mislocated beam stop) in the low-Q region can be removed by setting a Q-min cut-off.
 
 The option to smooth the data will apply a Savitzky-Golay filter to the data. Options to change the length of the filter window and the order of the polynomial used to fit samples can be found in the *Additional Preferences* dialog, accessible from the *Tools* menu.
 
 LiquidDiffract provides the option to use either Ashcroft-Langreth [6] or Faber-Ziman [7] formalisms of the structure factor. See Keen et al., 2001 [8] for discussions of differences in structure factor formalisms, or the LiquidDiffract source code for specific implementations. 
 
-Applying a modification function to S(Q) before FFT can help suppress truncation ripples amd can correct a gradient in the high-Q region. Two functions are currently implemented:
+Applying a modification function to S(Q) before FFT can help suppress truncation ripples and can correct a gradient in the high-Q region. Two functions are currently implemented:
 
 **Lorch [11]:**
 
@@ -149,7 +151,7 @@ Applying a modification function to S(Q) before FFT can help suppress truncation
 >where N is width of the window function
 >and x is an integer with values from 0 : (N-1) across the window
 
-After calculating the structure factor the final tab can be used to output S(Q), the pair distribution function g(r), and the radial distiribution function RDF(r), as is.
+After calculating the structure factor the final tab can be used to output S(Q), the pair distribution function g(r), and the radial distribution function RDF(r), as is.
 
 
 #### Iterative Structure Factor Refinement
@@ -160,7 +162,7 @@ To refine S(Q) the value of r-min should be set carefully, as it has a strong in
 
 The number of iterations in the procedure can also be set; a minimum of 3 is normally required for convergence.
 
-A *&Chi;<sup>2</sup>* figure of merit, defined as the area under the curve &Delta;F(r) for r<r-min, is used to rate the refinement.
+A *&Chi;<sup>2</sup>* figure of merit, defined as the area under the curve *&Delta;F(r) for r<r-min*, is used to rate the refinement.
 
 #### Density (&rho;) Refinement
 
@@ -178,7 +180,7 @@ For more information on these optimisation algorithms please see the [SciPy docu
 
 ##### Global optimisation capability
 
-The optimisation algorithms used to estimate density work best when the initial guess, &rho;<sub>0</sub> is close to the true value. If the density of the material is very poorly known it is reccomended to use the global optimisation option provided. It is not reccomended if a good initial guess can be made, due to slower, and sometimes poor, convergence.
+The optimisation algorithms used to estimate density work best when the initial guess, &rho;<sub>0</sub> is close to the true value. If the density of the material is very poorly known it is recommended to use the global optimisation option provided. It is not recommended if a good initial guess can be made, due to slower, and sometimes poor, convergence.
 
 The global optimisation procedure used is the basin-hopping algorithm provided by the SciPy library [20-21]. Basin-hopping is a stochastic algorithm which attempts to find the global minimum of a function by applying an iterative process with each cycle composed of the following features:
 
@@ -193,9 +195,9 @@ For more information see the [SciPy documentation](https://docs.scipy.org/doc/sc
 
 #### Terminal & Log-file Output
 
-An log is automatically generated for any refinement made. This log includes information on the data file, sample composition, data and refinement options used, solver ouput/convergence info (if refining density), and the final *&Chi;<sup>2</sup>* and *&rho;*.
+An log is automatically generated for any refinement made. This log includes information on the data file, sample composition, data and refinement options used, solver output/convergence info (if refining density), and the final *&Chi;<sup>2</sup>* and *&rho;*.
 
-The log for each refinement is automatically written to file. The default behaviour is to store each log in a file named 'refinement.log' within the current data directory. Each log is preceded by a timestamp. The log-mode can be changed to *Overwrite* in the *Additional Preferences* dialog. This creates a new log file for each data file loaded, which will be overwritten if already present. The filenames generated are of the form 'DATAFILENAME_refinement.log' and are similarly created in the source directory of the loaded data file.
+The log for each refinement is automatically written to file. The default behaviour is to store each log in a file named 'refinement.log' within the current data directory. Each log is preceded by a time-stamp. The log-mode can be changed to *Overwrite* in the *Additional Preferences* dialog. This creates a new log file for each data file loaded, which will be overwritten if already present. The file-names generated are of the form 'DATAFILENAME_refinement.log' and are similarly created in the source directory of the loaded data file.
 
 LiquidDiffract outputs some density refinement information to the terminal. There is an option provided to print convergence progress messages to the terminal also. This can be useful for real-time monitoring (e.g. when using the slow global optimisation with a known number of iterations).
 
@@ -229,16 +231,16 @@ composition = {'Ga': (31,0,1)}
 # Set initial density
 rho = 0.05
 
-# Load your background substracted data
-q_raw, I_raw = np.loadtxt('Ga_backcor_origin.dat', unpack=True, skiprows=0)
+# Load your background subtracted data
+q_raw, I_raw = np.loadtxt('MYDATA.dat', unpack=True, skiprows=0)
 
 
-# Next rebin data and trim if neccessary
+# Next rebin data and trim if necessary
 
 # Re-bin via interpolation so dq (steps of q) is consistent
 # Suggested dq = 0.02
 dq = 0.02
-# Cutoff below Q_cutoff
+# Cut-off below Q_cutoff
 q_cutoff = 9.0
 q_dat = np.arange(0, q_raw[-1], dq)
 q_dat = q_dat[q_dat<q_cutoff]
@@ -318,10 +320,10 @@ interference_func = (liquid.calc_structure_factor(q_dat,I_dat, composition, rho_
                      liquid.calc_S_inf(composition, q_dat))
 args = (q_dat, interference_func, composition, r_min, None, iter_limit, method, mod_func, window_start, 0)
 improved_interference_func = liquid.calc_impr_interference_func(rho_refined, *args)
-# Store refined interference function calculated at the opimised rho
+# Store refined interference function calculated at the optimised rho
 
 # Plot the data
-# Inital interference function calculation
+# Initial interference function calculation
 plt.plot(q_dat, interference_func_0, color='g')
 # optimised for rho_0
 plt.plot(q_dat, interference_func_1, color='r')
