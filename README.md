@@ -1,7 +1,7 @@
 ```diff
-! ***LiquidDiffract is still in development.***
-! ***It currently works well for monatomic samples.*** 
-! ***It does not yet support multi-component samples!!***
+! **LiquidDiffract is still in development.**
+! **It currently works well for monatomic samples.**
+! **It does not yet support multi-component samples!!**
 ```
 
 <p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/icons/logo.png"></p>
