@@ -17,7 +17,7 @@ import os
 from LiquidDiffract.gui import plot_widgets
 from LiquidDiffract.gui import utility
 from LiquidDiffract.core import data_manip
-from LiquidDiffract.core.core import __name__, __version__
+from LiquidDiffract.version import __appname__, __version__
 
 class BkgUI(QWidget):
     
@@ -190,7 +190,7 @@ class BkgUI(QWidget):
         self.error_msg.setStandardButtons(QMessageBox.Ok)
         self.error_msg.setText(message[0])
         self.error_msg.setInformativeText((message[1]))
-        self.error_msg.setWindowTitle(__name__ + ' v' + __version__)
+        self.error_msg.setWindowTitle(__appname__ + ' v' + __version__)
         self.error_msg.adjustSize()
         self.error_msg.show()
 
@@ -390,7 +390,7 @@ class DataConvertGroupBox(QGroupBox):
             self.error_msg.setStandardButtons(QMessageBox.Ok)
             self.error_msg.setText(_message[0])
             self.error_msg.setInformativeText((_message[1]))
-            self.error_msg.setWindowTitle(__name__ + ' v' + __version__)
+            self.error_msg.setWindowTitle(__appname__ + ' v' + __version__)
             self.error_msg.adjustSize()
             self.error_msg.show()
             self.data_file = None
@@ -414,7 +414,7 @@ class DataConvertGroupBox(QGroupBox):
             self.error_msg.setStandardButtons(QMessageBox.Ok)
             self.error_msg.setText(_message[0])
             self.error_msg.setInformativeText((_message[1]))
-            self.error_msg.setWindowTitle(__name__ + ' v' + __version__)
+            self.error_msg.setWindowTitle(__appname__ + ' v' + __version__)
             self.error_msg.adjustSize()
             self.error_msg.show()
             return
@@ -435,7 +435,7 @@ class DataConvertGroupBox(QGroupBox):
         self.success_msg.setStandardButtons(QMessageBox.Ok)
         self.success_msg.setText('Data converted to Q-Space!')
         self.success_msg.setInformativeText(('Lambda: ' + str(__lambda) + '\nConverted data: ' + self.convert_filename))
-        self.success_msg.setWindowTitle(__name__ + ' v' + __version__)
+        self.success_msg.setWindowTitle(__appname__ + ' v' + __version__)
         self.success_msg.adjustSize()
         self.success_msg.show()
         # Clear variables

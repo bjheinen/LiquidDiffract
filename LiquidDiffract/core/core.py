@@ -1,14 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Python implementation of Eggert method for estimating liquid structure factor
-by optimising rho/alpha.
+LiquidDiffract core functions module
+
+Python implementation of iterative method for liquid structure factor 
+normalisation based on Eggert et al., 2002. 
+Optimises the normalisation factor, alpha, and allows refinement of sample density, rho.
+
+Provides functions for:
+
+  * Calculation of liquid structure factor, S(Q)
+  * Fourier transformation of S(Q)/g(r)
+  * Calculation of pair and radial distribution functions, g(r) and RDF(r)
+  * Calculation of atomic form factors, effective electronic form factor, and scattering intensities
+  * Utility functions for density and molecular mass conversions/automatic calculation
+
+See <https://github.com/bjheinen/LiquidDiffract#using-liquiddiffract-core-library> for more details
+
 """
 __author__ = 'Benedict J Heinen'
 __copyright__ = 'Copyright 2018-2019, Benedict J Heinen'
 __email__ = 'benedict.heinen@gmail.com'
-__name__ = 'LiquidDiffract'
-__version__= '0.1'
+# Get version number from version.py
+from LiquidDiffract.version import __appname__, __version__
 
 import os
 import numpy as np

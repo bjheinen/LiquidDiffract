@@ -11,6 +11,7 @@ import numpy as np
 from LiquidDiffract.gui import plot_widgets
 from LiquidDiffract.gui import utility
 import LiquidDiffract.core.core as core
+from LiquidDiffract.version import __appname__, __version__
 
 class ResultsUI(QWidget):
         
@@ -89,7 +90,7 @@ class ResultsUI(QWidget):
             return
         __header = (
                     'Refined S(Q)\n' +
-                    core.__name__ + ' v' + core.__version__ + '\n' +
+                    __appname__ + ' v' + __version__ + '\n' +
                     'See refinement_log for more info\n' +
                     'S(Q) = i(Q) + S_inf\n' +
                     'S_inf = ' + np.str(self.data['S_inf']) + '\n'
@@ -115,7 +116,7 @@ class ResultsUI(QWidget):
             return
         __header = (
                     'Refined g(r)\n' +
-                    core.__name__ + ' v' + core.__version__ + '\n' +
+                    __appname__ + ' v' + __version__ + '\n' +
                     'See refinement_log for more info\n' +
                     'r|g(r)'
                     )
@@ -132,7 +133,7 @@ class ResultsUI(QWidget):
             return
         __header = (
                     'Refined rdf\n' +
-                    core.__name__ + ' v' + core.__version__ + '\n' +
+                    __appname__ + ' v' + __version__ + '\n' +
                     'See refinement_log for more info\n' +
                     'r|rdf'
                     )

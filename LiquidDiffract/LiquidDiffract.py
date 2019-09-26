@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+'''
+LiquidDiffract application loader script
+<https://github.com/bjheinen/LiquidDiffract>
+'''
 __author__ = 'Benedict J Heinen'
 __copyright__ = 'Copyright 2018-2019, Benedict J Heinen'
 __license__ = 'Gnu GPL v3'
 __email__ = 'benedict.heinen@gmail.com'
-
+# Get version number from version.py
+from LiquidDiffract.version import __version__
 
 import sys
 from PyQt5.QtWidgets import QApplication

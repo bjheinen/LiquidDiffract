@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-GUI frontend for python implementation of Eggert method.
+GUI frontend for LiquidDiffract
+<https://github.com/bjheinen/LiquidDiffract>
 """
 __author__ = "Benedict J Heinen"
 __copyright__ = "Copyright 2018, Benedict J Heinen"
@@ -17,7 +18,7 @@ from LiquidDiffract.gui import bkg_ui
 from LiquidDiffract.gui import optim_ui
 from LiquidDiffract.gui import results_ui
 from LiquidDiffract.gui import utility
-from LiquidDiffract.core.core import __name__, __version__
+from LiquidDiffract.version import __appname__, __version__
 
 
 class App(QMainWindow):
@@ -34,7 +35,7 @@ class App(QMainWindow):
         self.initUI()
         
     def initUI(self):
-        self.title = __name__ + ' v' + __version__
+        self.title = __appname__ + ' v' + __version__
         self.setWindowTitle(self.title)
         self.icon_path = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'data', 'icons')
         self.setWindowIcon(QIcon(os.path.join(self.icon_path, 'gs_icon.png')))

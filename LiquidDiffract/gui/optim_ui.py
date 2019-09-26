@@ -19,7 +19,7 @@ from LiquidDiffract.gui import plot_widgets
 from LiquidDiffract.gui import utility
 from LiquidDiffract.core import data_manip
 import LiquidDiffract.core.core as core
-
+from LiquidDiffract.version import __appname__, __version__
 
 
 class OptimUI(QWidget):
@@ -350,7 +350,7 @@ class OptimUI(QWidget):
         
         log_string = (
                       'refinement_log\n' +
-                      core.__name__ + ' v' + core.__version__ + '\n\n' +
+                      __appname__ + ' v' + __version__ + '\n\n' +
                       '-'*25 + '\n' +
                       'Data File : ' + self.base_filename + '\n' +
                       'Composition [Element: (Z, Charge, n)]: ' + str(_composition) + '\n' +

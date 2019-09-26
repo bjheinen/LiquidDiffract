@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QFileDialog, QStyledItemDelegate, \
                             QMessageBox, QFrame, QGroupBox, \
                             QVBoxLayout, QGridLayout, QDialogButtonBox, \
                             QLabel, QLineEdit, QCheckBox, QComboBox, QTextBrowser
-from LiquidDiffract.core.core import __name__, __version__
+from LiquidDiffract.version import __appname__, __version__
 
 
 def get_filename(io='open', caption='Load Data File', directory=None):
@@ -64,7 +64,7 @@ class PreferencesDialog(QDialog):
         super(PreferencesDialog, self).__init__()
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.setWindowTitle
-        self.title = 'Additional Preferences | ' + __name__ + 'v' + __version__
+        self.title = 'Additional Preferences | ' + __appname__ + 'v' + __version__
         self.setWindowTitle(self.title)
         self.resize(300, 500)
      
@@ -570,7 +570,7 @@ class ErrorMessageBox(QMessageBox):
         self.setStandardButtons(QMessageBox.Ok)
         self.setText(_message[0])
         self.setInformativeText((_message[1]))
-        self.setWindowTitle(__name__ + ' v' + __version__)
+        self.setWindowTitle(__appname__ + ' v' + __version__)
         self.adjustSize()
         
 ##### About Dialog from here
@@ -581,7 +581,7 @@ class AboutDialog(QDialog):
         super(AboutDialog, self).__init__()
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.setWindowTitle
-        self.title = __name__ + 'v' + __version__
+        self.title = __appname__ + 'v' + __version__
         self.setWindowTitle(self.title)
         self.resize(590, 555)
      
@@ -605,7 +605,7 @@ class AboutDialog(QDialog):
                                  
                                     
         _text = (
-            '<p class="western" align="center"><strong>' + __name__ + '</strong></p>'
+            '<p class="western" align="center"><strong>' + __appname__ + '</strong></p>'
             '<p class="western" align="center">v' + __version__ + '</p>'
             '<p class="western" align="center">&nbsp;</p>'
             '<p class="western" align="center"><em>LiquidDiffract is a Python implementation of the iterative procedure of Eggert et al. (2002) to obtain information on macroscopic bulk properties (density) and local atomic arrangement (pair distribution function, g(r)) from XRD data of liquids and amorphous solids.</em></p>'
