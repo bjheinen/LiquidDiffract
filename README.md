@@ -1,3 +1,5 @@
+<Warning> *LiquidDiffract is still in development. It currently works well for monatomic samples, but does not yet fully support multi-component samples!!*</Warning>
+
 <p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/icons/logo.png"></p>
 
 <p align="center">
@@ -143,24 +145,24 @@ Applying a modification function to S(Q) before FFT can help suppress truncation
 ><img src='http://latex.codecogs.com/svg.latex?M\left(Q\right)%20=\begin{cases}1&if\;\,Q%3CQ_{window\_start}\\0.5\left[1+\cos\left(\frac{x\pi}{N-1}\right)\right]&if\;\,Q_{window\_start}%3CQ\leq%20Q_{max}\\0&if\;\,Q%3EQ_{max}\end{cases}'/>
 >
 >where N is width of the window function
->and x is an integer with values from 0 - (N-1) across the window
+>and x is an integer with values from 0 : (N-1) across the window
 
 After calculating the structure factor the final tab can be used to output S(Q), the pair distribution function g(r), and the radial distiribution function RDF(r), as is.
 
 
 #### Iterative Structure Factor Refinement
 
-The numerical iterative procedure used by LiquidDiffract to minimize the error in the determination of g(r) follows the one proposed by Eggert et al., 2002 [1-4]. This procedure is based on the assumption that a minimum distance, r-min, can be defined, which represents the largest distance (0 -- r-min) where no atom can be found. In a liquid, this should be the distance of the 1st coordination shell. Because no atom can be present in this region, no oscillation should be observed in the g(r) function. As a result, the function F(r < r-min) = -4&pi;r&rho; However oscillations are commonly observed in this region, due to systematic errors such as the effect of an experimentally limited Q range (Q-max < &inf;) on the determination of the normalisation factor, &alpha;. The iterative procedure calculates the difference between real and model data in the low-r region and scales S(Q) accordingly to reduce this.
+The numerical iterative procedure used by LiquidDiffract to minimize the error in the determination of g(r) follows the one proposed by Eggert et al., 2002 [1-4]. This procedure is based on the assumption that a minimum distance, r-min, can be defined, which represents the largest distance (0 -- r-min) where no atom can be found. In a liquid, this should be the distance of the 1st coordination shell. Because no atom can be present in this region, no oscillation should be observed in the g(r) function. As a result, the function *F(r < r-min)* = -4&pi;r&rho; However oscillations are commonly observed in this region, due to systematic errors such as the effect of an experimentally limited Q range (Q-max < &inf;) on the determination of the normalisation factor, &alpha;. The iterative procedure calculates the difference between real and model data in the low-r region and scales S(Q) accordingly to reduce this.
 
 To refine S(Q) the value of r-min should be set carefully, as it has a strong influence. The position of r-min should correspond to the base of the first coordinence sphere in the g(r).
 
 The number of iterations in the procedure can also be set; a minimum of 3 is normally required for convergence.
 
-A &Chi;^2 figure of merit, defined as the area under the curve &Delta;F(r) for r<r-min, is used to rate the refinement.
+A *&Chi;<sup>2</sup>* figure of merit, defined as the area under the curve &Delta;F(r) for r<r-min, is used to rate the refinement.
 
 #### Density (&rho;) Refinement
 
-The sample density can be determined by finding the value of &rho; that provides the best convergence of the iterative procedure described above. This is done by minimising the resultant value of &Chi;^2. LiquidDiffract supports several different solvers to do this. The solver in use, along with specific options like convergence criteria and number of iterations, can be selected from the *Additional Preferences* dialog. The solvers currently supported are:
+The sample density can be determined by finding the value of &rho; that provides the best convergence of the iterative procedure described above. This is done by minimising the resultant value of *&Chi;<sup>2</sup>*. LiquidDiffract supports several different solvers to do this. The solver in use, along with specific options like convergence criteria and number of iterations, can be selected from the *Additional Preferences* dialog. The solvers currently supported are:
 
 * L-BFGS-B [14-15]
 
@@ -189,7 +191,7 @@ For more information see the [SciPy documentation](https://docs.scipy.org/doc/sc
 
 #### Terminal & Log-file Output
 
-An log is automatically generated for any refinement made. This log includes information on the data file, sample composition, data and refinement options used, solver ouput/convergence info (if refining density), and the final &Chi;^2 and &rho;.
+An log is automatically generated for any refinement made. This log includes information on the data file, sample composition, data and refinement options used, solver ouput/convergence info (if refining density), and the final *&Chi;<sup>2</sup>* and *&rho;*.
 
 The log for each refinement is automatically written to file. The default behaviour is to store each log in a file named 'refinement.log' within the current data directory. Each log is preceded by a timestamp. The log-mode can be changed to *Overwrite* in the *Additional Preferences* dialog. This creates a new log file for each data file loaded, which will be overwritten if already present. The filenames generated are of the form 'DATAFILENAME_refinement.log' and are similarly created in the source directory of the loaded data file.
 
