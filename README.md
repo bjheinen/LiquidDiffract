@@ -50,32 +50,31 @@ The simplest way to install LiquidDiffract is with pip and git
 
 ```$ pip install git+https://github.com/bjheinen/LiquidDiffract```
 
-Alternatively (without git) you can download the source
-
-https://github.com/bjheinen/LiquidDiffract/archive/master.zip
-
-and install from there.
-
-```
-$ cd /path/to/local/directory/
-$ curl -Lo LiquidDiffract.zip https://github.com/bjheinen/LiquidDiffract/archive/master.zip
-$ unzip LiquidDiffract.zip 
-$ mv LiquidDiffract-*/ LiquidDiffract/
-$ pip install /path/to/local/directory/LiquidDiffract
-```
+The source is directly available [here](https://github.com/bjheinen/LiquidDiffract/archive/master.zip)
 
  We still reccomend pip for installing from a local directory.
 ***Invoking setup.py directly is entirely at your own risk!***
 
 <details><summary><b>Testing the software or modifying source code</b></summary>
 
-You can make a development (editable) install using the -e flag:
+You can make a development (editable) install by using pip's *-e* flag:
 
-```$ pip install -e git+https://github.com/bjheinen/LiquidDiffract```
+```$ pip install -e git+https://github.com/bjheinen/LiquidDiffract#egg=LiquidDiffract```
+
+From a local directory:
+
+```
+$ cd /path/to/local/directory/
+$ curl -Lo LiquidDiffract.zip https://github.com/bjheinen/LiquidDiffract/archive/master.zip
+$ unzip LiquidDiffract.zip 
+$ mv LiquidDiffract-*/ LiquidDiffract/
+$ pip install -e /path/to/local/directory/LiquidDiffract/
+
+```
 
 This will not actually install anything, but create a special .egg-link file in the deployment directory, that links to LiquidDiffract's source code.
 
-It is useful if you want to mess around with, or make changes to the source code without having to re-install. It is also good for testing the software, as it makes uninstalling simpler. Use Python's site-packages directory as the deployment directory if you want LiquidDiffract available on your sys.path for other programs using your Python installation. This can be done with the target flag ```-t /path/to/directory```
+It is useful if you want to mess around with, or make changes to the source code without having to re-install. It is also good for testing the software, as it makes uninstalling simpler. Use Python's site-packages directory as the deployment directory if you want your editable install of LiquidDiffract available on your sys.path for other programs using your Python installation. To do this from thie github page us the *-t* flag ```-t /path/to/directory```
 
 </details>
 
