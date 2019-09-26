@@ -133,15 +133,14 @@ LiquidDiffract provides the option to use either Ashcroft-Langreth [6] or Faber-
 
 Applying a modification function to S(Q) before FFT can help suppress truncation ripples amd can correct a gradient in the high-Q region. Two functions are currently implemented:
 
-#### Lorch [11]
+* Lorch [11]
 
-```<img src='http://latex.codecogs.com/svg.latex?M\left(Q\right)=\frac{\sin\left(\tfrac{\pi%20Q}{Q_{max}}\right)}{\left(\tfrac{\pi%20Q}{Q_{max}}\right)}'/>```
+><img src='http://latex.codecogs.com/svg.latex?M\left(Q\right)=\frac{\sin\left(\tfrac{\pi%20Q}{Q_{max}}\right)}{\left(\tfrac{\pi%20Q}{Q_{max}}\right)}'/>
 
 
-#### Cosine Window (Drewitt et al.) [12]
+* Cosine Window (Drewitt et al.) [12]
 
-```
-<img src='http://latex.codecogs.com/svg.latex?M\left(Q\right)%20=\begin{cases}1&if\;\,Q%3CQ_{window\_start}\\0.5\left[1+\cos\left(\frac{x\pi}{N-1}\right)\right]&if\;\,Q_{window\_start}%3CQ\leq%20Q_{max}\\0&if\;\,Q%3EQ_{max}\end{cases}'/>
+><img src='http://latex.codecogs.com/svg.latex?M\left(Q\right)%20=\begin{cases}1&if\;\,Q%3CQ_{window\_start}\\0.5\left[1+\cos\left(\frac{x\pi}{N-1}\right)\right]&if\;\,Q_{window\_start}%3CQ\leq%20Q_{max}\\0&if\;\,Q%3EQ_{max}\end{cases}'/
 
 where N is width of the window function
 and x is an integer with values from 0 - (N-1) across the window
