@@ -1,4 +1,6 @@
-<Warning> *LiquidDiffract is still in development. It currently works well for monatomic samples, but does not yet fully support multi-component samples!!*</Warning>
+```diff
+! ***LiquidDiffract is still in development. It currently works well for monatomic samples, but does not yet fully support multi-component samples!!***
+```
 
 <p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/icons/logo.png"></p>
 
