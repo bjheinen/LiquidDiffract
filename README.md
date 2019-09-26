@@ -35,25 +35,28 @@ Benedict J. Heinen (benedict.heinen@gmail.com)
 
 ## Requirements
 
-* [Python >= 3.7](https://www.python.org)
+* [Python >= 3.5](https://www.python.org)
 * [Scipy >= 1.2.1](https://www.scipy.org)
 * [Numpy >= 1.16.2](https://numpy.org)
 * [PyQt5 >= 5.12](https://riverbankcomputing.com/software/pyqt/intro)
 * [pyqtgraph >= 0.10.0](http://www.pyqtgraph.org)
+* [importlib_resources](https://pypi.org/project/importlib_resources/) is required if using Python<3.7
 
 LiquidDiffract should run with earlier versions of these python packages but is untested. If you do not have a python installation, we reccomend [Anaconda](https://www.anaconda.com/distribution/).
 LiquidDiffract is system-independent and has been tested on Linux, Mac, and Windows.
 
 ## Installation
 
-The simplest way to install LiquidDiffract is with pip and git
+The simplest way to install LiquidDiffract is with pip and git:
 
 ```$ pip install git+https://github.com/bjheinen/LiquidDiffract```
+
+which should also deal with dependencies automatically.
 
 The source is directly available [here](https://github.com/bjheinen/LiquidDiffract/archive/master.zip)
 
  We still reccomend pip for installing from a local directory.
-***Invoking setup.py directly is entirely at your own risk!***
+***Invoke setup.py directly at your own risk!***
 
 <details><summary><b>Testing the software or modifying source code</b></summary>
 
@@ -69,7 +72,6 @@ $ curl -Lo LiquidDiffract.zip https://github.com/bjheinen/LiquidDiffract/archive
 $ unzip LiquidDiffract.zip 
 $ mv LiquidDiffract-*/ LiquidDiffract/
 $ pip install -e /path/to/local/directory/LiquidDiffract/
-
 ```
 
 This will not actually install anything, but create a special .egg-link file in the deployment directory, that links to LiquidDiffract's source code.
