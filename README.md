@@ -55,7 +55,7 @@ LiquidDiffract is system-independent and has been tested on Linux, Mac, and Wind
 
 The simplest way to install LiquidDiffract is with pip and git:
 
-```$ pip install git+https://github.com/bjheinen/LiquidDiffract```
+```$ pip install git+https://github.com/bjheinen/LiquidDiffract.git```
 
 which should also deal with dependencies automatically.
 
