@@ -113,7 +113,9 @@ class BkgUI(QWidget):
             # Check array size before rebin operation as this could hang on
             # very large file. Array is re-binned in steps of 0.02 from 0
             if self.data['data_raw_x'][-1] > ((2**12/2)*0.02):
-                raise ValueError
+                self.oversize_file_error()
+                self.data_file = None
+                return
             else:
                 pass
             self.data['data_x'], self.data['data_y'] = data_manip.rebin_data(self.data['data_raw_x'], self.data['data_raw_y'])
@@ -146,7 +148,9 @@ class BkgUI(QWidget):
             # Check array size before rebin operation as this could hang on
             # very large file. Array is re-binned in steps of 0.02 from 0
             if self.data['bkg_raw_x'][-1] > ((2**12/2)*0.02):
-                raise ValueError
+                self.oversize_file_error()
+                self.bkg_file = None
+                return
             else:
                 pass
         except ValueError:
@@ -196,6 +200,10 @@ class BkgUI(QWidget):
 
     def load_file_error(self):
         message = ['Error loading file!', 'Unable to load file.\nPlease check filename,\nensure header lines are commented (#),\nand data is in Q-space']
+        self.warning_message(message)
+
+    def oversize_file_error(self):
+        message = ['Error loading file!', 'Re-binned array size\nis too large!\nIs the data in Q-space?']
         self.warning_message(message)
 
     def missing_bkg_file_error(self):
