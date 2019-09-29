@@ -617,10 +617,19 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
     # Make sure using float64
     z = z.astype(np.float64, copy=False)
     # Pad with enough zeros to make array of size 2**N
-
-    # check the len(z) > N or some such thing
-    #!!!!!!!!!!!!
+    # Length of array to fourier transform is 2**N
+    # The array is mirrored and padding zeros are added to increase
+    # the size of the array
+    # Therefore len(z) < ((2**N)/2)
     # N=12 allows max 2048 data points (at q-spacing 0f 0.02 range is 40.94)
+    if len(z) > (2**N/2):
+        # Error checking also takes place in LiquidDiffract.gui
+        # so that the graphical app does not crash
+        raise ValueError('Length of data array > [(2**N)/2]\n' +
+                         '            Please check your data is in ' +
+                         'Q-space or increase value of \'N\'')
+    else:
+        pass
     padding_zeros = np.int(2**N - (len(z)*2 - 1))
     # Pad array with odd image of function
     z = np.concatenate((z, np.zeros(padding_zeros), -np.flip(z[1::],0)))
@@ -663,6 +672,11 @@ def calc_F_r_iteration_term(delta_F_r, N=12):
 
     Delta_F(r) is the difference between F(r) and its expected behaviour
     '''
+    # Make sure array size is not too large for padding value N
+    if len(delta_F_r) > (2**N/2):
+        raise ValueError('Length of array > [(2**N)/2]')
+    else:
+        pass        
     padding_zeros = np.int(2**N - (len(delta_F_r)*2 - 1))
     z = np.concatenate((delta_F_r, 
                         np.zeros(padding_zeros), 
@@ -831,9 +845,14 @@ def calc_impr_interference_func(rho, *args):
 
         count += 1
 
-    if opt_flag is True:
+    # Check if opt_flag == 1 (True) or 0 (False)
+    # Checking against number value is preferred because of *args usage
+    # This meanse it would be easy to pass another value to the function by
+    # mistake. In this case bool() could return a false positive.
+    # i.e. bool(4) == True
+    if opt_flag == 1:
         return chi_squared
-    elif opt_flag is False:
+    elif opt_flag == 0:
         return interference_func_impr, chi_squared
     else:
         raise ValueError('Argument - opt_flag - must be boolean')
