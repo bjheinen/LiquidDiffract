@@ -171,7 +171,11 @@ class BkgUI(QWidget):
             # Only re-subtract if already subtract button clicked
             if self.bkg_config_widget.bkg_subtract_gb.isChecked() and self.bkg_file is not None:
                 # Subtract background from raw data if option chosen
-                self.data['cor_y'] = self.data['data_y'] - self.data['bkg_y_sc']
+                try:
+                    self.data['cor_y'] = self.data['data_y'] - self.data['bkg_y_sc']
+                except ValueError:
+                    self.bkg_match_error()
+                    return
             else:
                 self.data['cor_y'] = self.data['data_y']
         if self.bkg_config_widget.data_files_gb.plot_raw_check.isChecked():
@@ -191,6 +195,9 @@ class BkgUI(QWidget):
         if self.bkg_file is None:
             self.missing_bkg_file_error()
             return
+        if len(self.data['data_y']) != len(self.data['bkg_y']):
+            self.bkg_match_error()
+            return
         bkg_scaling = minimize(data_manip.bkg_scaling_residual, 1,
                                args=(self.data['data_y'], self.data['bkg_y']),
                                method='nelder-mead',
@@ -208,6 +215,10 @@ class BkgUI(QWidget):
 
     def missing_bkg_file_error(self):
         message = ['No background file!', 'Please load a background file']
+        self.warning_message(message)
+    
+    def bkg_match_error(self):
+        message = ['Error subtracting background!', 'Data and background\n do not match!']
         self.warning_message(message)
 
     def warning_message(self, message):
