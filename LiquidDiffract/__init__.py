@@ -2,23 +2,31 @@
 LiquidDiffract
 ==============
 
-LiquidDiffract is a GUI application for treating experimental X-ray diffraction data of liquid structures. 
-LiquidDiffract can perform background subtraction, fourier transformation, data (quantitative structure factor) optimisation/normalisation, and estimation of density. 
-The sub-package LiquidDiffract.core provides useful functions for common numerical operations on such diffraction data.
+LiquidDiffract is a graphical data analysis application for processing
+experimental total X-ray diffraction data of liquids and disordered solids.
 
-Core functions available from
+LiquidDiffract can perform background subtraction,fourier transformation,
+numerical optimisation/normalisation of the quantitative structure factor,
+and estimation of sample density.
+
+The sub-package LiquidDiffract.core provides useful functions for common
+numerical operations on total diffraction data.
+
+Core functions available from LiquidDiffract.core.core
 
     >>> import LiquidDiffract.core.core
+    >>> help(LiquidDiffract.core.core)
 
-Additional utilities from
+Additional utilities from LiquidDiffract.core.data_manip
 
     >>> import LiquidDiffract.core.data_manip
+    >>> help(LiquidDiffract.core.data_manip)
 
 
 Please see the documentation on the LiquidDiffract homepage for more details.
 <https://www.github.com/bjheinen/LiquidDiffract>
 
-Copyright (c) 2019 Benedict J Heinen 
+Copyright (c) 2019 Benedict J. Heinen
 
 
 '''

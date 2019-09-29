@@ -3,14 +3,10 @@
 GUI frontend for LiquidDiffract
 <https://github.com/bjheinen/LiquidDiffract>
 """
-__author__ = "Benedict J Heinen"
+__author__ = "Benedict J. Heinen"
 __copyright__ = "Copyright 2018, Benedict J Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
-
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTabWidget, QAction
-from PyQt5.QtGui import QIcon
-import numpy as np
 import os.path
 import webbrowser
 # importlib.resources only available in python>=3.7
@@ -18,6 +14,9 @@ try:
     from importlib import resources as importlib_resources
 except ImportError:
     import importlib_resources
+import numpy as np
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTabWidget, QAction
+from PyQt5.QtGui import QIcon
 
 from LiquidDiffract.gui import bkg_ui
 from LiquidDiffract.gui import optim_ui
@@ -27,18 +26,16 @@ from LiquidDiffract.version import __appname__, __version__
 
 
 class App(QMainWindow):
-    
+
     def __init__(self, screen_size):
         super().__init__()
         # Set options here before running initUI to initialise
         # Get primary (current) screen dimensions
         self.screen_size = screen_size
-        #self.left = 0
-        #self.top = 0
         self.width = self.screen_size.width()
         self.height = self.screen_size.height()
         self.initUI()
-        
+
     def initUI(self):
         self.title = __appname__ + ' v' + __version__
         self.setWindowTitle(self.title)
@@ -50,38 +47,36 @@ class App(QMainWindow):
         self.menu_bar = self.menuBar()
         self.tools_menu = self.menu_bar.addMenu('&Tools')
         self.help_menu = self.menu_bar.addMenu('&Help')
-        
+
         with importlib_resources.path(self.icon_module, 'config.png') as path:
-            self.preferences_action = QAction(QIcon(str(path)), 
+            self.preferences_action = QAction(QIcon(str(path)),
                                               'Additional Preferences...', self)
-            
+
         with importlib_resources.path(self.icon_module, 'browser.png') as path:
-            self.documentation_action = QAction(QIcon(str(path)), 
+            self.documentation_action = QAction(QIcon(str(path)),
                                                 self.title + ' Documentation', self)
-            
+
         with importlib_resources.path(self.icon_module, 'info.png') as path:
             self.about_action = QAction(QIcon(str(path)), 'About', self)
-        
+
         self.tools_menu.addAction(self.preferences_action)
         self.help_menu.addAction(self.documentation_action)
-        #help_menu.addSeperator()
         self.help_menu.addAction(self.about_action)
         self.preferences_action.triggered.connect(self.call_preferences_dialog)
         self.about_action.triggered.connect(self.call_about_dialog)
         self.documentation_action.triggered.connect(self.open_docs)
-        
-        
+
         self.table_widget = MainContainer(self)
         self.setCentralWidget(self.table_widget)
         self.set_default_preferences()
         self.showMaximized()
-        
+
     def set_default_preferences(self):
         self.preferences = {'append_log_mode': 1,
                             'window_length': 5,
                             'poly_order': 3,
                             'op_method': 'L-BFGS-B',
-                            'minimisation_options': 
+                            'minimisation_options':
                                 {'disp': 0,
                                  'maxiter': 15000,
                                  'maxfun': 15000,
@@ -94,7 +89,7 @@ class App(QMainWindow):
                                  'T': 1.0,
                                  'stepsize': 0.01,
                                  'interval': 50}
-                            } 
+                            }
         self.set_preferences()
 
     def call_preferences_dialog(self):
@@ -102,7 +97,7 @@ class App(QMainWindow):
         # set window icon
         with importlib_resources.path(self.icon_module, 'gs_icon.png') as path:
             self.preferences_dialog.setWindowIcon(QIcon(str(path)))
-        
+
         if self.preferences_dialog.exec_() == utility.PreferencesDialog.Accepted:
             self.preferences = self.preferences_dialog.get_preferences()
             # Set preferences in OptimUI
@@ -122,13 +117,13 @@ class App(QMainWindow):
     def call_about_dialog(self):
         self.about_dialog = utility.AboutDialog()
         self.about_dialog.exec_()
-        
+
     def open_docs(self):
         webbrowser.open_new('https://github.com/bjheinen/LiquidDiffract')
 
 
 class MainContainer(QWidget):
-    
+
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
         self.setStyleSheet('QTabWidget::pane { border: 0; } \
@@ -139,26 +134,25 @@ class MainContainer(QWidget):
         self.bkg_ui = bkg_ui.BkgUI(self)
         self.optim_ui = optim_ui.OptimUI(self)
         self.results_ui = results_ui.ResultsUI(self)
-        #self.tabs.resize(300,200)
-        self.tabs.addTab(self.bkg_ui,'Background Subtraction')
-        self.tabs.addTab(self.optim_ui,'Refine Structure Factor')
-        self.tabs.addTab(self.results_ui,'Calculate PDF')
+        self.tabs.addTab(self.bkg_ui, 'Background Subtraction')
+        self.tabs.addTab(self.optim_ui, 'Refine Structure Factor')
+        self.tabs.addTab(self.results_ui, 'Calculate PDF')
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
-        
+
         self.create_signal_tab_links()
 
     def create_signal_tab_links(self):
         self.bkg_ui.plots_changed.connect(self.bkg_plots_changed_slot)
         self.optim_ui.results_changed.connect(self.results_changed_slot)
         self.bkg_ui.file_name_changed.connect(self.update_filename)
-        
+
     def bkg_plots_changed_slot(self):
         # Clear data from Optim UI (as S(Q) etc. need to be recalculated)
         self.optim_ui.data = {'cor_x': np.asarray([]), 'cor_y': np.asarray([]),
                               'cor_x_cut': np.asarray([]), 'cor_y_cut': np.asarray([]),
-                              'sq_x':  np.asarray([]), 'sq_y':  np.asarray([]),
-                              'fr_x':  np.asarray([]), 'fr_y':  np.asarray([]),
+                              'sq_x': np.asarray([]), 'sq_y': np.asarray([]),
+                              'fr_x': np.asarray([]), 'fr_y': np.asarray([]),
                               'mod_func': 'None'
                               }
         # Pass data to Optim UI
@@ -181,10 +175,11 @@ class MainContainer(QWidget):
         self.results_ui.data['window_start'] = self.optim_ui.data['window_start']
         self.results_ui.data['sq_method'] = self.optim_ui.data['sq_method']
         self.results_ui.plot_data()
-        
-    def update_filename(self):
-        _base_name = os.path.splitext(self.bkg_ui.data_file)[0]
-        self.results_ui.base_filename = _base_name
-        self.optim_ui.base_filename = _base_name
-        
 
+    def update_filename(self):
+        _base_name, _ext = os.path.splitext(self.bkg_ui.data_file)
+        self.results_ui.base_filename = _base_name
+        print(self.bkg_ui.data_file)
+        os.path.splitext(self.bkg_ui.data_file)
+        self.optim_ui.base_filename = _base_name
+        self.optim_ui.filename_ext = _ext

@@ -35,6 +35,7 @@ except ImportError:
 # Get version number from version.py
 from LiquidDiffract.version import __appname__, __version__
 
+
 def calc_mol_mass(composition):
     '''
     Calculates the molecular mass for a given composition and returns
@@ -47,6 +48,7 @@ def calc_mol_mass(composition):
         mass_dict = np.load(fp, allow_pickle=True).item()
     mol_mass = np.sum([mass_dict[element]*(composition[element][2]) for element in composition])
     return mol_mass
+
 
 def conv_density(rho, composition):
     '''
@@ -102,18 +104,17 @@ def calc_atomic_ff(element,Q):
     '''
     Calculates the atomic form factors fp(Q) using the analytic tabulation
     of ...???....
-    
+
     Args:
         element - tuple of form (Z, charge, *_)
         Q - Data in Q space and units Angstroms^-1
-    
+
     Returns: 
         form_factor - NumPy array of atomic form factors at each Q value
- 
+
     note: calc_atomic_ff ignores n values - atomic fractions or number of
           atoms in formula unit must be treated elsewhere as the function
           calculates form factor for 1 atom in the compositional unit.
-    
     '''
     atomic_number, charge, *_ = element
     
@@ -164,6 +165,7 @@ def calc_effective_ff(composition,Q):
     effective_ff = np.sum(atomic_ff,0) / Z_tot
     return effective_ff, atomic_ff
 
+
 def calc_average_scattering(composition,Q):
     '''
     for <f2> need to loop over every atom and get fp for them
@@ -182,8 +184,6 @@ def calc_average_scattering(composition,Q):
     
     call calc_atomic_ff directly as it takes tuple as argument
     
-    
-    
     Calculates <f2> which is equal to <f>2 for monatomic case
     '''
     # Expand composition dictionary to list of tuples with entries repeated
@@ -197,10 +197,10 @@ def calc_average_scattering(composition,Q):
     for atom in composition_atoms:
         atomic_ff.append(calc_atomic_ff(atom,Q))
     atomic_ff = np.asarray(atomic_ff)
-    
+
     # Create list to hold both function
     average_scattering = []
-    
+
     # 1st function
     average_scattering.append(
             1/N * np.sum(atomic_ff**2, 0)
@@ -211,7 +211,7 @@ def calc_average_scattering(composition,Q):
             np.sum(np.asarray([x*y for x in atomic_ff for y in atomic_ff]), 0)
             )
     return average_scattering
-        
+
 
 def calc_compton_scattering(element, Q):
     '''
@@ -221,7 +221,7 @@ def calc_compton_scattering(element, Q):
     Args:
         element - dictionary entry from 'comp' where keys are element symbols
         Q - Q values to estimate compton scattering intensity at
-    '''    
+    '''
 
     element_data = element + '.npy'
     with importlib_resources.open_binary('LiquidDiffract.resources.hubbel_compton', element_data) as fp:
@@ -237,7 +237,7 @@ def calc_total_compton_scattering(composition, Q):
     '''
     Helper function to calculate total compton (incoherent) scattering for
     all atoms in a formula unit (composition)
-    
+
     See function core.calc_compton_scattering for details on data used
     '''
     compton_scattering = []
@@ -254,11 +254,11 @@ def calc_J(composition, Q):
     i.e.
         J(Q) = SUM {Compton(Q)} / Z_tot^2 * f_e(Q)^2
         where f_e(Q) is the effective electronic form factor
-    
+
     Args:
         composition - dictionary where keys are element symbols and values
         are tuples of the form (Z, charge, n)
-        
+
         Q - Q values to evaluate
     '''
     effective_ff, _ = calc_effective_ff(composition,Q)
@@ -267,31 +267,31 @@ def calc_J(composition, Q):
     J = compton_scattering / (Z_tot**2 * effective_ff**2)
     return J
 
- 
+
 def calc_K_p(composition, Q):
     '''
     Calculates average effective atomic numbers of each atomic element 
     in a formula unit over a set Q range as defined in Eqs 11 & 14 of 
     Eggert et al., 2002.
-    
+
     i.e.
-    
+
     K_p(Q) for each element = f_p(Q)/f_e(Q)
     K_p for each element = <K_p(Q)>_Q
-    
+
     Where:
         f_e(Q) is the effective electronic form factor of the total composition
         f_p(Q) are the atomic form factors for each atom, p, in the formula unit
         K_p(Q) is the Q-dependent effective atomic number for each atom, p
         K_p is the average effective atomic number 
-        
-    
+
+
     Args:
         composition - dictionary of elements in composition where values
         are tuples of the form (Z, charge, n)
-        
+
         Q - Q range to evaluate over
-        
+
     Returns:
         K_p - numpy array of K_p values with length equal to number of atoms
               in a formula unit of the composition
@@ -299,8 +299,8 @@ def calc_K_p(composition, Q):
     effective_ff, atomic_ff = calc_effective_ff(composition,Q)
     K_p = atomic_ff / effective_ff
     K_p = np.mean(K_p,1)
-    return K_p  
-    
+    return K_p
+
 
 def calc_S_inf(composition, Q, method='ashcroft-langreth'):
     '''
@@ -315,7 +315,7 @@ def calc_S_inf(composition, Q, method='ashcroft-langreth'):
     '''
     if method == 'faber-ziman':
         S_inf = 1.0
-    
+
     elif method == 'ashcroft-langreth':    
         N = np.sum([composition[el][2] for el in composition])
         if N == 1:
@@ -329,8 +329,7 @@ def calc_S_inf(composition, Q, method='ashcroft-langreth'):
 
     else:
         raise ValueError('Please select a valid method for structure factor')
-    
-    #print('S_inf = ', S_inf)
+
     return S_inf
 
 
@@ -369,7 +368,6 @@ def calc_alpha(Q_cor, I_cor, rho,
     Returns:
         alpha
     '''
-    
     if method == 'ashcroft-langreth':
         # define the two integrals in the equation
         int_1 = simps((J + S_inf) * Q_cor**2, Q_cor)
@@ -461,9 +459,6 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langr
     <f^2> and <f>^2 are intermediate functions which quantify average 
     scattering in a similar way to the effective electronic form factor used
     in the Ashcroft-Langreth formulation
-    
-    
-    
 	'''
     if method == 'ashcroft-langreth':
         # N is number of atoms in 1 formula unit
@@ -527,7 +522,6 @@ def get_mod_func(q, mod_func, window_start):
             
         if cosine-window is selected, optional kwarg window-start must
         be passed (Q1)
-        
     '''
     if mod_func == 'Cosine-window':
         pre_window = np.ones(len(q[np.where(q<window_start)]))
@@ -539,12 +533,10 @@ def get_mod_func(q, mod_func, window_start):
     elif mod_func == 'Lorch':
         with np.errstate(divide='ignore', invalid='ignore'):
             modification = np.sin(np.pi * q / np.max(q)) / (np.pi * q / np.max(q))
-    
     else:
         modification = 1
-        
+
     return modification
-        
 
 
 def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None, 
@@ -609,24 +601,23 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
     Returns:
         r   - Array of r values
         F_r/g_r/RDF_r - Corresponding array of values for calculated function 
-
-    '''    
+    '''
     # Define dx (qstep) if not passed to function
     if dx == 'check':
         dx = x[1] - x[0]
     else:
         pass
-    
+
     # Get modification function
     modification = get_mod_func(x, mod_func, window_start)
-        
+
     # Calculate qi(q) input array
     z = x * y * modification
     del modification
     # Make sure using float64
     z = z.astype(np.float64, copy=False)
     # Pad with enough zeros to make array of size 2**N
-    
+
     # check the len(z) > N or some such thing
     #!!!!!!!!!!!!
     # N=12 allows max 2048 data points (at q-spacing 0f 0.02 range is 40.94)
@@ -667,19 +658,17 @@ def calc_F_r_iteration_term(delta_F_r, N=12):
     '''
     Calculates the term responsible for oscillations at small r values.
     Equation 45 in Eggert et al., 2002
-    
-    i.e. Delta_alpha * Q * S_inf = INT 0>r_min [Delta_F(r) sin(Qr) dr]
-    
-    Delta_F(r) is the difference between F(r) and its expected behaviour
 
-    
+    i.e. Delta_alpha * Q * S_inf = INT 0>r_min [Delta_F(r) sin(Qr) dr]
+
+    Delta_F(r) is the difference between F(r) and its expected behaviour
     '''
     padding_zeros = np.int(2**N - (len(delta_F_r)*2 - 1))
     z = np.concatenate((delta_F_r, 
                         np.zeros(padding_zeros), 
                         -np.flip(delta_F_r[1::],0)))
     fft_z = np.imag(scipy.fftpack.fft(z))
-    
+
     return fft_z
 
 
@@ -688,39 +677,37 @@ def calc_model_F_intra_r(Q, r, composition, rho, d_pq, use_intra_model=False):
     d_pq is list of distances?
     not sure how to do this for polyatmoic cases
     > stick to monatomic for now
-        
+
     divide by 4pi^2 ??? why!?
-    
+
     '''
     model_F_intra_r = 4 * np.pi * r * rho
     model_F_intra_r /= (4*np.pi**2)
     return model_F_intra_r
-    
-    
     ## Monatomic case:
-    #if len(composition) == 1:
-    #    d = d_pq
-    #    r_minus_d = r - d
-    #    r_plus_d = r + d
-    #    K_p = calc_K_p(composition,Q)[0]
-    #    Z_tot = calc_Z_sum(composition)
-    #    Q_max = np.max(Q)
-    #    F_intra_r = K_p**2/(np.pi*d*Z_tot**2) *\
-    #                ((np.sin(r_minus_d*Q_max)/r_minus_d) - 
-    #                 (np.sin(r_plus_d*Q_max)/r_plus_d))
-    #    if use_intra_model:
-    #        model_F_intra_r = F_intra_r - (4*np.pi*r*rho)
-    #    else:
-    #        model_F_intra_r = - 4*np.pi*r*rho
-    #    model_F_intra_r /= (4*np.pi**2)
-    #    return model_F_intra_r
+    # if len(composition) == 1:
+    #     d = d_pq
+    #     r_minus_d = r - d
+    #     r_plus_d = r + d
+    #     K_p = calc_K_p(composition,Q)[0]
+    #     Z_tot = calc_Z_sum(composition)
+    #     Q_max = np.max(Q)
+    #     F_intra_r = K_p**2/(np.pi*d*Z_tot**2) *\
+    #                 ((np.sin(r_minus_d*Q_max)/r_minus_d) - 
+    #                  (np.sin(r_plus_d*Q_max)/r_plus_d))
+    #     if use_intra_model:
+    #         model_F_intra_r = F_intra_r - (4*np.pi*r*rho)
+    #     else:
+    #         model_F_intra_r = - 4*np.pi*r*rho
+    #     model_F_intra_r /= (4*np.pi**2)
+    #     return model_F_intra_r
     # 
-    #else:
-    #    if use_intra_model:
-    #        print('Cannot calculate F_intra(r) for polaytomic species')
-    #    else:
-    #        model_F_intra_r = -4 * np.pi * r * rho
-    #        return model_F_intra_r
+    # else:
+    #     if use_intra_model:
+    #         print('Cannot calculate F_intra(r) for polaytomic species')
+    #     else:
+    #         model_F_intra_r = -4 * np.pi * r * rho
+    #         return model_F_intra_r
 
 def calc_chi_squared(r_intra, delta_F_r, method='simps'):
     '''
@@ -768,16 +755,16 @@ def calc_impr_interference_func(rho, *args):
     
     The form of this function also enables it to be passed to an optimisation
     routine to estimate rho by minimising chi^2.
-    
+
     Args:
         rho - density
-        
+
         args - tuple of static parameters and arguments
             If opt_flag == False, expected form is:
             (q_dat, interference_func, composition, r_min, d_pq, opt_flag)
             If opt_flag == True, expected form is:
             (q_dat, I_dat, composition, r_min, d_pq, iter_limit, opt_flag)
-        
+
         q_dat - numpy array of Q space data
         I_dat - Background corrected/scaled intensity data for the sample
         interference_func - initial interference function (if using fixed rho)
@@ -798,8 +785,8 @@ def calc_impr_interference_func(rho, *args):
     elif opt_flag == True:
         (q_dat, I_dat, composition, r_min, d_pq, iter_limit, method, mod_func, window_start, opt_flag) = args
         # Calculate initial interference func for rho value
-        structure_factor = calc_structure_factor(q_dat, I_dat, 
-                                                 composition, rho, 
+        structure_factor = calc_structure_factor(q_dat, I_dat,
+                                                 composition, rho,
                                                  method=method)
         interference_func = structure_factor - calc_S_inf(composition, q_dat, method=method)
     else:
@@ -826,12 +813,12 @@ def calc_impr_interference_func(rho, *args):
             r, F_r = calc_F_r(q_dat, interference_func, rho, mod_func=mod_func, window_start=window_start)
         except NameError:
             pass
-                   
+
         delta_F_r = (- F_r - model_F_intra_r)[np.where(r<r_min)]
-        
+
         r_intra = r[np.where(r<r_min)]
         chi_squared = calc_chi_squared(r_intra, delta_F_r)
-        
+
         if method == 'ashcroft-langreth':
             t2 = (interference_func/t2_divisor) + 1
             t3 = calc_F_r_iteration_term(delta_F_r)[:len(interference_func)]
@@ -842,12 +829,11 @@ def calc_impr_interference_func(rho, *args):
             with np.errstate(invalid='ignore'):
                 interference_func_impr = ((interference_func+1) * (1 - t1*t2)) - 1
 
-        count+=1
+        count += 1
 
-    if opt_flag == True:
+    if opt_flag is True:
         return chi_squared
-    elif opt_flag == False:
+    elif opt_flag is False:
         return interference_func_impr, chi_squared
     else:
         raise ValueError('Argument - opt_flag - must be boolean')
-        

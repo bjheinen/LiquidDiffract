@@ -21,7 +21,10 @@ TODO
 
 * Add option to add mod function when one hasn't been used (in the final tab)
 
+* Change mouse position label precision depending on plot zoom level
 
+* convert_two_theta in core.data_manip is ambiguously named
 
+* core.data_manip.zero_norm may be dead code
 
 
