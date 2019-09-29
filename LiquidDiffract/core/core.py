@@ -18,7 +18,7 @@ Provides functions for:
 See <https://github.com/bjheinen/LiquidDiffract#using-liquiddiffract-core-library> for more details
 
 """
-__author__ = 'Benedict J Heinen'
+__author__ = 'Benedict J. Heinen'
 __copyright__ = 'Copyright 2018-2019, Benedict J Heinen'
 __email__ = 'benedict.heinen@gmail.com'
 
