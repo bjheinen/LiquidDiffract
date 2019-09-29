@@ -8,12 +8,9 @@ TODO
 
 * Remove references to d_pq in core.core? > or add functionality
 
-* When dataset is too large it crashes - in fourier transform N < dataset so tries to add negative number
-  of padding zeros to the array
+* Add option to change padding (N value)
 
-  * Add option to change padding (N value)
-
-  * Error catch - check data type correct on load (its not in Q space)
+* Add option to change re-bin step-size
 
 * Document (back)FFT scaling: 4*np.pi**2
 
