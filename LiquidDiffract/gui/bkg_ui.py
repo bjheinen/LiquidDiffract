@@ -107,6 +107,15 @@ class BkgUI(QWidget):
             return
         try:
             self.data['data_raw_x'], self.data['data_raw_y'] = np.loadtxt(self.data_file, unpack=True)
+            # Array is padded before fourier transform operations in core.core
+            # Currently padded array size is fixed in core.core to 2**N, N=12
+            # Handle possible exception here instead
+            # Check array size before rebin operation as this could hang on
+            # very large file. Array is re-binned in steps of 0.02 from 0
+            if self.data['data_raw_x'][-1] > ((2**12/2)*0.02):
+                raise ValueError
+            else:
+                pass
             self.data['data_x'], self.data['data_y'] = data_manip.rebin_data(self.data['data_raw_x'], self.data['data_raw_y'])
         except ValueError:
             self.data_file = None
@@ -131,6 +140,15 @@ class BkgUI(QWidget):
             return
         try:
             self.data['bkg_raw_x'], self.data['bkg_raw_y'] = np.loadtxt(self.bkg_file, unpack=True)
+            # Array is padded before fourier transform operations in core.core
+            # Currently padded array size is fixed in core.core to 2**N, N=12
+            # Handle possible exception here instead
+            # Check array size before rebin operation as this could hang on
+            # very large file. Array is re-binned in steps of 0.02 from 0
+            if self.data['bkg_raw_x'][-1] > ((2**12/2)*0.02):
+                raise ValueError
+            else:
+                pass
         except ValueError:
             self.bkg_file = None
             self.load_file_error()
@@ -177,7 +195,7 @@ class BkgUI(QWidget):
         self.bkg_config_widget.bkg_subtract_gb.scale_sb.setValue(bkg_scaling)
 
     def load_file_error(self):
-        message = ['Error loading file!', 'Unable to load file.\nPlease check filename is correct and make sure header lines are commented (#)']
+        message = ['Error loading file!', 'Unable to load file.\nPlease check filename,\nensure header lines are commented (#),\nand data is in Q-space']
         self.warning_message(message)
 
     def missing_bkg_file_error(self):
