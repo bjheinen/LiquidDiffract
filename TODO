@@ -25,3 +25,62 @@ TODO
 * core.data_manip.zero_norm may be dead code
 
 
+
+
+IMPORTANT
+
+From method='ashcroft-langreth' > remove scaling factor 'N'
+
+Compton scattering > scale by 1/n_atoms for faber-ziman, no scaling for ashcroft-langreth (i.e. use totals)
+
+For ashcroft langreth, scaling is by Z_tot > look into scaling by average Z instead?
+
+Check effective-form-factor calculations
+
+
+Implement compton scattering alternative (use hadju instead of hubbel-compton)
+
+
+Calculate/tabulate atomic form factors and store as .npy resource files instead of calculating on the fly
+	> make one and timeit before making all though
+
+
+Ashcroft-langreth scaling to 1?
+
+
+Shifting data to start at zero?
+
+
+---------------------------------------------------
+def hadju(element, atomic_ff, Q):
+    # Test run just for 'Ca' 'Al' and 'O' - CaAl2O4
+    Ca_data = [20, 0.5207, 0.9320, 18.112]
+    O_data = [8, 0.3933, 1.2843, 32.6820]
+    Al_data = [13, 0.5268, 1.2263, 13.932]
+    key_data = ['Z', 'M', 'K', 'L']
+    if element == 'Ca':
+        hadju_data = dict(zip(key_data, Ca_data))
+    elif element == 'O':
+        hadju_data = dict(zip(key_data, O_data))
+    elif element == 'Al':
+        hadju_data = dict(zip(key_data, Al_data))
+    else:
+        raise ValueError
+       
+
+    element = hadju_data['Z'], 0, 1
+   
+    aff_part = hadju_data['Z'] - ((atomic_ff**2) / hadju_data['Z'])
+    s = Q/(np.pi*4)
+    cs_part = 1 - hadju_data['M'] * (np.exp(hadju_data['K'] * s * -1) - np.exp(hadju_data['L'] * s * -1))
+    compton_scattering = aff_part * cs_part
+   
+    return compton_scattering
+
+def calc_tot_hadju(composition, Q):
+    compton_scattering = []
+    for element in composition:
+        aff = calc_atomic_ff(composition[element], Q)
+        compton_scattering.append(hadju(element, aff, Q) * composition[element][2])
+    compton_scattering = np.sum(np.asarray(compton_scattering),0)
+    return compton_scattering

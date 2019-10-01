@@ -59,6 +59,8 @@ The simplest way to install LiquidDiffract is with pip and git:
 
 which should also deal with dependencies automatically.
 
+If you have issues clone this repository or download the source and install locally.
+
 The source is directly available [here](https://github.com/bjheinen/LiquidDiffract/archive/master.zip)
 
  We still reccomend pip for installing from a local directory.
