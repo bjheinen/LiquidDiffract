@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Accessory functions for data manipulation
+Utility functions for common data operations 
 """
 __author__ = "Benedict J Heinen"
 __copyright__ = "Copyright 2018-2019, Benedict J Heinen"

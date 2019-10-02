@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
 # LiquidDiffract imports
 from LiquidDiffract.gui import plot_widgets
 from LiquidDiffract.gui import utility
-from LiquidDiffract.core import data_manip
+from LiquidDiffract.core import data_utils
 from LiquidDiffract.version import __appname__, __version__
 
 
@@ -118,7 +118,7 @@ class BkgUI(QWidget):
                 return
             else:
                 pass
-            self.data['data_x'], self.data['data_y'] = data_manip.rebin_data(self.data['data_raw_x'], self.data['data_raw_y'])
+            self.data['data_x'], self.data['data_y'] = data_utils.rebin_data(self.data['data_raw_x'], self.data['data_raw_y'])
         except ValueError:
             self.data_file = None
             self.load_file_error()
@@ -158,7 +158,7 @@ class BkgUI(QWidget):
             self.load_file_error()
             return
         self.bkg_config_widget.data_files_gb.bkg_filename_lbl.setText(self.bkg_file.split('/')[-1])
-        self.data['bkg_x'], self.data['bkg_y'] = data_manip.rebin_data(self.data['bkg_raw_x'], self.data['bkg_raw_y'])
+        self.data['bkg_x'], self.data['bkg_y'] = data_utils.rebin_data(self.data['bkg_raw_x'], self.data['bkg_raw_y'])
         self.plot_data()
 
     def plot_data(self):
@@ -198,7 +198,7 @@ class BkgUI(QWidget):
         if len(self.data['data_y']) != len(self.data['bkg_y']):
             self.bkg_match_error()
             return
-        bkg_scaling = minimize(data_manip.bkg_scaling_residual, 1,
+        bkg_scaling = minimize(data_utils.bkg_scaling_residual, 1,
                                args=(self.data['data_y'], self.data['bkg_y']),
                                method='nelder-mead',
                                options={'xtol': 1e-8, 'disp': False})
@@ -457,7 +457,7 @@ class DataConvertGroupBox(QGroupBox):
         if not self.convert_filename:
             return
         # Convert 2theta data
-        __q_data = data_manip.convert_two_theta(self.two_theta_data[0], __lambda)
+        __q_data = data_utils.convert_two_theta(self.two_theta_data[0], __lambda)
         __out_data = np.column_stack((__q_data, self.two_theta_data[1]))
         np.savetxt(self.convert_filename, __out_data)
         # Message user success

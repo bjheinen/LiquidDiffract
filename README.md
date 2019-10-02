@@ -210,7 +210,7 @@ The final tab displays the optimised S(Q), g(r), and RDF(r). The buttons at the 
 
 ### Using LiquidDiffract Core Library
 
-The module LiquidDiffract.core.core is the core library which provides all the specific functions for processing (liquid) diffraction data. This can be imported and used in your own Python code. There are also some data helper functions (e.g. to rebin data) found in LiquidDiffract.core.data_manip
+The module LiquidDiffract.core.core is the core library which provides all the specific functions for processing (liquid) diffraction data. This can be imported and used in your own Python code. There are also some data helper functions (e.g. to rebin data) found in LiquidDiffract.core.data_utils
 
 A brief example of using LiquidDiffract in a custom data processing script is given below:
 

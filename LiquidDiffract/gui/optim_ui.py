@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QScrollArea, QSplitter
 from LiquidDiffract.gui import plot_widgets
 from LiquidDiffract.gui import utility
-from LiquidDiffract.core import data_manip
+from LiquidDiffract.core import data_utils
 import LiquidDiffract.core.core as core
 from LiquidDiffract.version import __appname__, __version__
 
@@ -384,7 +384,7 @@ class OptimUI(QWidget):
         self.optim_plot_widget.update_plots(self.data)
 
     def smooth_data(self):
-        self.data['cor_y_cut'] = data_manip.smooth_data(self.data['cor_y_cut'],
+        self.data['cor_y_cut'] = data_utils.smooth_data(self.data['cor_y_cut'],
                                                         window_length=self.window_length,
                                                         poly_order=self.poly_order)
 

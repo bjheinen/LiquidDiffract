@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 import pyqtgraph as pg
 import numpy as np
-from LiquidDiffract.core import data_manip
+from LiquidDiffract.core import data_utils
 
 pg_options = {'leftButtonPan': False, 'background': 0.9, 'foreground': 0.15,
               'antialias': True}
@@ -192,7 +192,7 @@ class OptimPlotWidget(QWidget):
         # For interference function this should be == 0 - S_inf
         # Fix nan values by interpolation
         if np.isnan(_data['impr_int_func']).any():
-             _data['impr_int_func'] = data_manip.interp_nan(_data['impr_int_func'])
+             _data['impr_int_func'] = data_utils.interp_nan(_data['impr_int_func'])
 
         _window = len(_data['cor_x_cut'])
 
@@ -328,11 +328,11 @@ class ResultsPlotWidget(QWidget):
         # Some versions of pyqtgraph cannot produce plot if nan values present
         # Fix nan values by interpolation
         if np.isnan(_data['sq_y']).any():
-             _data['sq_y'] = data_manip.interp_nan(_data['sq_y'])
+             _data['sq_y'] = data_utils.interp_nan(_data['sq_y'])
         if np.isnan(_data['sq_y']).any():
-             _data['gr_y'] = data_manip.interp_nan(_data['gr_y'])
+             _data['gr_y'] = data_utils.interp_nan(_data['gr_y'])
         if np.isnan(_data['sq_y']).any():
-             _data['rdf_y'] = data_manip.interp_nan(_data['rdf_y'])
+             _data['rdf_y'] = data_utils.interp_nan(_data['rdf_y'])
 
         # Determine data window for length of sq (pre fft)
         _window = len(_data['sq_x'])

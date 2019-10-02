@@ -17,10 +17,10 @@ Core functions available from LiquidDiffract.core.core
     >>> import LiquidDiffract.core.core
     >>> help(LiquidDiffract.core.core)
 
-Additional utilities from LiquidDiffract.core.data_manip
+Additional utilities from LiquidDiffract.core.data_utils
 
-    >>> import LiquidDiffract.core.data_manip
-    >>> help(LiquidDiffract.core.data_manip)
+    >>> import LiquidDiffract.core.data_utils
+    >>> help(LiquidDiffract.core.data_utils)
 
 
 Please see the documentation on the LiquidDiffract homepage for more details.
