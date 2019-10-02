@@ -30,11 +30,12 @@ def convert_two_theta(two_theta, wavelength):
     return q_data
 
 
-def zero_norm(int_func, _S_inf):
-    '''Shift data to fit first value to zero - S_inf'''
-    shift = int_func[0]
-    int_func = int_func - shift
-    return int_func
+def zero_norm(y, shift=None):
+    '''Shift data on y axis. If no 'shift' given, first value is set to zero'''
+    if shift == None:
+         shift = y[0]
+    return y - shift
+
 
 def interp_nan(y):
      '''
@@ -48,6 +49,7 @@ def interp_nan(y):
      f = lambda z: z.nonzero()[0]
      y[nans] = np.interp(f(nans), f(~nans), y[~nans])
      return y
+
 
 def bkg_scaling_residual(bkg_scaling, *args):
     '''
