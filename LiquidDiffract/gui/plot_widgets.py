@@ -7,6 +7,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 import pyqtgraph as pg
 import numpy as np
+from LiquidDiffract.core import data_manip
 
 pg_options = {'leftButtonPan': False, 'background': 0.9, 'foreground': 0.15,
               'antialias': True}
@@ -186,6 +187,13 @@ class OptimPlotWidget(QWidget):
         except AttributeError:
             pass
 
+        # Some versions of pyqtgraph cannot produce plot if nan values present
+        # First value in some arrays is nan (e.g. int func)
+        # For interference function this should be == 0 - S_inf
+        # Fix nan values by interpolation
+        if np.isnan(_data['impr_int_func']).any():
+             _data['impr_int_func'] = data_manip.interp_nan(_data['impr_int_func'])
+
         _window = len(_data['cor_x_cut'])
 
         self.p1 = self.data_plot.plot(x=_data['cor_x_cut'], y=_data['cor_y_cut'], pen={'color': 0.1, 'width': 1.2})
@@ -317,16 +325,25 @@ class ResultsPlotWidget(QWidget):
         except AttributeError:
             pass
 
+        # Some versions of pyqtgraph cannot produce plot if nan values present
+        # Fix nan values by interpolation
+        if np.isnan(_data['sq_y']).any():
+             _data['sq_y'] = data_manip.interp_nan(_data['sq_y'])
+        if np.isnan(_data['sq_y']).any():
+             _data['gr_y'] = data_manip.interp_nan(_data['gr_y'])
+        if np.isnan(_data['sq_y']).any():
+             _data['rdf_y'] = data_manip.interp_nan(_data['rdf_y'])
+
         # Determine data window for length of sq (pre fft)
         _window = len(_data['sq_x'])
 
         # Needed for some version of pyqtgraph
-        _data['sq_x'] = np.nan_to_num(_data['sq_x'])
-        _data['sq_y'] = np.nan_to_num(_data['sq_y'])
-        _data['gr_x'] = np.nan_to_num(_data['gr_x'])
-        _data['gr_y'] = np.nan_to_num(_data['gr_y'])
-        _data['rdf_x'] = np.nan_to_num(_data['rdf_x'])
-        _data['rdf_y'] = np.nan_to_num(_data['rdf_y'])
+        #_data['sq_x'] = np.nan_to_num(_data['sq_x'])
+        #_data['sq_y'] = np.nan_to_num(_data['sq_y'])
+        #_data['gr_x'] = np.nan_to_num(_data['gr_x'])
+        #_data['gr_y'] = np.nan_to_num(_data['gr_y'])
+        #_data['rdf_x'] = np.nan_to_num(_data['rdf_x'])
+        #_data['rdf_y'] = np.nan_to_num(_data['rdf_y'])
 
         self.p1 = self.sq_plot.plot(x=_data['sq_x'], y=_data['sq_y'], pen={'color': 0.1, 'width': 1.2})
         self.p2 = self.gr_plot.plot(x=_data['gr_x'][:_window], y=_data['gr_y'][:_window], pen={'color': 0.1, 'width': 1.2})

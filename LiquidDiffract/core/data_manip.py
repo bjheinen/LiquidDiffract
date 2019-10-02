@@ -36,6 +36,18 @@ def zero_norm(int_func, _S_inf):
     int_func = int_func - shift
     return int_func
 
+def interp_nan(y):
+     '''
+     Uses interpolation to fix nan values in an array
+     This is useful for nan values at start of interference function array
+     which cannot be set to zero with np.nan_to_num
+     '''     
+     # Array of True/False values for nan location 
+     nans = np.isnan(y)
+     # Return nonzero (non-nan) values
+     f = lambda z: z.nonzero()[0]
+     y[nans] = np.interp(f(nans), f(~nans), y[~nans])
+     return y
 
 def bkg_scaling_residual(bkg_scaling, *args):
     '''
