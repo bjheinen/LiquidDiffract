@@ -35,7 +35,6 @@ except ImportError:
 # Get version number from version.py
 from LiquidDiffract.version import __appname__, __version__
 
-
 def calc_mol_mass(composition):
     '''
     Calculates the molecular mass for a given composition and returns
@@ -408,6 +407,8 @@ def calc_coherent_scattering(Q_sample, I_sample, composition, alpha,
     # If compton scattering data is not provided, retrieve it now
     if compton_scattering is None:
         compton_scattering = calc_total_compton_scattering(composition, Q_sample)
+        if method == 'faber-ziman':
+             compton_scattering /= sum(composition[el][2] for el in composition)
     else:
         pass
     coherent_scattering = (alpha * I_sample) - compton_scattering
@@ -463,10 +464,10 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langr
     <f^2> and <f>^2 are intermediate functions which quantify average 
     scattering in a similar way to the effective electronic form factor used
     in the Ashcroft-Langreth formulation
-	'''
+    '''
+    # N is number of atoms in 1 formula unit
+    n_atoms = sum(composition[element][2] for element in composition)
     if method == 'ashcroft-langreth':
-        # N is number of atoms in 1 formula unit
-        n_atoms = sum(composition[el][2] for el in composition)
         # Z is total atomic number of formula unit
         Z_tot = calc_Z_sum(composition)
         # Calculate intermediate functions for alpha/coherent scattering for
@@ -487,6 +488,7 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langr
         avg_scattering_f = calc_average_scattering(composition, Q_cor)    
         # Calculate compton (incoherent scattering) used in alpha_FZ
         compton_scattering = calc_total_compton_scattering(composition, Q_cor)
+        compton_scattering = compton_scattering / n_atoms
         # Calculate alpha
         alpha = calc_alpha(Q_cor, I_cor, rho, 
                            average_scattering=avg_scattering_f, 
