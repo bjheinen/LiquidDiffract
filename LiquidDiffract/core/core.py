@@ -747,14 +747,19 @@ def calc_chi_squared(r_intra, delta_F_r, method='simps'):
     return chi_squared * 1e6
 
 
-def stop_iteration(chi_squared, count, iter_limit=5):
-    if count < iter_limit:
-        #print('count', count)
-        #print(chi_squared)
-        return False
-    else:
-        #print('stop the loop!')
-        return True
+def stop_iteration(stop_condition='count', count=None, 
+                   iter_limit=5, chi_squared=None):
+    '''Helper function for checking stop condition of iteration
+    
+    Currently LiquidDiffract used an iteration limit only so this function
+    is very unnecessary/a little . It is left here to make any changes
+    easier to implement (i.e. checking for chi^2 convergence)
+    '''
+    if stop_condition == 'count':
+        if count < iter_limit:
+            return False
+        else:
+            return True
 
 
 def calc_impr_interference_func(rho, *args):
@@ -825,7 +830,7 @@ def calc_impr_interference_func(rho, *args):
     done_looping = False
     while not done_looping:
         try:
-            done_looping = stop_iteration(chi_squared, count, iter_limit=iter_limit)
+            done_looping = stop_iteration(stop_condition='count', count=count, iter_limit=iter_limit)
             interference_func = interference_func_impr
             r, F_r = calc_F_r(q_data, interference_func, rho, mod_func=mod_func, window_start=window_start)
         except NameError:
