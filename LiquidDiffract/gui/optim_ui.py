@@ -82,7 +82,7 @@ class OptimUI(QWidget):
         self.optim_config_widget.data_options_gb.qmin_check.stateChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.qmin_input.textChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.calc_sq_btn.clicked.connect(self.on_click_calc_sq)
-        self.optim_config_widget.data_options_gb.smooth_data_check.toggled.connect(self.smooth_check_toggled)
+        self.optim_config_widget.data_options_gb.smooth_data_check.toggled.connect(self.plot_data)
         self.optim_config_widget.optim_options_gb.opt_button.clicked.connect(self.on_click_refine)
 
     def plot_data(self):
@@ -141,7 +141,8 @@ class OptimUI(QWidget):
 
         # this method is only used for 'raw' S(Q) actual data so mod_func = 1
         self.data['modification'] = 1
-        if self.optim_config_widget.data_options_gb.smooth_data_check.isChecked():
+        # Smooth data if option checked. Error handling for empty array
+        if self.optim_config_widget.data_options_gb.smooth_data_check.isChecked() and self.data['cor_y_cut'].size:
             self.smooth_data()
         else:
             self.optim_plot_widget.update_plots(self.data)
@@ -369,21 +370,12 @@ class OptimUI(QWidget):
 
         self.results_changed.emit()
 
-    def smooth_check_toggled(self):
-        if self.optim_config_widget.data_options_gb.smooth_data_check.isChecked():
-            if not self.data['cor_y_cut'].size:
-                return
-            self.smooth_data()
-
-        # Replot and calculate data
-        self.plot_data()
-        # Update the plots
-        self.optim_plot_widget.update_plots(self.data)
-
     def smooth_data(self):
+        # Update with smoothed data
         self.data['cor_y_cut'] = data_utils.smooth_data(self.data['cor_y_cut'],
                                                         window_length=self.window_length,
                                                         poly_order=self.poly_order)
+        self.optim_plot_widget.update_plots(self.data)
 
 
 class OptimConfigWidget(QWidget):

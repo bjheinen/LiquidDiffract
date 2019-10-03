@@ -102,8 +102,8 @@ class App(QMainWindow):
             self.preferences = self.preferences_dialog.get_preferences()
             # Set preferences in OptimUI
             self.set_preferences()
-            # Call method smooth_check_toggled to update data treatment
-            self.table_widget.optim_ui.smooth_check_toggled()
+            # Call method plot_data to update data treatment
+            self.table_widget.optim_ui.plot_data()
 
     def set_preferences(self):
         self.table_widget.optim_ui.op_method = self.preferences['op_method']
