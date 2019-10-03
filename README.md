@@ -357,9 +357,11 @@ plt.show()
 
 [8] Keen, D. A. (2001). A comparison of various commonly used correlation functions for describing total scattering. Journal of Applied Crystallography, 34(2), 172-177.
 
-[9] hubbel compton data
+[9] Hubbell, J. H., Veigele, W. J., Briggs, E. A., Brown, R. T., Cromer, D. T., & Howerton, D. R. (1975). Atomic form factors, incoherent scattering functions, and photon scattering cross sections. Journal of physical and chemical reference data, 4(3), 471-538.
 
-[10] form factors data
+[10a] Brown, P. J., Fox, A. G., Maslen, E. N., O'Keefe, M. A., & Willis, B. T. M. (2006). 'Intensity of diffracted intensities' in *International Tables for Crystallography*, Vol. C., ch. 6.1, pp. 554-595 
+
+[10b] This form factor data is also available freely at <http://lampx.tugraz.at/~hadley/ss1/crystaldiffraction/atomicformfactors/formfactors.php>
 
 [11] Lorch, E. (1969). Neutron diffraction by germania, silica and radiation-damaged silica glasses. Journal of Physics C: Solid State Physics, 2(2), 229.
 
