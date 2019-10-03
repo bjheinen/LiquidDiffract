@@ -1,12 +1,8 @@
 TODO
 
-* Fix/further testing on polyatomic (multi-component) sample
-
 * Implement multiprocessing for speedier calculations
 
 * Redundant code > multiple definitions of warning message dialog boxes?
-
-* Remove references to d_pq in core.core? > or add functionality
 
 * Add option to change padding (N value)
 
@@ -24,31 +20,11 @@ TODO
 
 * core.data_manip.zero_norm may be dead code
 
+* Implement option to use Hadju tabulations?
 
+* Calculate and store atomic form factor data
 
-
-IMPORTANT
-
-From method='ashcroft-langreth' > remove scaling factor 'N'
-
-Compton scattering > scale by 1/n_atoms for faber-ziman, no scaling for ashcroft-langreth (i.e. use totals)
-
-For ashcroft langreth, scaling is by Z_tot > look into scaling by average Z instead?
-
-Check effective-form-factor calculations
-
-
-Implement compton scattering alternative (use hadju instead of hubbel-compton)
-
-
-Calculate/tabulate atomic form factors and store as .npy resource files instead of calculating on the fly
-	> make one and timeit before making all though
-
-
-Ashcroft-langreth scaling to 1?
-
-
-Shifting data to start at zero?
+* Option to shift / zero data on load
 
 
 ---------------------------------------------------
