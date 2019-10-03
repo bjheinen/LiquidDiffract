@@ -209,7 +209,11 @@ class OptimPlotWidget(QWidget):
         self.p3_b = self.fr_plot.plot(x=_data['impr_fr_x'][:_window], y=_data['impr_fr_y'][:_window], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
 
         if _data['mod_func'] != 'None':
-            self.p2_c = self.iq_plot.plot(x=_data['iq_x'], y=(_data['modification'] * _data['int_func']), pen={'color': '#342256', 'width': 0.8, 'style': Qt.DashLine})
+            # Apply modification function and handle any nans that arise 
+            _modified_int_func = _data['modification'] * _data['int_func']
+            if np.isnan(_modified_int_func).any():
+                 _modified_int_func = data_utils.interp_nan(_modified_int_func)
+            self.p2_c = self.iq_plot.plot(x=_data['iq_x'], y=_modified_int_func, pen={'color': '#342256', 'width': 0.8, 'style': Qt.DashLine})
 
         self.data_plot.vb.autoRange()
         self.iq_plot.vb.autoRange()
