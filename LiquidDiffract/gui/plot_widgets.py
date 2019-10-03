@@ -191,8 +191,14 @@ class OptimPlotWidget(QWidget):
         # First value in some arrays is nan (e.g. int func)
         # For interference function this should be == 0 - S_inf
         # Fix nan values by interpolation
+        if np.isnan(_data['int_func']).any():
+             _data['int_func'] = data_utils.interp_nan(_data['int_func'])
         if np.isnan(_data['impr_int_func']).any():
              _data['impr_int_func'] = data_utils.interp_nan(_data['impr_int_func'])
+        if np.isnan(_data['fr_x']).any():
+             _data['fr_x'] = data_utils.interp_nan(_data['fr_x'])
+        if np.isnan(_data['impr_fr_x']).any():
+             _data['impr_fr_x'] = data_utils.interp_nan(_data['impr_fr_x'])
 
         _window = len(_data['cor_x_cut'])
 
@@ -336,14 +342,6 @@ class ResultsPlotWidget(QWidget):
 
         # Determine data window for length of sq (pre fft)
         _window = len(_data['sq_x'])
-
-        # Needed for some version of pyqtgraph
-        #_data['sq_x'] = np.nan_to_num(_data['sq_x'])
-        #_data['sq_y'] = np.nan_to_num(_data['sq_y'])
-        #_data['gr_x'] = np.nan_to_num(_data['gr_x'])
-        #_data['gr_y'] = np.nan_to_num(_data['gr_y'])
-        #_data['rdf_x'] = np.nan_to_num(_data['rdf_x'])
-        #_data['rdf_y'] = np.nan_to_num(_data['rdf_y'])
 
         self.p1 = self.sq_plot.plot(x=_data['sq_x'], y=_data['sq_y'], pen={'color': 0.1, 'width': 1.2})
         self.p2 = self.gr_plot.plot(x=_data['gr_x'][:_window], y=_data['gr_y'][:_window], pen={'color': 0.1, 'width': 1.2})
