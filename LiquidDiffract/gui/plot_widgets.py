@@ -329,9 +329,9 @@ class ResultsPlotWidget(QWidget):
         # Fix nan values by interpolation
         if np.isnan(_data['sq_y']).any():
              _data['sq_y'] = data_utils.interp_nan(_data['sq_y'])
-        if np.isnan(_data['sq_y']).any():
+        if np.isnan(_data['gr_y']).any():
              _data['gr_y'] = data_utils.interp_nan(_data['gr_y'])
-        if np.isnan(_data['sq_y']).any():
+        if np.isnan(_data['rdf_y']).any():
              _data['rdf_y'] = data_utils.interp_nan(_data['rdf_y'])
 
         # Determine data window for length of sq (pre fft)
