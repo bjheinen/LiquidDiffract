@@ -424,43 +424,42 @@ def calc_coherent_scattering(Q_sample, I_sample, composition, alpha,
 
 def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langreth'):
     '''
-	Calculate the molecular structure factor using Eq 18 of Eggert et al., 2002
-    
+    Calculates the molecular structure factor in normalised units using the
+    method first developed by Krogh-Moe (1956) and Norman (1957).
+
     Args:
         Q_cor - Rebinned Q space data
         I_cor - Bkgd corrected intensity data
         composition - dictionary of atomic elements, with values as tuples in 
                       the form (Z,charge,n)
         rho - actual or initial estimate of atomic density in atoms/Angstrom^3
-        
-        
+
     The code provides an option to use either the Ashcroft-Langreth or
     Faber-Ziman formulation of the structure factor S(Q)
-    
+
     S_AL(Q) = I^COHERENT(Q) / N * Z_TOT^2 * f_e^2(Q)
-            
+
     S_FZ(Q) = I^COHERENT(Q) - (<f^2> - <f>^2 ) / <f>^2
-    
-    
+
     I^COHERENT (the coherent scattering component of measured scattering 
     intensity) has a different formulation for AL & FZ methods.
 
     I^COH_AL = N [alpha_AL * I^SAMPLE(Q) - SUM_p[I^COMPTON_p(Q)] ]
-    
+
     I^COH_FZ = alpha_FZ * I^SAMPLE(Q) - SUM_p[I^COMPTON_p(Q)]
-    
+
     I^COMPTON_p is the compton (incoherent) scattering of each atom 
     (see core.calc_compton_scattering)
-    
+
     alpha is the normalisation factor (see core.calc_alpha)
-    
+
     N is the total number of atomic species in a formula unit 
     (e.g. for SiO2 N=3)
-    
+
     Z_TOT is the total Z number of a formula unit
-    
+
     f_e(Q) is the effective electronic form factor
-    
+
     <f^2> and <f>^2 are intermediate functions which quantify average 
     scattering in a similar way to the effective electronic form factor used
     in the Ashcroft-Langreth formulation

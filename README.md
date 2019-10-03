@@ -139,14 +139,16 @@ The option to smooth the data will apply a Savitzky-Golay filter to the data. Op
 
 LiquidDiffract provides the option to use either Ashcroft-Langreth [6] or Faber-Ziman [7] formalisms of the structure factor. See Keen et al., 2001 [8] for discussions of differences in structure factor formalisms, or the LiquidDiffract source code for specific implementations. 
 
+The total molecular structure factor, S(Q), is converted to normalised units using the method of Krogh-Moe [9] and Norman [10].
+
 Applying a modification function to S(Q) before FFT can help suppress truncation ripples and can correct a gradient in the high-Q region. Two functions are currently implemented:
 
-**Lorch [11]:**
+**Lorch [13]:**
 
 ><img src='http://latex.codecogs.com/svg.latex?M\left(Q\right)=\frac{\sin\left(\tfrac{\pi%20Q}{Q_{max}}\right)}{\left(\tfrac{\pi%20Q}{Q_{max}}\right)}'/>
 
 
-**Cosine Window (Drewitt et al.) [12]:**
+**Cosine Window (Drewitt et al.) [14]:**
 
 ><img src='http://latex.codecogs.com/svg.latex?M\left(Q\right)%20=\begin{cases}1&if\;\,Q%3CQ_{window\_start}\\0.5\left[1+\cos\left(\frac{x\pi}{N-1}\right)\right]&if\;\,Q_{window\_start}%3CQ\leq%20Q_{max}\\0&if\;\,Q%3EQ_{max}\end{cases}'/>
 >
@@ -170,11 +172,11 @@ A *&Chi;<sup>2</sup>* figure of merit, defined as the area under the curve *&Del
 
 The sample density can be determined by finding the value of &rho; that provides the best convergence of the iterative procedure described above. This is done by minimising the resultant value of *&Chi;<sup>2</sup>*. LiquidDiffract supports several different solvers to do this. The solver in use, along with specific options like convergence criteria and number of iterations, can be selected from the *Additional Preferences* dialog. The solvers currently supported are:
 
-* L-BFGS-B [14-15]
+* L-BFGS-B [16-17]
 
-* SLSQP [16]
+* SLSQP [18]
 
-* COBYLA [17-19]
+* COBYLA [19-21]
 
 All solvers require upper and lower bounds on the density to be set.
 
@@ -184,13 +186,13 @@ For more information on these optimisation algorithms please see the [SciPy docu
 
 The optimisation algorithms used to estimate density work best when the initial guess, &rho;<sub>0</sub> is close to the true value. If the density of the material is very poorly known it is recommended to use the global optimisation option provided. It is not recommended if a good initial guess can be made, due to slower, and sometimes poor, convergence.
 
-The global optimisation procedure used is the basin-hopping algorithm provided by the SciPy library [20-21]. Basin-hopping is a stochastic algorithm which attempts to find the global minimum of a function by applying an iterative process with each cycle composed of the following features:
+The global optimisation procedure used is the basin-hopping algorithm provided by the SciPy library [22-23]. Basin-hopping is a stochastic algorithm which attempts to find the global minimum of a function by applying an iterative process with each cycle composed of the following features:
 
 1. random perturbation of the coordinates
 2. local minimization
 3. accept or reject the new coordinates based on the minimized function value
 
-The acceptance test used here is the Metropolis criterion of standard Monte Carlo algorithms [21].
+The acceptance test used here is the Metropolis criterion of standard Monte Carlo algorithms [23].
 
 For more information see the [SciPy documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.basinhopping.html), or consult the references listed.
 
@@ -357,33 +359,37 @@ plt.show()
 
 [8] Keen, D. A. (2001). A comparison of various commonly used correlation functions for describing total scattering. Journal of Applied Crystallography, 34(2), 172-177.
 
-[9] Hubbell, J. H., Veigele, W. J., Briggs, E. A., Brown, R. T., Cromer, D. T., & Howerton, D. R. (1975). Atomic form factors, incoherent scattering functions, and photon scattering cross sections. Journal of physical and chemical reference data, 4(3), 471-538.
+[9] Krogh-Moe, J. (1956). A method for converting experimental X-ray intensities to an absolute scale. Acta Crystallographica, 9(11), 951-953.
 
-[10a] Brown, P. J., Fox, A. G., Maslen, E. N., O'Keefe, M. A., & Willis, B. T. M. (2006). 'Intensity of diffracted intensities' in *International Tables for Crystallography*, Vol. C., ch. 6.1, pp. 554-595 
+[10] Norman, N. (1957). The Fourier transform method for normalizing intensities. Acta Crystallographica, 10(5), 370-373.
 
-[10b] This form factor data is also available freely at <http://lampx.tugraz.at/~hadley/ss1/crystaldiffraction/atomicformfactors/formfactors.php>
+[11] Hubbell, J. H., Veigele, W. J., Briggs, E. A., Brown, R. T., Cromer, D. T., & Howerton, D. R. (1975). Atomic form factors, incoherent scattering functions, and photon scattering cross sections. Journal of physical and chemical reference data, 4(3), 471-538.
 
-[11] Lorch, E. (1969). Neutron diffraction by germania, silica and radiation-damaged silica glasses. Journal of Physics C: Solid State Physics, 2(2), 229.
+[12a] Brown, P. J., Fox, A. G., Maslen, E. N., O'Keefe, M. A., & Willis, B. T. M. (2006). 'Intensity of diffracted intensities' in *International Tables for Crystallography*, Vol. C., ch. 6.1, pp. 554-595 
 
-[12] Drewitt, J. W., Sanloup, C., Bytchkov, A., Brassamin, S., & Hennet, L. (2013). Structure of (FexCa1−xO)y(SiO 2)1−y liquids and glasses from high-energy x-ray diffraction: Implications for the structure of natural basaltic magmas. Physical Review B, 87(22), 224201.
+[12b] This form factor data is also available freely at <http://lampx.tugraz.at/~hadley/ss1/crystaldiffraction/atomicformfactors/formfactors.php>
 
-[13] Morard, G., Garbarino, G., Antonangeli, D., Andrault, D., Guignot, N., Siebert, J., Roberge, M., Boulard, E., Lincot, A., Denoeud, A. & Petitgirard, S. (2014). Density measurements and structural properties of liquid and amorphous metals under high pressure. High Pressure Research, 34(1), 9-21.
+[13] Lorch, E. (1969). Neutron diffraction by germania, silica and radiation-damaged silica glasses. Journal of Physics C: Solid State Physics, 2(2), 229.
 
-[14] Byrd, R H and P Lu and J. Nocedal. 1995. A Limited Memory Algorithm for Bound Constrained Optimization. SIAM Journal on Scientific and Statistical Computing 16 (5): 1190-1208.
+[14] Drewitt, J. W., Sanloup, C., Bytchkov, A., Brassamin, S., & Hennet, L. (2013). Structure of (FexCa1−xO)y(SiO 2)1−y liquids and glasses from high-energy x-ray diffraction: Implications for the structure of natural basaltic magmas. Physical Review B, 87(22), 224201.
 
-[15] Zhu, C and R H Byrd and J Nocedal. 1997. L-BFGS-B: Algorithm 778: L-BFGS-B, FORTRAN routines for large scale bound constrained optimization. ACM Transactions on Mathematical Software 23 (4): 550-560.
+[15] Morard, G., Garbarino, G., Antonangeli, D., Andrault, D., Guignot, N., Siebert, J., Roberge, M., Boulard, E., Lincot, A., Denoeud, A. & Petitgirard, S. (2014). Density measurements and structural properties of liquid and amorphous metals under high pressure. High Pressure Research, 34(1), 9-21.
 
-[16] Kraft, D. A software package for sequential quadratic programming. 1988. Tech. Rep. DFVLR-FB 88-28, DLR German Aerospace Center – Institute for Flight Mechanics, Koln, Germany.
+[16] Byrd, R H and P Lu and J. Nocedal. 1995. A Limited Memory Algorithm for Bound Constrained Optimization. SIAM Journal on Scientific and Statistical Computing 16 (5): 1190-1208.
 
-[17] Powell, M J D. A direct search optimization method that models the objective and constraint functions by linear interpolation. 1994. Advances in Optimization and Numerical Analysis, eds. S. Gomez and J-P Hennart, Kluwer Academic (Dordrecht), 51-67.
+[17] Zhu, C and R H Byrd and J Nocedal. 1997. L-BFGS-B: Algorithm 778: L-BFGS-B, FORTRAN routines for large scale bound constrained optimization. ACM Transactions on Mathematical Software 23 (4): 550-560.
 
-[18] Powell M J D. Direct search algorithms for optimization calculations. 1998. Acta Numerica 7: 287-336.
+[18] Kraft, D. A software package for sequential quadratic programming. 1988. Tech. Rep. DFVLR-FB 88-28, DLR German Aerospace Center – Institute for Flight Mechanics, Koln, Germany.
 
-[19] Powell M J D. A view of algorithms for optimization without derivatives. 2007.Cambridge University Technical Report DAMTP 2007/NA03
+[19] Powell, M J D. A direct search optimization method that models the objective and constraint functions by linear interpolation. 1994. Advances in Optimization and Numerical Analysis, eds. S. Gomez and J-P Hennart, Kluwer Academic (Dordrecht), 51-67.
 
-[20] Wales, D J, and Doye J P K, Global Optimization by Basin-Hopping and the Lowest Energy Structures of Lennard-Jones Clusters Containing up to 110 Atoms. Journal of Physical Chemistry A, 1997, 101, 5111.
+[20] Powell M J D. Direct search algorithms for optimization calculations. 1998. Acta Numerica 7: 287-336.
 
-[21] Li, Z. and Scheraga, H. A., Monte Carlo-minimization approach to the multiple-minima problem in protein folding, Proc. Natl. Acad. Sci. USA, 1987, 84, 6611.
+[21] Powell M J D. A view of algorithms for optimization without derivatives. 2007.Cambridge University Technical Report DAMTP 2007/NA03
+
+[22] Wales, D J, and Doye J P K, Global Optimization by Basin-Hopping and the Lowest Energy Structures of Lennard-Jones Clusters Containing up to 110 Atoms. Journal of Physical Chemistry A, 1997, 101, 5111.
+
+[23] Li, Z. and Scheraga, H. A., Monte Carlo-minimization approach to the multiple-minima problem in protein folding, Proc. Natl. Acad. Sci. USA, 1987, 84, 6611.
 
 
 
