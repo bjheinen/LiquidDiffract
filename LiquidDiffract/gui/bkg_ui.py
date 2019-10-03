@@ -124,6 +124,7 @@ class BkgUI(QWidget):
             self.load_file_error()
             return
         self.bkg_config_widget.data_files_gb.data_filename_lbl.setText(self.data_file.split('/')[-1])
+        print(f'Data file: {self.data_file}')
         self.file_name_changed.emit()
         # Delete any processed data when loading new file
         self.data['cor_x'] = np.asarray([])
@@ -158,6 +159,7 @@ class BkgUI(QWidget):
             self.load_file_error()
             return
         self.bkg_config_widget.data_files_gb.bkg_filename_lbl.setText(self.bkg_file.split('/')[-1])
+        print(f'Background File: {self.bkg_file}')
         self.data['bkg_x'], self.data['bkg_y'] = data_utils.rebin_data(self.data['bkg_raw_x'], self.data['bkg_raw_y'])
         self.plot_data()
 
