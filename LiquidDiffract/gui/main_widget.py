@@ -179,7 +179,5 @@ class MainContainer(QWidget):
     def update_filename(self):
         _base_name, _ext = os.path.splitext(self.bkg_ui.data_file)
         self.results_ui.base_filename = _base_name
-        print(self.bkg_ui.data_file)
-        os.path.splitext(self.bkg_ui.data_file)
         self.optim_ui.base_filename = _base_name
         self.optim_ui.filename_ext = _ext
