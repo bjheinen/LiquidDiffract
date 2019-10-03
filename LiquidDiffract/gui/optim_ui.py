@@ -228,11 +228,8 @@ class OptimUI(QWidget):
             _method = 'faber-ziman'
         # Get density
         _rho_0 = np.float(self.optim_config_widget.composition_gb.density_input.text())
-        # Get r_min, d_pq
+        # Get r_min
         _r_min = np.float(self.optim_config_widget.optim_options_gb.rmin_input.text())
-        # _d_pq = np.float(self.optim_config_widget.optim_options_gb.d_pq_input.text())
-        # Functionality for d_pq removed for now
-        _d_pq = 2.9
         # Get no. iterations for Eggert refinement
         _n_iter = np.int(self.optim_config_widget.optim_options_gb.niter_input.text())
         if _n_iter < 2:
@@ -247,7 +244,7 @@ class OptimUI(QWidget):
                 return
 
             _args = (self.data['cor_x_cut'], self.data['cor_y_cut'],
-                     _composition, _r_min, _d_pq, _n_iter, _method,
+                     _composition, _r_min, _n_iter, _method,
                      self.data['mod_func'], self.data['window_start'], 1)
 
             _solver_kwargs = {'args': _args,
@@ -296,7 +293,7 @@ class OptimUI(QWidget):
             _rho_temp = _rho_0
 
         _args = (self.data['cor_x_cut'], self.data['int_func'],
-                 _composition, _r_min, _d_pq, _n_iter, _method,
+                 _composition, _r_min, _n_iter, _method,
                  self.data['mod_func'], self.data['window_start'], 0)
         self.data['impr_int_func'], self.data['chi_sq'] = core.calc_impr_interference_func(_rho_temp, *_args)
         self.optim_config_widget.optim_results_gb.chi_sq_output.setText('{:.4e}'.format(self.data['chi_sq']))
@@ -755,8 +752,6 @@ class OptimOptionsGroupBox(QGroupBox):
     def create_widgets(self):
         self.rmin_label = QLabel('R-Min cutoff: ')
         self.rmin_input = QLineEdit('2.3')
-        # self.d_pq_label = QLabel('Atomic distances: ')
-        # self.d_pq_input = QLineEdit('2.9')
         self.niter_label = QLabel('No. iterations: ')
         self.niter_input = QLineEdit('5')
         self.opt_check = QCheckBox('Refine density? ')
@@ -769,7 +764,6 @@ class OptimOptionsGroupBox(QGroupBox):
     def style_widgets(self):
 
         self.rmin_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
-        # self.d_pq_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.niter_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.lb_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.ub_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
@@ -779,13 +773,6 @@ class OptimOptionsGroupBox(QGroupBox):
         self.rmin_input.setMaximumWidth(70)
         self.rmin_input.setToolTip('Intramolecular distance cut-off')
         self.rmin_label.setToolTip('Intramolecular distance cut-off')
-
-        # Defunct d_pq code
-        # self.d_pq_input.setAlignment(Qt.AlignRight)
-        # self.d_pq_input.setValidator(QDoubleValidator())
-        # self.d_pq_input.setMaximumWidth(70)
-        # self.d_pq_input.setToolTip('Inter-atomic distances for modelled behaviour')
-        # self.d_pq_label.setToolTip('Inter-atomic distances for modelled behaviour')
 
         self.niter_input.setAlignment(Qt.AlignRight)
         self.niter_input.setValidator(QIntValidator())
@@ -820,9 +807,6 @@ class OptimOptionsGroupBox(QGroupBox):
         # self.grid_layout.setColumnStretch(2, 2)
         self.top_grid.addWidget(self.rmin_label, 0, 0)
         self.top_grid.addWidget(self.rmin_input, 0, 1)
-        # Defunct d_pq code
-        # self.top_grid.addWidget(self.d_pq_label, 1, 0)
-        # self.top_grid.addWidget(self.d_pq_input, 1, 1)
         self.top_grid.addWidget(self.niter_label, 1, 0)
         self.top_grid.addWidget(self.niter_input, 1, 1)
 
