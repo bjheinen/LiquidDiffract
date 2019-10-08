@@ -214,10 +214,13 @@ A brief example of using LiquidDiffract in a custom data processing script is gi
 <details><summary><b>Example usage</b></summary>
 
 ```python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 # Import required python modules
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
 from scipy.optimize import minimize
 
@@ -231,8 +234,7 @@ composition = {'Ga': (31,0,1)}
 rho = 0.05
 
 # Load your background subtracted data
-q_raw, I_raw = np.loadtxt('MYDATA.dat', unpack=True, skiprows=0)
-
+q_raw, I_raw = np.loadtxt('example_data.dat', unpack=True, skiprows=0)
 
 # Next rebin data and trim if necessary
 
@@ -241,39 +243,39 @@ q_raw, I_raw = np.loadtxt('MYDATA.dat', unpack=True, skiprows=0)
 dq = 0.02
 # Cut-off below Q_cutoff
 q_cutoff = 9.0
-q_dat = np.arange(0, q_raw[-1], dq)
-q_dat = q_dat[q_dat<q_cutoff]
-finterp = scipy.interpolate.interp1d(q_raw, I_raw, kind='cubic', fill_value='extrapolate')
-I_dat = finterp(q_dat)
+q_data = np.arange(0, q_raw[-1], dq)
+q_data = q_data[q_data<q_cutoff]
+finterp = interp1d(q_raw, I_raw, kind='cubic', fill_value='extrapolate')
+I_data = finterp(q_data)
 
 # Apply any other data treatment
 # e.g. a savitsky-golay filter to smooth the data
-I_dat = savgol_filter(I_dat, window_length=31, poly_order=3)
-
-
+window_length = 31
+polyorder = 3
+I_data = savgol_filter(I_data, window_length, polyorder)
 
 # First calculate the interference function i(Q)
 # i(Q) = S(Q) - S_inf
-structure_factor = liquid.calc_structure_factor(q_dat,I_dat, composition, rho)
-interference_func = structure_factor - liquid.calc_S_inf(composition, q_dat) 
-
+structure_factor = liquid.calc_structure_factor(q_data, I_data, composition, rho)
+interference_func = structure_factor - liquid.calc_S_inf(composition, q_data)
 
 # store original interference function
 interference_func_0 = interference_func
 
 # A low r region cutoff must be chosen for the refinement method of Eggert et al. (2002)
+# A density value in atoms(or molecules) / A^3 must also be set. This will be
+# used as the starting estimate if the density is refined.
 r_min = 2.3
-rho_0 = 0.05
+rho_0 = 0.06
 
 # The function 'calc_impr_interference_func' calculates an improved estimate of
 # the interference function via the iterative procedure described in Eggert et al., 2002.
 #
 # calc_impr_interference_func requires the following arguments:
-# q_dat - q values
-# I_dat / i(Q) - the treated intensity data or interference function (depends on opt_flag used)
+# q_data - q values
+# I_data / i(Q) - the treated intensity data or interference function (depends on opt_flag used)
 # composition - composition dictionary
 # r_min - low r cut-off
-# d_pq - unused d-value (can be set to None)
 # iter_limit - iteration limit for Eggert procedure
 # method - method of calculating S(Q) ('ashcroft-langreth' and 'faber-ziman' are currently supported)
 # mod_func - modification function to use ('None', 'Cosine-window' or 'Lorch')
@@ -284,26 +286,26 @@ rho_0 = 0.05
 # This is useful if using a solver to refine the density by minimising the chi_squared value
 
 # e.g.
-# Return the improved i(Q) & chi^2
-iter_limit = 5
+# Return the improved i(Q) & chi^2 at density = rho_0
+iter_limit = 20
 method = 'ashcroft-langreth'
 mod_func = 'Cosine-window'
-window_start = 8
-args = (q_dat, interference_func_0, composition, r_min, None, iter_limit, method, mod_func, window_start, 0)
-improved_interference_func = liquid.calc_impr_interference_func(rho_0, *args)
+window_start = 9
+args = (q_data, interference_func_0, composition, r_min, iter_limit, method, mod_func, window_start, 0)
 # Store the refined interference function at rho_0
-interference_func_1 = improved_interference_func
+interference_func_1, chi_sq_1 = liquid.calc_impr_interference_func(rho_0, *args)
 
-# Run from solver
-args = (q_dat, I_dat, composition, r_min, None, iter_limit, method, mod_func, window_start, 1)
+# Next we use opt_flag = 1 and pass the function calc_impr_interference_func to
+# a solver to estimate the density
+args = (q_data, I_data, composition, r_min, iter_limit, method, mod_func, window_start, 1)
 # Set-up bounds and other options according to the documentation of solver/minimisation routine
-bounds = ((0.02, 0.08),)
+bounds = ((0.03, 0.08),)
 op_method = 'L-BFGS-B'
 optimisation_options = {'disp': 1,
                         'maxiter': 15000,
                         'maxfun': 15000,
-                        'ftol': 2.22e-8,
-                        'gtol': 1e-10
+                        'ftol': 2.22e-12,
+                        'gtol': 1e-12
                         }
 opt_result = minimize(liquid.calc_impr_interference_func, rho_0,
                       bounds=bounds, args=args,
@@ -312,22 +314,22 @@ opt_result = minimize(liquid.calc_impr_interference_func, rho_0,
 # The solver finds the value of rho that gives the smallest chi^2
 rho_refined = opt_result.x[0]
 
-# The interference function can then be calculated at that value of rho and refinement with 
-# the Eggert procedure as above
-
-interference_func = (liquid.calc_structure_factor(q_dat,I_dat, composition, rho_refined) - 
-                     liquid.calc_S_inf(composition, q_dat))
-args = (q_dat, interference_func, composition, r_min, None, iter_limit, method, mod_func, window_start, 0)
-improved_interference_func = liquid.calc_impr_interference_func(rho_refined, *args)
-# Store refined interference function calculated at the optimised rho
+# The interference function can then be re-calculated using the new value for rho,
+# and the F(r) refined as above.
+interference_func = (liquid.calc_structure_factor(q_data,I_data, composition, rho_refined) - 
+                     liquid.calc_S_inf(composition, q_data))
+args = (q_data, interference_func, composition, r_min, iter_limit, method, mod_func, window_start, 0)
+interference_func_2, chi_sq_2 = liquid.calc_impr_interference_func(rho_refined, *args)
 
 # Plot the data
 # Initial interference function calculation
-plt.plot(q_dat, interference_func_0, color='g')
-# optimised for rho_0
-plt.plot(q_dat, interference_func_1, color='r')
-# for optimised rho
-plt.plot(q_dat, interference_func_2, color='b')
+plt.plot(q_data, interference_func_0, color='g', label=r'Initial i(Q) | $ρ = {rho:.2f}$'.format(rho=rho_0))
+# Optimised at rho_0
+plt.plot(q_data, interference_func_1, color='r', label=r'Optimised i(Q) | $ρ = {rho:.2f}$ & $χ^{{2}} = {chisq:.2f}$'.format(rho=rho_0, chisq=chi_sq_1))
+# Optimised, using refined density estimate
+plt.plot(q_data, interference_func_2, color='b', label=r'Optimised i(Q) | $ρ = {rho:.3f}$ & $χ^{{2}} = {chisq:.2f}$'.format(rho=rho_refined, chisq=chi_sq_2))
+# Add a legend
+plt.legend(loc='best')
 # Show the plots
 plt.show()
 ```
