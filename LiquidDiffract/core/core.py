@@ -621,7 +621,6 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
 
     # Calculate qi(q) input array
     z = x * y * modification
-    z_length = len(z)
     del modification
     # Make sure using float64
     z = z.astype(np.float64, copy=False)
@@ -631,7 +630,7 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
     # the size of the array
     # Therefore len(z) < ((2**N)/2)
     # N=12 allows max 2048 data points (at q-spacing 0f 0.02 range is 40.94)
-    if z_length > (2**N/2):
+    if len(z) > (2**N/2):
         # Error checking also takes place in LiquidDiffract.gui
         # so that the graphical app does not crash
         raise ValueError('Length of data array > [(2**N)/2]\n' +
@@ -639,13 +638,13 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
                          'Q-space or increase value of \'N\'')
     else:
         pass
-    padding_zeros = np.int(2**N - (z_length*2 - 1))
+    padding_zeros = np.int(2**N - (len(z)*2 - 1))
     # Pad array with odd image of function
     z = np.concatenate((z, np.zeros(padding_zeros), -np.flip(z[1::],0)))
     # Fourier transform here uses scipy.fftpack over numpy.fft
     # ifft used as converting from frequency (intensity) domain
     # This means no array-length scaling is needed and the result is not negative
-    fft_z = scipy.fftpack.ifft(z, overwrite_x=True)
+    fft_z = scipy.fftpack.ifft(z)
     # Only the imaginary component of the transformed array is used
     # Only the first half of the array is used as the rest is the odd component
     fft_z = np.imag(fft_z)[:len(fft_z)//2]
@@ -653,7 +652,7 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
     fft_scaling = 2**N / 2 * dx
     fft_z *= fft_scaling
     # Calculate steps of r and r array
-    dr = np.pi*2/(z_length*dx)
+    dr = np.pi*2/(len(z)*dx)
     r = np.arange(len(fft_z))*dr
     if function == 'density_func':
         # Scale by factor 2/pi 
@@ -696,7 +695,7 @@ def calc_F_r_iteration_term(delta_F_r, N=12, dq=0.02):
                         -np.flip(delta_F_r[1::],0)))
     # For the forward fourier transform we need the negative of the imaginary components
     # in the first half of the array
-    fft_z = -np.imag(scipy.fftpack.fft(z, overwrite_x=True))
+    fft_z = -np.imag(scipy.fftpack.fft(z))
     # The fourier transform of Qi(Q) was scaled by the artificial Q_max to obtain the corrected
     # magnitudes - i.e. fft_scaling = len(F(r) * dQ = 2**N / 2 * q_step
     # This scaling has to be reversed here. For N=12 and q_step = 0.02 the scaling is 40.96
