@@ -8,8 +8,6 @@ TODO
 
 * Add option to change re-bin step-size
 
-* Document (back)FFT scaling: 4*np.pi**2
-
 * In results UI save output > also add S_inf info for AL only, if statement to check method
 
 * Add option to add mod function when one hasn't been used (in the final tab)
@@ -25,6 +23,8 @@ TODO
 * Calculate and store atomic form factor data
 
 * Option to shift / zero data on load
+
+* When calc_sq clicked, clear results tab
 
 
 ---------------------------------------------------

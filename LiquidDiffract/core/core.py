@@ -113,6 +113,7 @@ def calc_atomic_ff(element,Q):
         ff_data = np.load(fp, allow_pickle=True)   
         
     ff_data = ff_data[np.where((ff_data[:,0]==charge) & (ff_data[:,10]==atomic_number))][0,1:10]
+    # s = Q / 4pi, s here is s^2
     s = (Q / (4 * np.pi))**2
     form_factor = (ff_data[0] * np.exp(-ff_data[1] * s) + 
                    ff_data[2] * np.exp(-ff_data[3] * s) + 
@@ -647,6 +648,9 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
     # Only the imaginary component of the transformed array is used
     # Only the first half of the array is used as the rest is the odd component
     fft_z = np.imag(fft_z)[:len(fft_z)//2]
+    # Scaling for the inverse transform is QMax = dx * (2**N)/2
+    fft_scaling = 2**N / 2 * dx
+    fft_z *= fft_scaling
     # Calculate steps of r and r array
     dr = np.pi*2/(len(z)*dx)
     r = np.arange(len(fft_z))*dr
@@ -655,22 +659,19 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
         F_r = fft_z * 2/np.pi
         return r, F_r
     elif function == 'pair_dist_func':
-        fft_z *= 4 * np.pi**2
         with np.errstate(divide='ignore', invalid='ignore'):
             sf = 1 / (2 * r * rho * np.pi**2)
             g_r = fft_z * sf
-        #g_r = np.nan_to_num(g_r)
         g_r += 1
         return r, g_r
     elif function == 'radial_dist_func':
-        fft_z *= 4*np.pi**2
         RDF_r = (2 * r * fft_z / np.pi) + (4 * np.pi * rho * r**2)
         return r, RDF_r        
     else:
         raise ValueError('arg \'function\' must be valid option')
 
 
-def calc_F_r_iteration_term(delta_F_r, N=12):
+def calc_F_r_iteration_term(delta_F_r, N=12, dq=0.02):
     '''
     Calculates the term responsible for oscillations at small r values.
     Equation 45 in Eggert et al., 2002
@@ -678,6 +679,10 @@ def calc_F_r_iteration_term(delta_F_r, N=12):
     i.e. Delta_alpha * Q * S_inf = INT 0>r_min [Delta_F(r) sin(Qr) dr]
 
     Delta_F(r) is the difference between F(r) and its expected behaviour
+    
+    N defines the size of the array to be fourier transormed (2**N)
+    This should be the same as used to calculate F(r) from i(Q) to
+    preserve correct scaling factors
     '''
     # Make sure array size is not too large for padding value N
     if len(delta_F_r) > (2**N/2):
@@ -688,7 +693,15 @@ def calc_F_r_iteration_term(delta_F_r, N=12):
     z = np.concatenate((delta_F_r, 
                         np.zeros(padding_zeros), 
                         -np.flip(delta_F_r[1::],0)))
-    fft_z = np.imag(scipy.fftpack.fft(z))
+    # For the forward fourier transform we need the negative of the imaginary components
+    # in the first half of the array
+    fft_z = -np.imag(scipy.fftpack.fft(z))
+    # The fourier transform of Qi(Q) was scaled by the artificial Q_max to obtain the corrected
+    # magnitudes - i.e. fft_scaling = len(F(r) * dQ = 2**N / 2 * q_step
+    # This scaling has to be reversed here. For N=12 and q_step = 0.02 the scaling is 40.96
+    fft_scaling = 2**N / 2 * dq
+    fft_z = fft_z / fft_scaling
+    # For the forward transform here
 
     return fft_z
 
@@ -717,8 +730,7 @@ def calc_model_F_intra_r(Q, r, composition, rho, use_intra_model=False):
      some compositions (e.g. monatomic metallic liquids). This functionality
      may be added in future releases however.
     '''
-    model_F_intra_r = 4 * np.pi * r * rho
-    model_F_intra_r /= (4*np.pi**2)
+    model_F_intra_r = -4 * np.pi * r * rho
     return model_F_intra_r
 
 def calc_chi_squared(r_intra, delta_F_r, method='simps'):
@@ -752,7 +764,7 @@ def stop_iteration(stop_condition='count', count=None,
                    iter_limit=5, chi_squared=None):
     '''Helper function for checking stop condition of iteration
     
-    Currently LiquidDiffract used an iteration limit only so this function
+    Currently LiquidDiffract uses an iteration limit only so this function
     is very unnecessary/a little . It is left here to make any changes
     easier to implement (i.e. checking for chi^2 convergence)
     '''
@@ -837,8 +849,7 @@ def calc_impr_interference_func(rho, *args):
         except NameError:
             pass
 
-        delta_F_r = (- F_r - model_F_intra_r)[np.where(r<r_min)]
-
+        delta_F_r = (F_r - model_F_intra_r)[np.where(r<r_min)]
         r_intra = r[np.where(r<r_min)]
         chi_squared = calc_chi_squared(r_intra, delta_F_r)
 
