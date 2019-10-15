@@ -1,32 +1,37 @@
 TODO
 
-* Implement multiprocessing for speedier calculations
 
-* Redundant code > multiple definitions of warning message dialog boxes?
+* When calc_sq clicked, clear results tab
 
 * Add option to change padding (N value)
 
 * Add option to change re-bin step-size
 
-* In results UI save output > also add S_inf info for AL only, if statement to check method
+* Implement auto-convert to Q-space / Angstroms on data load
 
 * Add option to add mod function when one hasn't been used (in the final tab)
+
+* In results UI save output > also add S_inf info for AL only, if statement to check method
+
+* Implement multiprocessing for speedier calculations
+
+* Redundant code > multiple definitions of warning message dialog boxes?
+
+* Implement option to use Hadju tabulations?
+
+* core.data_manip.zero_norm is dead code > remove?
 
 * Change mouse position label precision depending on plot zoom level
 
 * convert_two_theta in core.data_manip is ambiguously named
 
-* core.data_manip.zero_norm may be dead code
-
-* Implement option to use Hadju tabulations?
-
-* Calculate and store atomic form factor data
-
 * Option to shift / zero data on load
 
-* When calc_sq clicked, clear results tab
 
 
+
+# Example Hadju compton scattering calculation
+# > Tabulation (in Hadju) doesn't exist for some elements
 ---------------------------------------------------
 def hadju(element, atomic_ff, Q):
     # Test run just for 'Ca' 'Al' and 'O' - CaAl2O4
