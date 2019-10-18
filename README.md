@@ -219,25 +219,28 @@ A brief example of using LiquidDiffract in a custom data processing script is gi
 
 # Import required python modules
 import numpy as np
+# Import optional python modules used in this example
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
 from scipy.optimize import minimize
-
 # import the LiquidDiffract core module
 import LiquidDiffract.core.core as liquid
 
 # First set composition
-# Composition dictionary should have element names as keys, with values as tuples of the form (Z, charge, fraction)
+# The composition should be a dictionary dictionary with short element names as keys,
+# and values as tuples of the form (Z, charge, number_of_atoms)
 composition = {'Ga': (31,0,1)}
-# Set initial density
-rho = 0.05
+# Set initial density - in atoms per cubic Angstrom
+rho = 0.06
 
-# Load your background subtracted data
+# Load data
+# LiquidDiffract expects x data to be Q values in Angstroms (not nm!)
+# The file 'example_data.dat' has already been background corrected
 q_raw, I_raw = np.loadtxt('example_data.dat', unpack=True, skiprows=0)
 
 # Next rebin data and trim if necessary
-
+# The below example can also be done using LiquidDiffract.core.data_utils
 # Re-bin via interpolation so dq (steps of q) is consistent
 # Suggested dq = 0.02
 dq = 0.02
@@ -255,7 +258,7 @@ polyorder = 3
 I_data = savgol_filter(I_data, window_length, polyorder)
 
 # First calculate the interference function i(Q)
-# i(Q) = S(Q) - S_inf
+# i(Q) = S(Q) - S_inf (S_inf = 1 for monatomic samples, or in the Faber-Ziman formalism)
 structure_factor = liquid.calc_structure_factor(q_data, I_data, composition, rho)
 interference_func = structure_factor - liquid.calc_S_inf(composition, q_data)
 
