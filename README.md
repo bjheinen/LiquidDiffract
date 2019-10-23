@@ -218,7 +218,7 @@ It is important to note that a well defined minimum in *&Chi;<sup>2</sup><sub>n<
 
 The Eggert method works by forcing the region below r<sub>min</sub> to fit a line defined as -4&pi;&rho;r. *&Chi;<sup>2</sup><sub>n</sub>* is the square of the area between this modelled line and *F(r) (r < r<sub>min</sub>)* after *n* iterations. *&Chi;<sup>2</sup>(&rho;)* should display a minimum when the slope (controlled by density) best fits the data. However, after a large number of iterations the data can always be forced to fit the model slope through unreasonable manipulation (e.g. by massively inflating low-Q values), and so *&Chi;<sup>2</sup><sub>n</sub>* will be drastically reduced at large values of *n*. Furthermore, at large values of *n*, *&Chi;<sup>2</sup><sub>n</sub>* will decrease as *&rho;* --> 0, because the absolute values used to calculate *&Chi;<sup>2</sup>* are smaller as the magnitude of the slope decreases.
 
-We can investigate this by computing the function *&Chi;<sup>2</sup><sub>n</sub>(&rho;, n)* - in this case for an example composition with a density ~0.048 &AA;<sup>3</sup>. Plotting *&Chi;<sup>2</sup><sub>n</sub>(&rho;)* for *n = 4* and *n = 25* shows that with only 25 iterations there is no longer a well defined minimum.
+We can investigate this by computing the function *&Chi;<sup>2</sup><sub>n</sub>(&rho;, n)* - in this case for an example composition with a density ~0.048 atoms per cubic Angstrom. Plotting *&Chi;<sup>2</sup><sub>n</sub>(&rho;)* for *n = 4* and *n = 25* shows that with only 25 iterations there is no longer a well defined minimum.
 
 <p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/docs/4_and_25_iterations.png"></p>
 
