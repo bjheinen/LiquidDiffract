@@ -106,7 +106,6 @@ There are three main tabs which provide a selection of toolboxes for data operat
 
 Data are automatically plotted and tabs updated as operations are made. The graphical plots display coordinates in the upper-right corner. Click and drag or use the scroll-wheel to zoom in on a region. Double right-click to reset the view.
 
-
 <p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/docs/LiquidDiffract v0.1_refinement_tab.png"></p>
 
 
@@ -119,6 +118,18 @@ All data must be in Q-space. A toolbox is provided to convert raw experimental d
 ### Refinement Tab
 
 This is the tab where most of the data processing takes place.
+
+The sample composition can be set here, along with data processing options. After setting these options the interference function *i(Q)* is calculated and displayed. i(Q) is related to the total molecular structure factor as: 
+
+<img src='http://latex.codecogs.com/svg.latex?i(Q)=S(Q)-1\;\;\;\text{or}\;\;\;i(Q)=S(Q)-S_{\infty}'/> 
+
+depending on the formalism used. 
+
+This function can then be normalised by minimising errors in the related 'density function', *F(r)*:
+
+><img src='http://latex.codecogs.com/svg.latex?F(r)=\frac{2}{\pi}\int_{0}^{Q_{Max}}Qi(Q)\sin(qr)dq'/>
+
+In *LiquidDiffract* the integral in the function *F(r)* is calculated by taking the imaginary parts of the inverse fourier transform of *Qi(Q)* using a standard FFT algorithm.
 
 
 #### Composition Toolbox
@@ -163,6 +174,12 @@ To refine S(Q) the value of r-min should be set carefully, as it has a strong in
 The number of iterations in the procedure can also be set; a minimum of 3 is normally required for convergence.
 
 A *&Chi;<sup>2</sup>* figure of merit, defined as the area under the curve *&Delta;F(r) for r<r-min*, is used to rate the refinement.
+
+><img src='http://latex.codecogs.com/svg.latex?\chi^{2}_{\left(n\right)}(\rho)=\int_{0}^{r_{min}}\left[\Delta{F}_{n}(r)^2\right]dr'/>
+
+Where,
+
+><img src='http://latex.codecogs.com/svg.latex?\Delta{F}_{n}(r)= F_{n}(r)-\left(-4\pi\rho{r}\right),\;for\;r<r_{min}'/>
 
 #### Density (&rho;) Refinement
 
@@ -231,6 +248,32 @@ LiquidDiffract outputs some density refinement information to the terminal. Ther
 ### PDF Calculation (Output) Tab
 
 The final tab displays the optimised S(Q), g(r), and RDF(r). The buttons at the bottom of the window allow each one to be saved to a text file. If a modification function has been used in the data treatment then information on this will also be saved, along with the raw S(Q).
+
+*g(r)* is the *pair-distribution function*. It is defined as:
+
+><img src='http://latex.codecogs.com/svg.latex?g(r)-1=\frac{1}{2\pi^{2}r\rho_{0}}\int_{0}^{Q_{Max}}Qi(Q)\sin(qr)dq'/>
+
+Where the interference function, i(Q) is:
+
+><img src='http://latex.codecogs.com/svg.latex?i(Q)=S(Q)-S_{\infty}'/>
+
+
+RDF(r) is the radial distribution function:
+
+><img src='http://latex.codecogs.com/svg.latex?RDF(r)=4\pi{r}^2\rho_{0}g(r)=\left({\frac{2r}{\pi}\int_{0}^{Q_{Max}}Qi(Q)\sin(qr)dq}\right)+4\pi{r}^2\rho_{0}'/>
+
+its integration across peaks yields atomic coordination numbers.
+
+<details><summary><b><i>F(r)</i></b></summary>
+
+The density function, *F(r)*, that is used in the data analysis and defined [above](#refinement-tab), should not be confused with *g(r)* or *RDF(r)*. In the literature it is sometimes referred to by other names, including *D(r)*, *G(r)*, and *PDF(r)*. It is defined as:
+
+><img src='http://latex.codecogs.com/svg.latex?F(r)=G(r)=D(r)=PDF(r)=4\pi{r}\rho_{0}\left[g(r)-1\right]'/>
+
+><img src='http://latex.codecogs.com/svg.latex?F(r)=\frac{2}{\pi}\int_{0}^{Q_{Max}}Qi(Q)\sin(qr)dq'/>
+
+</details>
+
 
 
 ### Using LiquidDiffract Core Library
