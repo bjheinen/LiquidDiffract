@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+This script shows an example usage of the LiquidDiffract library. Whilst LiquidDiffract
+was primarily designed as a graphical application, the functions in its core module can
+be easily called from a python script. This is useful for batch processing files (where
+an ongoing graphical view of the steps is not neccessary), or computing probability 
+density functions from pre-existing structure factors (fourier transformation). It can 
+also be used to call functions that are intermediary calculation steps in the graphical
+application - e.g. retreiving atomic form factors or calculating compton scattering 
+intensities for an element or multi-component composition.
+
+The two primary functions in normal usage are:
+
+    LiquidDiffract.core.core.calc_structure_factor
+    LiquidDiffract.core.core.calc_impr_interference_func
+
+calc_structure_factor computes the structure factor, S(Q), for given sample
+composition, density, and experimentally measured sample scattering data.
+
+calc_impr_interference_func optimises the interference function, S(Q) - S_inf,
+based on the iterative method developed by Eggert et al., 2002, Phy Rev B, 65(17).
+
+See <https://github.com/bjheinen/LiquidDiffract> for more details.
+"""
+__author__ = 'Benedict J. Heinen'
+__copyright__ = 'Copyright 2018-2019, Benedict J. Heinen'
+__email__ = 'benedict.heinen@gmail.com'
+__license__='GPLv3'
+
+# Import required python modules
+import numpy as np
+# Import optional python modules used in this example
+import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
+from scipy.signal import savgol_filter
+from scipy.optimize import minimize
+# import the LiquidDiffract core module
+import LiquidDiffract.core.core as liquid
+
+# First set composition
+# The composition should be a dictionary dictionary with short element names as keys,
+# and values as tuples of the form (Z, charge, number_of_atoms)
+composition = {'Ga': (31,0,1)}
+# Set initial density - in atoms per cubic Angstrom
+rho = 0.055
+
+# Load data
+# LiquidDiffract expects x data to be Q values in Angstroms (not nm!)
+# The file 'example_data.dat' has already been background corrected
+q_raw, I_raw = np.loadtxt('example_data.dat', unpack=True, skiprows=0)
+
+# Next rebin data and trim if necessary
+# The below example can also be done using LiquidDiffract.core.data_utils
+# Re-bin via interpolation so dq (steps of q) is consistent
+# Suggested dq = 0.02
+dq = 0.02
+# Cut-off below Q_cutoff
+q_cutoff = 11.8
+q_data = np.arange(0, q_raw[-1], dq)
+q_data = q_data[q_data<q_cutoff]
+finterp = interp1d(q_raw, I_raw, kind='cubic', fill_value='extrapolate')
+I_data = finterp(q_data)
+
+# Apply any other data treatment
+# e.g. a savitsky-golay filter to smooth the data
+window_length = 31
+polyorder = 3
+I_data = savgol_filter(I_data, window_length, polyorder)
+
+# First calculate the interference function i(Q)
+# i(Q) = S(Q) - S_inf (S_inf = 1 for monatomic samples, or in the Faber-Ziman formalism)
+structure_factor = liquid.calc_structure_factor(q_data, I_data, composition, rho)
+interference_func = structure_factor - liquid.calc_S_inf(composition, q_data)
+
+# store original interference function
+interference_func_0 = interference_func
+
+# A low r region cutoff must be chosen for the refinement method of Eggert et al. (2002)
+# A density value in atoms(or molecules) / A^3 must also be set. This will be
+# used as the starting estimate if the density is refined.
+r_min = 2.3
+rho_0 = rho
+
+# The function 'calc_impr_interference_func' calculates an improved estimate of
+# the interference function via the iterative procedure described in Eggert et al., 2002.
+#
+# calc_impr_interference_func requires the following arguments:
+# q_data - q values
+# I_data / i(Q) - the treated intensity data or interference function (depends on opt_flag used)
+# composition - composition dictionary
+# r_min - low r cut-off
+# iter_limit - iteration limit for Eggert procedure
+# method - method of calculating S(Q) ('ashcroft-langreth' and 'faber-ziman' are currently supported)
+# mod_func - modification function to use ('None', 'Cosine-window' or 'Lorch')
+# window_start - window_start of cosine function (if in use)
+# opt_flag - set to 0 if not running from solver
+#
+# The last positional argument (opt_flag) signals that you only want the chi_squared value to be returned.
+# This is useful if using a solver to refine the density by minimising the chi_squared value
+
+# e.g.
+# Return the improved i(Q) & chi^2 at density = rho_0
+iter_limit = 25
+method = 'ashcroft-langreth'
+mod_func = 'Cosine-window'
+window_start = 7
+args = (q_data, interference_func_0, composition, r_min, iter_limit, method, mod_func, window_start, 0)
+# Store the refined interference function at rho_0
+interference_func_1, chi_sq_1 = liquid.calc_impr_interference_func(rho_0, *args)
+
+# Next we use opt_flag = 1 and pass the function calc_impr_interference_func to
+# a solver to estimate the density
+# For use with a solver iter_limit <= 10 is recommended
+iter_limit_refine = 5
+args = (q_data, I_data, composition, r_min, iter_limit_refine, method, mod_func, window_start, 1)
+# Set-up bounds and other options according to the documentation of solver/minimisation routine
+bounds = ((0.045, 0.065),)
+op_method = 'L-BFGS-B'
+optimisation_options = {'disp': 1,
+                        'maxiter': 15000,
+                        'maxfun': 15000,
+                        'ftol': 2.22e-12,
+                        'gtol': 1e-12
+                        }
+opt_result = minimize(liquid.calc_impr_interference_func, rho_0,
+                      bounds=bounds, args=args,
+                      options=optimisation_options,
+                      method=op_method)
+# The solver finds the value of rho that gives the smallest chi^2
+rho_refined = opt_result.x[0]
+
+# The interference function can then be re-calculated using the new value for rho,
+# and the F(r) refined as above.
+interference_func = (liquid.calc_structure_factor(q_data,I_data, composition, rho_refined) - 
+                     liquid.calc_S_inf(composition, q_data))
+
+args = (q_data, interference_func, composition, r_min, iter_limit, method, mod_func, window_start, 0)
+interference_func_2, chi_sq_2 = liquid.calc_impr_interference_func(rho_refined, *args)
+
+# Calculate the corresponding pair distribution functions g(r)
+r, g_r_0 = liquid.calc_F_r(q_data, interference_func_0, rho_0,
+                           mod_func=mod_func, window_start=window_start,
+                           function='pair_dist_func')
+# r values will be the same
+_, g_r_1 = liquid.calc_F_r(q_data, interference_func_1, rho_0,
+                           mod_func=mod_func, window_start=window_start,
+                           function='pair_dist_func')
+_, g_r_2 = liquid.calc_F_r(q_data, interference_func_2, rho_refined,
+                           mod_func=mod_func, window_start=window_start,
+                           function='pair_dist_func')
+
+# Plot the data
+fig1 = plt.figure()
+plt.xlabel(r'i(Q), $\AA^{-1}$')
+# Initial interference function calculation
+plt.plot(q_data, interference_func_0, color='g', label=r'Initial i(Q) | $ρ = {rho:.2f}$'.format(rho=rho_0))
+# Optimised at rho_0
+plt.plot(q_data, interference_func_1, color='r', label=r'Optimised i(Q) | $ρ = {rho:.2f}$ & $χ^{{2}} = {chisq:.2f}$'.format(rho=rho_0, chisq=chi_sq_1))
+# Optimised, using refined density estimate
+plt.plot(q_data, interference_func_2, color='b', label=r'Optimised i(Q) | $ρ = {rho:.3f}$ & $χ^{{2}} = {chisq:.2f}$'.format(rho=rho_refined, chisq=chi_sq_2))
+# Add a legend
+plt.legend(loc='best')
+# Show the plots
+plt.show()
+
+fig2 = plt.figure()
+plt.xlabel(r'g(r), $\AA$')
+plt.ylim((np.nanmin(g_r_2), np.nanmax(g_r_2)))
+window = len(q_data)
+# Initial g(r)
+plt.plot(r[:window], g_r_0[:window], color='g', label=r'Initial g(r) | $ρ = {rho:.2f}$'.format(rho=rho_0))
+# Optimised g(r) at rho_0
+plt.plot(r[:window], g_r_1[:window], color='r', label=r'Optimised g(r) | $ρ = {rho:.2f}$ & $χ^{{2}} = {chisq:.2f}$'.format(rho=rho_0, chisq=chi_sq_1))
+# Optimised g(r), using refined density estimate
+plt.plot(r[:window], g_r_2[:window], color='b', label=r'Optimised g(r) | $ρ = {rho:.3f}$ & $χ^{{2}} = {chisq:.2f}$'.format(rho=rho_refined, chisq=chi_sq_2))
+# Add a legend
+plt.legend(loc='best')
+# Show the plots
+plt.show()
