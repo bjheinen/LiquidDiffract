@@ -234,7 +234,7 @@ class OptimUI(QWidget):
         # Get no. iterations for Eggert refinement
         _n_iter = np.int(self.optim_config_widget.optim_options_gb.niter_input.text())
         if _n_iter < 2:
-            print('Warning: n_iter >= 2 is reccomended for convergence!')
+            print('Warning: n_iter >= 2 is recommended for convergence!')
         if self.optim_config_widget.optim_options_gb.opt_check.isChecked():
             # Get bounds but don't continue if none set
             try:
@@ -243,7 +243,8 @@ class OptimUI(QWidget):
             except ValueError:
                 print('Warning: Must set bounds to refine density!')
                 return
-
+            if _n_iter > 10:
+                 print('Warning: n_iter <= 10 is recommended for convergence!')
             _args = (self.data['cor_x_cut'], self.data['cor_y_cut'],
                      _composition, _r_min, _n_iter, _method,
                      self.data['mod_func'], self.data['window_start'], 1)

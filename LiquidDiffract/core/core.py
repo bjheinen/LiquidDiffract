@@ -803,7 +803,10 @@ def calc_impr_interference_func(rho, *args):
         interference_func - Initial interference function (if using fixed rho)
         composition - Dict of elements, values as tuples of form (Z,charge,n)
         r_min - Intramolecular distance cut-off
-        iter_limit - Iteration limit for S(Q) refinement
+        iter_limit - Iteration limit for S(Q) refinement. iter_limit >= 3 is
+                     recommended for convergence. If optimising for minimum
+                     chi^2 then 3 <= iter_limit <= 10 is recommended. Please
+                     see the LiquidDiffract README for more information
         method - Formalisation of total scattering structure factor to use
                  ('ashcroft-langreth' or 'faber-ziman')
         mod_func - Modification function to scale data before fft
