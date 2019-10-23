@@ -593,7 +593,7 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
     Radial distribution function, RDF(r):
         
         RDF(r) = 4 * pi * r^2 * rho_0 * g(r)
-        RDF(r) = 2r*INT[ q[i(q)] sin(qr) dq] - 4*pi*r^2*rho_0
+        RDF(r) = (2r/pi)*INT[ q[i(q)] sin(qr) dq] + 4*pi*r^2*rho_0
     
     Args:
         x   - Q values (numpy array)
