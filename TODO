@@ -27,8 +27,6 @@ TODO
 
 * Option to shift / zero data on load
 
-* Add a scripts folder with example and brute(chi^2 map) 
-
 
 # Example Hadju compton scattering calculation
 # > Tabulation (in Hadju) doesn't exist for some elements

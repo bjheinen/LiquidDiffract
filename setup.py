@@ -28,7 +28,9 @@ setup(
     install_requires=['numpy', 'scipy', 'PyQt5', 'pyqtgraph',
                       "importlib_resources ; python_version<'3.7'"],
     package_data={'LiquidDiffract': ['resources/*', 'resources/icons/*',
-                                     'resources/hubbel_compton/*']},
+                                     'resources/hubbel_compton/*',
+                                     'resources/docs/*',
+                                     'scripts/*']},
     zip_safe=True,
     entry_points={'console_scripts':
                   ['LiquidDiffract=LiquidDiffract.LiquidDiffract:main']}

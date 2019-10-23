@@ -26,6 +26,7 @@ Benedict J. Heinen (benedict.heinen@gmail.com)
     * [Iterative Structure Factor Refinement](#iterative-structure-factor-refinement)
     * [Density (&rho;) Refinement](#density-%CF%81-refinement)
       * [Global optimisation capability](#global-optimisation-capability)
+    * [Note on Number of Iterations in the Eggert Procedure & *&Chi;<sup>2</sup>* Minimisation](#note-on-number-of-iterations-in-the-eggert-procedure--sup2sup-minimisation)
     * [Terminal & Log-file Output](#terminal--log-file-output)
   * [PDF Calculation (Output) Tab](#pdf-calculation-output-tab)
   * [Using LiquidDiffract Core Library](#using-liquiddiffract-core-library)
@@ -192,6 +193,33 @@ The acceptance test used here is the Metropolis criterion of standard Monte Carl
 For more information see the [SciPy documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.basinhopping.html), or consult the references listed.
 
 
+#### Note on Number of Iterations in the Eggert Procedure & *&Chi;<sup>2</sup>* Minimisation
+
+It is important to note that a well defined minimum in *&Chi;<sup>2</sup><sub>n</sub>* only exists for n <~ 10. This is a result of how the iterative procedure works, and the definition of *&Chi;<sup>2</sup>*.
+
+<details><summary><b>More info...</b></summary>
+
+The Eggert method works by forcing the region below r<sub>min</sub> to fit a line defined as -4&pi;&rho;r. *&Chi;<sup>2</sup><sub>n</sub>* is the square of the area between this modelled line and *F(r) (r < r<sub>min</sub>)* after *n* iterations. *&Chi;<sup>2</sup>(&rho;)* should display a minimum when the slope (controlled by density) best fits the data. However, after a large number of iterations the data can always be forced to fit the model slope through unreasonable manipulation (e.g. by massively inflating low-Q values), and so *&Chi;<sup>2</sup><sub>n</sub>* will be drastically reduced at large values of *n*. Furthermore, at large values of *n*, *&Chi;<sup>2</sup><sub>n</sub>* will decrease as *&rho;* --> 0, because the absolute values used to calculate *&Chi;<sup>2</sup>* are smaller as the magnitude of the slope decreases.
+
+We can investigate this by computing the function *&Chi;<sup>2</sup><sub>n</sub>(&rho;, n)* - in this case for an example composition with a density ~0.048 &AA;<sup>3</sup>. Plotting *&Chi;<sup>2</sup><sub>n</sub>(&rho;)* for *n = 4* and *n = 25* shows that with only 25 iterations there is no longer a well defined minimum.
+
+<p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/docs/4_and_25_iterations.png"></p>
+
+As *n* increases, the density region in which the eggert algorithm can fit the data to the model is rapidly increasing too:
+
+<p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/docs/fitting_region.png"></p>
+
+The range of value of *n* that result in a well defined minimum will depend on the data (or more properly on the r<sub>min</sub> value used). This change in the behaviour of *&Chi;<sup>2</sup><sub>n</sub>(&rho;, n)* can best be illustrated by plotting the double natural logarithm of normalised *&Chi;<sup>2</sup>* values, because the magnitude of *&Chi;<sup>2</sup><sub>n</sub>(&rho;, n)* is so much lower at large *n*, and the minima in the function much shallower. For this data it takes 3 iterations for the procedure to converge properly, after which there is a clear stable minimum which allows an accurate density estimate to be retrieved. Above 10 iterations the method no longer works, because of a sharp shelf in the function.
+
+<p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/docs/chi_squared_minimum_map.png"></p>
+
+At high enough resolution the number of iterations can be optimised. For this particular data it is 7.
+
+<p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/docs/optimal_n_iter.png"></p>
+
+</details>
+
+
 #### Terminal & Log-file Output
 
 An log is automatically generated for any refinement made. This log includes information on the data file, sample composition, data and refinement options used, solver output/convergence info (if refining density), and the final *&Chi;<sup>2</sup>* and *&rho;*.
@@ -232,7 +260,7 @@ import LiquidDiffract.core.core as liquid
 # and values as tuples of the form (Z, charge, number_of_atoms)
 composition = {'Ga': (31,0,1)}
 # Set initial density - in atoms per cubic Angstrom
-rho = 0.06
+rho = 0.055
 
 # Load data
 # LiquidDiffract expects x data to be Q values in Angstroms (not nm!)
@@ -245,7 +273,7 @@ q_raw, I_raw = np.loadtxt('example_data.dat', unpack=True, skiprows=0)
 # Suggested dq = 0.02
 dq = 0.02
 # Cut-off below Q_cutoff
-q_cutoff = 9.0
+q_cutoff = 11.8
 q_data = np.arange(0, q_raw[-1], dq)
 q_data = q_data[q_data<q_cutoff]
 finterp = interp1d(q_raw, I_raw, kind='cubic', fill_value='extrapolate')
@@ -269,7 +297,7 @@ interference_func_0 = interference_func
 # A density value in atoms(or molecules) / A^3 must also be set. This will be
 # used as the starting estimate if the density is refined.
 r_min = 2.3
-rho_0 = 0.06
+rho_0 = rho
 
 # The function 'calc_impr_interference_func' calculates an improved estimate of
 # the interference function via the iterative procedure described in Eggert et al., 2002.
@@ -290,19 +318,21 @@ rho_0 = 0.06
 
 # e.g.
 # Return the improved i(Q) & chi^2 at density = rho_0
-iter_limit = 20
+iter_limit = 25
 method = 'ashcroft-langreth'
 mod_func = 'Cosine-window'
-window_start = 9
+window_start = 7
 args = (q_data, interference_func_0, composition, r_min, iter_limit, method, mod_func, window_start, 0)
 # Store the refined interference function at rho_0
 interference_func_1, chi_sq_1 = liquid.calc_impr_interference_func(rho_0, *args)
 
 # Next we use opt_flag = 1 and pass the function calc_impr_interference_func to
 # a solver to estimate the density
-args = (q_data, I_data, composition, r_min, iter_limit, method, mod_func, window_start, 1)
+# For use with a solver iter_limit <= 10 is recommended
+iter_limit_refine = 5
+args = (q_data, I_data, composition, r_min, iter_limit_refine, method, mod_func, window_start, 1)
 # Set-up bounds and other options according to the documentation of solver/minimisation routine
-bounds = ((0.03, 0.08),)
+bounds = ((0.045, 0.065),)
 op_method = 'L-BFGS-B'
 optimisation_options = {'disp': 1,
                         'maxiter': 15000,
@@ -321,16 +351,46 @@ rho_refined = opt_result.x[0]
 # and the F(r) refined as above.
 interference_func = (liquid.calc_structure_factor(q_data,I_data, composition, rho_refined) - 
                      liquid.calc_S_inf(composition, q_data))
+
 args = (q_data, interference_func, composition, r_min, iter_limit, method, mod_func, window_start, 0)
 interference_func_2, chi_sq_2 = liquid.calc_impr_interference_func(rho_refined, *args)
 
+# Calculate the corresponding pair distribution functions g(r)
+r, g_r_0 = liquid.calc_F_r(q_data, interference_func_0, rho_0,
+                           mod_func=mod_func, window_start=window_start,
+                           function='pair_dist_func')
+# r values will be the same
+_, g_r_1 = liquid.calc_F_r(q_data, interference_func_1, rho_0,
+                           mod_func=mod_func, window_start=window_start,
+                           function='pair_dist_func')
+_, g_r_2 = liquid.calc_F_r(q_data, interference_func_2, rho_refined,
+                           mod_func=mod_func, window_start=window_start,
+                           function='pair_dist_func')
+
 # Plot the data
+fig1 = plt.figure()
+plt.xlabel(r'i(Q), $\AA^{-1}$')
 # Initial interference function calculation
 plt.plot(q_data, interference_func_0, color='g', label=r'Initial i(Q) | $ρ = {rho:.2f}$'.format(rho=rho_0))
 # Optimised at rho_0
 plt.plot(q_data, interference_func_1, color='r', label=r'Optimised i(Q) | $ρ = {rho:.2f}$ & $χ^{{2}} = {chisq:.2f}$'.format(rho=rho_0, chisq=chi_sq_1))
 # Optimised, using refined density estimate
 plt.plot(q_data, interference_func_2, color='b', label=r'Optimised i(Q) | $ρ = {rho:.3f}$ & $χ^{{2}} = {chisq:.2f}$'.format(rho=rho_refined, chisq=chi_sq_2))
+# Add a legend
+plt.legend(loc='best')
+# Show the plots
+plt.show()
+
+fig2 = plt.figure()
+plt.xlabel(r'g(r), $\AA$')
+plt.ylim((np.nanmin(g_r_2), np.nanmax(g_r_2)))
+window = len(q_data)
+# Initial g(r)
+plt.plot(r[:window], g_r_0[:window], color='g', label=r'Initial g(r) | $ρ = {rho:.2f}$'.format(rho=rho_0))
+# Optimised g(r) at rho_0
+plt.plot(r[:window], g_r_1[:window], color='r', label=r'Optimised g(r) | $ρ = {rho:.2f}$ & $χ^{{2}} = {chisq:.2f}$'.format(rho=rho_0, chisq=chi_sq_1))
+# Optimised g(r), using refined density estimate
+plt.plot(r[:window], g_r_2[:window], color='b', label=r'Optimised g(r) | $ρ = {rho:.3f}$ & $χ^{{2}} = {chisq:.2f}$'.format(rho=rho_refined, chisq=chi_sq_2))
 # Add a legend
 plt.legend(loc='best')
 # Show the plots
