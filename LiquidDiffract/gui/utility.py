@@ -114,6 +114,7 @@ class PreferencesDialog(QDialog):
         try:
             _window_length = np.int(self.data_settings_gb.window_length_input.text())
             _poly_order = np.int(self.data_settings_gb.poly_order_input.text())
+            _fft_N = np.int(self.data_settings_gb.fft_N_input.text())
             _op_method = self.refine_settings_gb.op_method_input.currentText()
             _disp = np.int(self.refine_settings_gb.disp_check.isChecked())
             _maxiter = np.int(self.refine_settings_gb.maxiter_input.text())
@@ -170,6 +171,7 @@ class PreferencesDialog(QDialog):
         self._preferences = {'append_log_mode': _append_log_mode,
                              'window_length': _window_length,
                              'poly_order': _poly_order,
+                             'fft_N': _fft_N,
                              'op_method': _op_method,
                              'minimisation_options': _minimisation_options,
                              'global_minimisation': _global_minimisation,
@@ -242,6 +244,9 @@ class DataSettingsGroupBox(QGroupBox):
         self.window_length_input = QLineEdit()
         self.poly_order_label = QLabel('Poly order')
         self.poly_order_input = QLineEdit()
+        self.fft_label = QLabel('FFT Options:')
+        self.fft_N_label = QLabel('<b><i>N</i></b> | Size of padded array for FFT = 2^N: ')
+        self.fft_N_input = QLineEdit()
 
         self.hline = QFrame()
         self.hline.setFrameShape(QFrame.HLine)
@@ -251,6 +256,7 @@ class DataSettingsGroupBox(QGroupBox):
     def set_data(self, preferences):
         self.window_length_input.setText(np.str(preferences['window_length']))
         self.poly_order_input.setText(np.str(preferences['poly_order']))
+        self.fft_N_input.setText(np.str(preferences['fft_N']))
 
     def style_widgets(self):
         self.smoothing_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
@@ -264,6 +270,13 @@ class DataSettingsGroupBox(QGroupBox):
         self.poly_order_input.setAlignment(Qt.AlignRight)
         self.poly_order_input.setValidator(QIntValidator())
         self.poly_order_input.setMaximumWidth(70)
+        
+        self.fft_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        
+        self.fft_N_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.fft_N_input.setAlignment(Qt.AlignRight)
+        self.fft_N_input.setValidator(QIntValidator())
+        self.fft_N_input.setMaximumWidth(70)
 
     def create_layout(self):
         self.main_layout = QVBoxLayout()
@@ -278,6 +291,9 @@ class DataSettingsGroupBox(QGroupBox):
         self.grid_layout.addWidget(self.window_length_input, 1, 1)
         self.grid_layout.addWidget(self.poly_order_label, 2, 0)
         self.grid_layout.addWidget(self.poly_order_input, 2, 1)
+        self.grid_layout.addWidget(self.fft_label, 3, 0)
+        self.grid_layout.addWidget(self.fft_N_label, 4, 0)
+        self.grid_layout.addWidget(self.fft_N_input, 4, 1)
 
         self.main_layout.addLayout(self.grid_layout)
         self.setLayout(self.main_layout)

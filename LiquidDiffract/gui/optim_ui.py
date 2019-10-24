@@ -188,7 +188,7 @@ class OptimUI(QWidget):
         _S_inf = core.calc_S_inf(_composition, self.data['cor_x_cut'], method=_method)
         self.data['int_func'] = self.data['sq_y'] - _S_inf
         self.data['fr_x'], self.data['fr_y'] = core.calc_F_r(self.data['iq_x'], self.data['int_func'], _rho_0,
-                                                             mod_func=self.data['mod_func'], window_start=self.data['window_start'])
+                                                             N=self.fft_N, mod_func=self.data['mod_func'], window_start=self.data['window_start'])
         self.data['modification'] = core.get_mod_func(self.data['iq_x'], self.data['mod_func'], self.data['window_start'])
         self.optim_plot_widget.update_plots(self.data)
 
@@ -247,7 +247,8 @@ class OptimUI(QWidget):
                  print('Warning: n_iter <= 10 is recommended for convergence!')
             _args = (self.data['cor_x_cut'], self.data['cor_y_cut'],
                      _composition, _r_min, _n_iter, _method,
-                     self.data['mod_func'], self.data['window_start'], 1)
+                     self.data['mod_func'], self.data['window_start'],
+                     self.fft_N, 1)
 
             _solver_kwargs = {'args': _args,
                               'options': dict(self.minimisation_options),
@@ -296,11 +297,12 @@ class OptimUI(QWidget):
 
         _args = (self.data['cor_x_cut'], self.data['int_func'],
                  _composition, _r_min, _n_iter, _method,
-                 self.data['mod_func'], self.data['window_start'], 0)
+                 self.data['mod_func'], self.data['window_start'],
+                 self.fft_N, 0)
         self.data['impr_int_func'], self.data['chi_sq'] = core.calc_impr_interference_func(_rho_temp, *_args)
         self.optim_config_widget.optim_results_gb.chi_sq_output.setText('{:.4e}'.format(self.data['chi_sq']))
         # Calculated improved F_r
-        self.data['impr_fr_x'], self.data['impr_fr_y'] = core.calc_F_r(self.data['iq_x'], self.data['impr_int_func'], _rho_temp,
+        self.data['impr_fr_x'], self.data['impr_fr_y'] = core.calc_F_r(self.data['iq_x'], self.data['impr_int_func'], _rho_temp, N=self.fft_N,
                                                                        mod_func=self.data['mod_func'], window_start=self.data['window_start'])
         self.data['impr_iq_x'] = self.data['iq_x']
         # Set modification function to None so it is not plotted this time

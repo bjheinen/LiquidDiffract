@@ -813,15 +813,18 @@ def calc_impr_interference_func(rho, *args):
                    None, 'Cosine-window' or 'Lorch'
         window_start - Start of Cosine-window function needed if
                        mod_func == 'Cosine-window'
+        fft_N - Sets size of array for fft where array_size = 2^N
         opt_flag - Function returns chi_squared to minimisation routine if true
                    Returns improved interference_func and chi squared if false
     '''
     # Unpack static parameters & arguments
     *_, opt_flag = args
     if opt_flag == False:
-        (q_data, interference_func, composition, r_min, iter_limit, method, mod_func, window_start, opt_flag) = args
+        (q_data, interference_func, composition, r_min, iter_limit,
+         method, mod_func, window_start, fft_N, opt_flag) = args
     elif opt_flag == True:
-        (q_data, I_data, composition, r_min, iter_limit, method, mod_func, window_start, opt_flag) = args
+        (q_data, I_data, composition, r_min, iter_limit,
+         method, mod_func, window_start, fft_N, opt_flag) = args
         # Calculate initial interference func for rho value
         structure_factor = calc_structure_factor(q_data, I_data,
                                                  composition, rho,
@@ -831,7 +834,8 @@ def calc_impr_interference_func(rho, *args):
         raise ValueError('Arg - opt_flag - must be boolean')
 
     # Calculate initial F(r)
-    r, F_r = calc_F_r(q_data, interference_func, rho, mod_func=mod_func, window_start=window_start)
+    r, F_r = calc_F_r(q_data, interference_func, rho, 
+                      mod_func=mod_func, window_start=window_start, N=fft_N)
     # Calculate expected behaviour of F(r) for intramolecular distances (r<r_min)
     model_F_intra_r = calc_model_F_intra_r(q_data, r, composition, rho)
     # Calculate static terms of iterative proceduce
@@ -848,7 +852,8 @@ def calc_impr_interference_func(rho, *args):
         try:
             done_looping = stop_iteration(stop_condition='count', count=count, iter_limit=iter_limit)
             interference_func = interference_func_impr
-            r, F_r = calc_F_r(q_data, interference_func, rho, mod_func=mod_func, window_start=window_start)
+            r, F_r = calc_F_r(q_data, interference_func, rho, 
+                              mod_func=mod_func, window_start=window_start, N=fft_N)
         except NameError:
             pass
 
@@ -858,11 +863,11 @@ def calc_impr_interference_func(rho, *args):
 
         if method == 'ashcroft-langreth':
             t2 = (interference_func/t2_divisor) + 1
-            t3 = calc_F_r_iteration_term(delta_F_r)[:len(interference_func)]
+            t3 = calc_F_r_iteration_term(delta_F_r, N=fft_N)[:len(interference_func)]
             with np.errstate(invalid='ignore'):
                 interference_func_impr = interference_func - (t1 * t2 * t3)
         elif method == 'faber-ziman':
-            t2 = calc_F_r_iteration_term(delta_F_r)[:len(interference_func)]
+            t2 = calc_F_r_iteration_term(delta_F_r, N=fft_N)[:len(interference_func)]
             with np.errstate(invalid='ignore'):
                 interference_func_impr = ((interference_func+1) * (1 - t1*t2)) - 1
 

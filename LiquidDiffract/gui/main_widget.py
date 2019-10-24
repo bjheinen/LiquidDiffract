@@ -75,6 +75,7 @@ class App(QMainWindow):
         self.preferences = {'append_log_mode': 1,
                             'window_length': 5,
                             'poly_order': 3,
+                            'fft_N': 12,
                             'op_method': 'L-BFGS-B',
                             'minimisation_options':
                                 {'disp': 0,
@@ -113,6 +114,9 @@ class App(QMainWindow):
         self.table_widget.optim_ui.append_log_mode = self.preferences['append_log_mode']
         self.table_widget.optim_ui.window_length = self.preferences['window_length']
         self.table_widget.optim_ui.poly_order = self.preferences['poly_order']
+        # Set N for FFT
+        self.table_widget.optim_ui.fft_N = self.preferences['fft_N']
+        self.table_widget.results_ui.fft_N = self.preferences['fft_N']
 
     def call_about_dialog(self):
         self.about_dialog = utility.AboutDialog()

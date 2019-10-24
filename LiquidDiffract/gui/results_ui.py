@@ -66,11 +66,11 @@ class ResultsUI(QWidget):
         self.data['sq_y'] = self.data['int_func'] + self.data['S_inf']
         # Calculate g(r) & rdf(r) from s(q)
         # Calculate g(r) - pair-distribution function
-        self.data['gr_x'], self.data['gr_y'] = core.calc_F_r(self.data['sq_x'], self.data['int_func'], self.data['rho'],
+        self.data['gr_x'], self.data['gr_y'] = core.calc_F_r(self.data['sq_x'], self.data['int_func'], self.data['rho'], N=self.fft_N,
                                                              mod_func=self.data['mod_func'], window_start=self.data['window_start'],
                                                              function='pair_dist_func')
         # Calculate RDF - radial distribution function
-        self.data['rdf_x'], self.data['rdf_y'] = core.calc_F_r(self.data['sq_x'], self.data['int_func'], self.data['rho'],
+        self.data['rdf_x'], self.data['rdf_y'] = core.calc_F_r(self.data['sq_x'], self.data['int_func'], self.data['rho'], N=self.fft_N,
                                                                mod_func=self.data['mod_func'], window_start=self.data['window_start'],
                                                                function='radial_dist_func')
         self.results_plot_widget.update_plots(self.data)
