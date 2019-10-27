@@ -90,6 +90,7 @@ sq_form = 'ashcroft-langreth'
 mod_func = None
 window_start = None
 r_min = 2.3
+fft_N = 12
 
 # Set the array of values to compute X^2
 brute_rho_array = np.arange(0.01, 0.08, 0.001)
@@ -105,7 +106,8 @@ x, y = x[np.where(x < q_max)], y[np.where(x < q_max)]
 func_args = {'Q_data': x, 'I_data': y, 'comp': comp,
              'r_min': r_min, 'n_iter': int(np.mean(brute_eggert_iterations_array)),
              'method': sq_form, 'mod_func': mod_func,
-             'window_start': window_start, 'opt_flag': 1}
+             'window_start': window_start, 'fft_N': fft_N,
+             'opt_flag': 1}
 
 brute_array = (brute_eggert_iterations_array, brute_rho_array)
 brute_iterations = len(brute_rho_array) * len(brute_eggert_iterations_array)

@@ -94,6 +94,7 @@ rho_0 = rho
 # method - method of calculating S(Q) ('ashcroft-langreth' and 'faber-ziman' are currently supported)
 # mod_func - modification function to use ('None', 'Cosine-window' or 'Lorch')
 # window_start - window_start of cosine function (if in use)
+# fft_N sets the size of the array during the fourier transform to 2**N
 # opt_flag - set to 0 if not running from solver
 #
 # The last positional argument (opt_flag) signals that you only want the chi_squared value to be returned.
@@ -105,7 +106,9 @@ iter_limit = 25
 method = 'ashcroft-langreth'
 mod_func = 'Cosine-window'
 window_start = 7
-args = (q_data, interference_func_0, composition, r_min, iter_limit, method, mod_func, window_start, 0)
+fft_N = 12
+args = (q_data, interference_func_0, composition, r_min,
+        iter_limit, method, mod_func, window_start, fft_N, 0)
 # Store the refined interference function at rho_0
 interference_func_1, chi_sq_1 = liquid.calc_impr_interference_func(rho_0, *args)
 
@@ -113,7 +116,8 @@ interference_func_1, chi_sq_1 = liquid.calc_impr_interference_func(rho_0, *args)
 # a solver to estimate the density
 # For use with a solver iter_limit <= 10 is recommended
 iter_limit_refine = 5
-args = (q_data, I_data, composition, r_min, iter_limit_refine, method, mod_func, window_start, 1)
+args = (q_data, I_data, composition, r_min,
+        iter_limit_refine, method, mod_func, window_start, fft_N, 1)
 # Set-up bounds and other options according to the documentation of solver/minimisation routine
 bounds = ((0.045, 0.065),)
 op_method = 'L-BFGS-B'
@@ -135,18 +139,19 @@ rho_refined = opt_result.x[0]
 interference_func = (liquid.calc_structure_factor(q_data,I_data, composition, rho_refined) - 
                      liquid.calc_S_inf(composition, q_data))
 
-args = (q_data, interference_func, composition, r_min, iter_limit, method, mod_func, window_start, 0)
+args = (q_data, interference_func, composition, r_min,
+        iter_limit, method, mod_func, window_start, fft_N, 0)
 interference_func_2, chi_sq_2 = liquid.calc_impr_interference_func(rho_refined, *args)
 
 # Calculate the corresponding pair distribution functions g(r)
-r, g_r_0 = liquid.calc_F_r(q_data, interference_func_0, rho_0,
+r, g_r_0 = liquid.calc_F_r(q_data, interference_func_0, rho_0, dx=dq,
                            mod_func=mod_func, window_start=window_start,
                            function='pair_dist_func')
 # r values will be the same
-_, g_r_1 = liquid.calc_F_r(q_data, interference_func_1, rho_0,
+_, g_r_1 = liquid.calc_F_r(q_data, interference_func_1, rho_0, dx=dq,
                            mod_func=mod_func, window_start=window_start,
                            function='pair_dist_func')
-_, g_r_2 = liquid.calc_F_r(q_data, interference_func_2, rho_refined,
+_, g_r_2 = liquid.calc_F_r(q_data, interference_func_2, rho_refined, dx=dq,
                            mod_func=mod_func, window_start=window_start,
                            function='pair_dist_func')
 

@@ -1,12 +1,5 @@
 TODO
 
-
-* When calc_sq clicked, clear results tab
-
-* Add option to change padding (N value)
-
-* Add option to change re-bin step-size
-
 * Implement auto-convert to Q-space / Angstroms on data load
 
 * Add option to add mod function when one hasn't been used (in the final tab)
@@ -24,8 +17,6 @@ TODO
 * Change mouse position label precision depending on plot zoom level
 
 * convert_two_theta in core.data_manip is ambiguously named
-
-* Option to shift / zero data on load
 
 
 # Example Hadju compton scattering calculation
