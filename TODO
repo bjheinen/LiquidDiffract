@@ -2,10 +2,6 @@ TODO
 
 * Implement auto-convert to Q-space / Angstroms on data load
 
-* Add option to add mod function when one hasn't been used (in the final tab)
-
-* In results UI save output > also add S_inf info for AL only, if statement to check method
-
 * Implement multiprocessing for speedier calculations
 
 * Redundant code > multiple definitions of warning message dialog boxes?
