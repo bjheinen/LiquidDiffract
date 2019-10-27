@@ -29,6 +29,7 @@ from LiquidDiffract.version import __appname__, __version__
 class OptimUI(QWidget):
     # Create custom signal to link Optim/Results UI
     results_changed = pyqtSignal()
+    results_cleared = pyqtSignal()
 
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
@@ -86,6 +87,8 @@ class OptimUI(QWidget):
         self.optim_config_widget.optim_options_gb.opt_button.clicked.connect(self.on_click_refine)
 
     def plot_data(self):
+        # Clear the results tab as well
+        self.results_cleared.emit()
         # Plots the data, no through update when this is changed
         # so the other data (S(Q) & F(r)) are cleared first
         _ea = np.asarray([])
@@ -191,6 +194,7 @@ class OptimUI(QWidget):
                                                              N=self.fft_N, mod_func=self.data['mod_func'], window_start=self.data['window_start'])
         self.data['modification'] = core.get_mod_func(self.data['iq_x'], self.data['mod_func'], self.data['window_start'])
         self.optim_plot_widget.update_plots(self.data)
+        self.results_cleared.emit()
 
     def on_click_refine(self):
         # Delete previous chi_sq & refined density

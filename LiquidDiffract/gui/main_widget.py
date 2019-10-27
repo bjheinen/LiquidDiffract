@@ -166,6 +166,7 @@ class MainContainer(QWidget):
     def create_signal_tab_links(self):
         self.bkg_ui.plots_changed.connect(self.bkg_plots_changed_slot)
         self.optim_ui.results_changed.connect(self.results_changed_slot)
+        self.optim_ui.results_cleared.connect(self.results_cleared_slot)
         self.bkg_ui.file_name_changed.connect(self.update_filename)
 
     def bkg_plots_changed_slot(self):
@@ -196,6 +197,10 @@ class MainContainer(QWidget):
         self.results_ui.data['window_start'] = self.optim_ui.data['window_start']
         self.results_ui.data['sq_method'] = self.optim_ui.data['sq_method']
         self.results_ui.plot_data()
+
+    def results_cleared_slot(self):
+        self.results_ui.clear_data()
+        self.results_ui.results_plot_widget.update_plots(self.results_ui.data)
 
     def update_filename(self):
         _base_name, _ext = os.path.splitext(self.bkg_ui.data_file)

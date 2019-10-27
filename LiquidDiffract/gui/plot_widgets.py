@@ -200,7 +200,6 @@ class OptimPlotWidget(QWidget):
         if np.isnan(_data['impr_fr_x']).any():
              _data['impr_fr_x'] = data_utils.interp_nan(_data['impr_fr_x'])
 
-        _window = len(_data['cor_x_cut'])
         # For the F(r) the r step = pi/q_max. Because the data is padded this
         # q_max is larger than the original q_max. i.e. q_max = dq * 2**N/2
         # Then: r_max = 2**N/2 * dr = pi/(dq * 2**N/2) * 2**N/2 = pi/dq
@@ -209,6 +208,7 @@ class OptimPlotWidget(QWidget):
         # is controlled only by sampling frequency in Q-space. At high r-values
         # the F(r) is dominated by ripples from the truncated integral (0-qmax)
         # The max value of r with 'real' q resolution is 1/dq.
+        _window = 0
         try:
             _dq = _data['iq_x'][1] - _data['iq_x'][0]
             try:
@@ -359,7 +359,7 @@ class ResultsPlotWidget(QWidget):
              _data['gr_y'] = data_utils.interp_nan(_data['gr_y'])
         if np.isnan(_data['rdf_y']).any():
              _data['rdf_y'] = data_utils.interp_nan(_data['rdf_y'])
-
+        _window = 0
         # Determine data window for Q-space resolution, dq
         try:
             _dq = _data['sq_x'][1] - _data['sq_x'][0]
@@ -375,7 +375,10 @@ class ResultsPlotWidget(QWidget):
         self.p3 = self.rdf_plot.plot(x=_data['rdf_x'][:_window], y=_data['rdf_y'][:_window], pen={'color': 0.1, 'width': 1.2})
 
         # Limit the inital view to important information
-        self.x_max = _data['sq_x'][-1]
+        try:
+            self.x_max = _data['sq_x'][-1]
+        except IndexError:
+            return
 
         _gr_cut = np.nan_to_num(_data['gr_y'][np.where(_data['gr_x'] < self.x_max)])
         self.y_min_gr = np.min(_gr_cut)
