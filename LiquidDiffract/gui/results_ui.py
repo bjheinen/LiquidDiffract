@@ -86,6 +86,7 @@ class ResultsUI(QWidget):
         __header = (f'Refined S(Q)\n'
                     f'{__appname__} v{__version__}\n'
                     f'See refinement_log for more info\n'
+                    f'S(Q) formalism : {self.data["sq_method"]}\n'
                     f'S(Q) = i(Q) + S_inf\n'
                     f'S_inf = {np.str(self.data["S_inf"])}\n'
                     )
@@ -93,9 +94,10 @@ class ResultsUI(QWidget):
             __header += 'Q|S(Q)'
             __data = np.column_stack((self.data['sq_x'], self.data['sq_y']))
         else:
-            __header += (f'M(Q) : {self.data["mod_func"]}\n'
-                         f'Q|S(Q)|i(Q)*M(Q)'
-                         )
+            __header += f'M(Q) : {self.data["mod_func"]}\n'
+            if self.data['mod_func'] == 'Cosine-window':
+                __header += f'Window-start : {self.data["window_start"]}\n'
+            __header += f'Q|S(Q)|i(Q)*M(Q)'
             __data = np.column_stack((self.data['sq_x'], self.data['sq_y'], self.data['mod_int_func']))
         np.savetxt(__file_name, __data, header=__header, comments='#')
 
