@@ -98,6 +98,42 @@ class BkgUI(QWidget):
         self.bkg_config_widget.bkg_subtract_gb.scale_sb.valueChanged.connect(self.plot_data)
         self.bkg_config_widget.bkg_subtract_gb.toggled.connect(self.sub_bkg)
         self.bkg_config_widget.bkg_subtract_gb.auto_sc_btn.clicked.connect(self.auto_scale_bkg)
+        self.bkg_config_widget.data_files_gb.dq_input.editingFinished.connect(self.dq_changed)
+
+    def rebin_data(self, bkg='check'):
+        '''
+        Helper function to rebin background/data arrays when necessary.
+        Because the S(Q) array is padded before fourier transform operations
+        in core.core the size should be checked here. Checking takes place
+        before rebinning as this could hang on very large files.
+        '''
+        try:
+            _dx = np.float(self.bkg_config_widget.data_files_gb.dq_input.text())
+        except ValueError:
+            _dx = 0
+        if bkg == 1:
+            if self.data['bkg_raw_x'][-1] > ((2**self.fft_N / 2) * _dx):
+                raise RuntimeWarning('Dataset size exceeds 2**N!')
+            self.data['bkg_x'], self.data['bkg_y'] = data_utils.rebin_data(self.data['bkg_raw_x'], self.data['bkg_raw_y'], dx=_dx)
+            self.plot_data()
+
+        elif bkg == 0:
+            if self.data['data_raw_x'][-1] > ((2**self.fft_N / 2) * _dx):
+                 raise RuntimeWarning('Dataset size exceeds 2**N!')
+            self.data['data_x'], self.data['data_y'] = data_utils.rebin_data(self.data['data_raw_x'], self.data['data_raw_y'], dx=_dx)
+            # Delete any processed data when loading new file
+            self.data['cor_x'] = np.asarray([])
+            self.data['cor_y'] = np.asarray([])
+            if not self.bkg_config_widget.bkg_subtract_gb.isChecked():
+                self.sub_bkg()
+            self.plots_changed.emit()
+            self.plot_data()
+
+        elif bkg == 'check':
+            if self.data['bkg_raw_x'].size and self.bkg_file != None:
+                 self.rebin_data(bkg=1)
+            if self.data['data_raw_x'].size and self.data_file != None:
+                 self.rebin_data(bkg=0)
 
     def load_data(self):
         __file_name = utility.get_filename(io='open')
@@ -107,33 +143,19 @@ class BkgUI(QWidget):
             return
         try:
             self.data['data_raw_x'], self.data['data_raw_y'] = np.loadtxt(self.data_file, unpack=True)
-            # Array is padded before fourier transform operations in core.core
-            # Currently padded array size is fixed in core.core to 2**N, N=12
-            # Handle possible exception here instead
-            # Check array size before rebin operation as this could hang on
-            # very large file. Array is re-binned in steps of 0.02 from 0
-            if self.data['data_raw_x'][-1] > ((2**12/2)*0.02):
-                self.oversize_file_error()
-                self.data_file = None
-                return
-            else:
-                pass
-            self.data['data_x'], self.data['data_y'] = data_utils.rebin_data(self.data['data_raw_x'], self.data['data_raw_y'])
         except ValueError:
             self.data_file = None
             self.load_file_error()
             return
+        try:
+            self.rebin_data(bkg=0)
+        except RuntimeWarning:
+             self.oversize_file_error()
+             self.data_file = None
+             return
         self.bkg_config_widget.data_files_gb.data_filename_lbl.setText(self.data_file.split('/')[-1])
         print(f'Data file: {self.data_file}')
         self.file_name_changed.emit()
-        # Delete any processed data when loading new file
-        self.data['cor_x'] = np.asarray([])
-        self.data['cor_y'] = np.asarray([])
-        self.plots_changed.emit()
-        if not self.bkg_config_widget.bkg_subtract_gb.isChecked():
-            self.sub_bkg()
-            self.plots_changed.emit()
-        self.plot_data()
 
     def load_bkg(self):
         __file_name = utility.get_filename(io='open', caption='Load Background File')
@@ -143,25 +165,18 @@ class BkgUI(QWidget):
             return
         try:
             self.data['bkg_raw_x'], self.data['bkg_raw_y'] = np.loadtxt(self.bkg_file, unpack=True)
-            # Array is padded before fourier transform operations in core.core
-            # Currently padded array size is fixed in core.core to 2**N, N=12
-            # Handle possible exception here instead
-            # Check array size before rebin operation as this could hang on
-            # very large file. Array is re-binned in steps of 0.02 from 0
-            if self.data['bkg_raw_x'][-1] > ((2**12/2)*0.02):
-                self.oversize_file_error()
-                self.bkg_file = None
-                return
-            else:
-                pass
         except ValueError:
             self.bkg_file = None
             self.load_file_error()
             return
+        try:
+            self.rebin_data(bkg=1)
+        except RuntimeWarning:
+            self.oversize_file_error()
+            self.bkg_file = None
+            return
         self.bkg_config_widget.data_files_gb.bkg_filename_lbl.setText(self.bkg_file.split('/')[-1])
         print(f'Background File: {self.bkg_file}')
-        self.data['bkg_x'], self.data['bkg_y'] = data_utils.rebin_data(self.data['bkg_raw_x'], self.data['bkg_raw_y'])
-        self.plot_data()
 
     def plot_data(self):
         if self.data['bkg_y'].size:
@@ -207,12 +222,20 @@ class BkgUI(QWidget):
         bkg_scaling = bkg_scaling.x
         self.bkg_config_widget.bkg_subtract_gb.scale_sb.setValue(bkg_scaling)
 
+    def dq_changed(self):
+        try:
+            self.rebin_data()
+        except RuntimeWarning:
+             self.dq_error()
+             self.bkg_config_widget.data_files_gb.dq_input.setText('0.02')
+             self.dq_changed()
+
     def load_file_error(self):
         message = ['Error loading file!', 'Unable to load file.\nPlease check filename,\nensure header lines are commented (#),\nand data is in Q-space']
         self.warning_message(message)
 
     def oversize_file_error(self):
-        message = ['Error loading file!', 'Re-binned array size\nis too large!\nIs the data in Q-space?']
+        message = ['Error loading file!', 'Re-binned array size\nis too large! Increase the Q-step or length of Fourier transform array (N)']
         self.warning_message(message)
 
     def missing_bkg_file_error(self):
@@ -221,6 +244,10 @@ class BkgUI(QWidget):
     
     def bkg_match_error(self):
         message = ['Error subtracting background!', 'Data and background\n do not match!']
+        self.warning_message(message)
+
+    def dq_error(self):
+        message = ['Error setting Q-step!', 'Re-binned array size\nis too large! Increase the Q-step or length of Fourier transform array (N)']
         self.warning_message(message)
 
     def warning_message(self, message):
@@ -259,44 +286,61 @@ class DataFilesGroupBox(QGroupBox):
         self.setTitle('Data Files')
         self.setAlignment(Qt.AlignLeft)
         self.setStyleSheet('GroupBox::title{subcontrol-origin: margin; subcontrol-position: top left;}')
+        
+        self.create_widgets()
+        self.style_widgets()
+        self.create_layout()
 
-        self.grid_layout = QGridLayout()
-        self.grid_layout.setContentsMargins(25, 10, 25, 7)
-        self.grid_layout.setSpacing(5)
-
+    def create_widgets(self):
         self.load_data_btn = QPushButton("Load Data")
         self.data_filename_lbl = QLabel("None")
-        self.data_filename_lbl.setAlignment(Qt.AlignCenter)
+
         self.load_bkg_btn = QPushButton("Load Background")
         self.bkg_filename_lbl = QLabel("None")
-        self.bkg_filename_lbl.setAlignment(Qt.AlignCenter)
 
         self.data_lbl_frame = QScrollArea()
+        self.bkg_lbl_frame = QScrollArea()
+
+        self.plot_raw_check = QCheckBox()
+        self.plot_raw_lbl = QLabel('Plot raw (unbinned) data?')
+        self.plot_raw_check.setChecked(False)
+        
+        self.dq_label = QLabel('Re-binned resolution (Q-step):')
+        self.dq_input = QLineEdit('0.02')
+
+    def style_widgets(self):
+        self.data_filename_lbl.setAlignment(Qt.AlignCenter)
+        self.bkg_filename_lbl.setAlignment(Qt.AlignCenter)
+
         self.data_lbl_frame.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.data_lbl_frame.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.data_lbl_frame.setWidgetResizable(True)
         self.data_lbl_frame.setFrameShape(QFrame.NoFrame)
 
-        self.bkg_lbl_frame = QScrollArea()
         self.bkg_lbl_frame.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.bkg_lbl_frame.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.bkg_lbl_frame.setWidgetResizable(True)
         self.bkg_lbl_frame.setFrameShape(QFrame.NoFrame)
 
+        self.dq_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.dq_input.setAlignment(Qt.AlignRight)
+        self.dq_input.setMaximumWidth(60)
+        self.dq_input.setValidator(QDoubleValidator())
+
+    def create_layout(self):
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setContentsMargins(25, 10, 25, 7)
+        self.grid_layout.setSpacing(5)
         self.data_lbl_frame.setWidget(self.data_filename_lbl)
         self.bkg_lbl_frame.setWidget(self.bkg_filename_lbl)
-
-        self.plot_raw_check = QCheckBox()
-        self.plot_raw_lbl = QLabel('Plot raw (unbinned) data?')
-        self.plot_raw_check.setChecked(False)
-
         self.grid_layout.addWidget(self.load_data_btn, 0, 0)
         self.grid_layout.addWidget(self.data_lbl_frame, 0, 1)
         self.grid_layout.addWidget(self.load_bkg_btn, 1, 0)
         self.grid_layout.addWidget(self.bkg_lbl_frame, 1, 1)
         self.grid_layout.addWidget(self.plot_raw_lbl, 2, 0)
         self.grid_layout.addWidget(self.plot_raw_check, 2, 1)
-
+        self.grid_layout.addWidget(self.dq_label, 3, 0)
+        self.grid_layout.addWidget(self.dq_input)
         self.setLayout(self.grid_layout)
 
 

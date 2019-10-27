@@ -833,9 +833,11 @@ def calc_impr_interference_func(rho, *args):
     else:
         raise ValueError('Arg - opt_flag - must be boolean')
 
+    dq = q_data[1] - q_data[0]
     # Calculate initial F(r)
     r, F_r = calc_F_r(q_data, interference_func, rho, 
-                      mod_func=mod_func, window_start=window_start, N=fft_N)
+                      mod_func=mod_func, window_start=window_start,
+                      dx=dq, N=fft_N)
     # Calculate expected behaviour of F(r) for intramolecular distances (r<r_min)
     model_F_intra_r = calc_model_F_intra_r(q_data, r, composition, rho)
     # Calculate static terms of iterative proceduce
@@ -853,7 +855,8 @@ def calc_impr_interference_func(rho, *args):
             done_looping = stop_iteration(stop_condition='count', count=count, iter_limit=iter_limit)
             interference_func = interference_func_impr
             r, F_r = calc_F_r(q_data, interference_func, rho, 
-                              mod_func=mod_func, window_start=window_start, N=fft_N)
+                              mod_func=mod_func, window_start=window_start,
+                              dx=dq, N=fft_N)
         except NameError:
             pass
 
@@ -863,11 +866,11 @@ def calc_impr_interference_func(rho, *args):
 
         if method == 'ashcroft-langreth':
             t2 = (interference_func/t2_divisor) + 1
-            t3 = calc_F_r_iteration_term(delta_F_r, N=fft_N)[:len(interference_func)]
+            t3 = calc_F_r_iteration_term(delta_F_r, N=fft_N, dq=dq)[:len(interference_func)]
             with np.errstate(invalid='ignore'):
                 interference_func_impr = interference_func - (t1 * t2 * t3)
         elif method == 'faber-ziman':
-            t2 = calc_F_r_iteration_term(delta_F_r, N=fft_N)[:len(interference_func)]
+            t2 = calc_F_r_iteration_term(delta_F_r, N=fft_N, dq=dq)[:len(interference_func)]
             with np.errstate(invalid='ignore'):
                 interference_func_impr = ((interference_func+1) * (1 - t1*t2)) - 1
 

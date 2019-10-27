@@ -95,6 +95,7 @@ class App(QMainWindow):
 
     def call_preferences_dialog(self):
         self.preferences_dialog = utility.PreferencesDialog(self.preferences)
+        self.preferences_dialog.fft_check_signal.connect(self.check_fft_N)
         # set window icon
         with importlib_resources.path(self.icon_module, 'gs_icon.png') as path:
             self.preferences_dialog.setWindowIcon(QIcon(str(path)))
@@ -115,6 +116,7 @@ class App(QMainWindow):
         self.table_widget.optim_ui.window_length = self.preferences['window_length']
         self.table_widget.optim_ui.poly_order = self.preferences['poly_order']
         # Set N for FFT
+        self.table_widget.bkg_ui.fft_N = self.preferences['fft_N']
         self.table_widget.optim_ui.fft_N = self.preferences['fft_N']
         self.table_widget.results_ui.fft_N = self.preferences['fft_N']
 
@@ -124,6 +126,21 @@ class App(QMainWindow):
 
     def open_docs(self):
         webbrowser.open_new('https://github.com/bjheinen/LiquidDiffract')
+
+    def check_fft_N(self):
+        try:
+            _qmax = self.table_widget.bkg_ui.data['data_raw_x'][-1]
+        except IndexError:
+            try:
+                _qmax = self.table_widget.bkg_ui.data['bkg_raw_x'][-1]
+            except IndexError:
+                self.preferences_dialog.fft_check_result = 0
+                return
+        _fft_check = self.preferences_dialog.fft_check
+        _dx = (self.table_widget.bkg_ui.data['data_raw_x'][1]
+               - self.table_widget.bkg_ui.data['data_raw_x'][0])
+        if _qmax > ((2**_fft_check / 2) * _dx):
+            self.preferences_dialog.fft_check_result = 1
 
 
 class MainContainer(QWidget):

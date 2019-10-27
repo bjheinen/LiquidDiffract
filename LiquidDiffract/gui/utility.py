@@ -9,10 +9,10 @@ try:
 except ImportError:
     import importlib_resources
 import numpy as np
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIntValidator, QDoubleValidator, QDialog, QPixmap
 from PyQt5.QtWidgets import QFileDialog, QStyledItemDelegate, \
-                            QMessageBox, QFrame, QGroupBox, \
+                            QMessageBox, QFrame, QGroupBox, QSpinBox, \
                             QVBoxLayout, QGridLayout, QDialogButtonBox, \
                             QLabel, QLineEdit, QCheckBox, QComboBox, QTextBrowser
 from LiquidDiffract.version import __appname__, __version__
@@ -70,6 +70,10 @@ class ValidatedItemDelegate(QStyledItemDelegate):
 
 
 class PreferencesDialog(QDialog):
+
+    fft_check_signal = pyqtSignal()
+    fft_check_result = 0
+
     def __init__(self, preferences):
         super(PreferencesDialog, self).__init__()
         self.setAttribute(Qt.WA_DeleteOnClose)
@@ -114,7 +118,11 @@ class PreferencesDialog(QDialog):
         try:
             _window_length = np.int(self.data_settings_gb.window_length_input.text())
             _poly_order = np.int(self.data_settings_gb.poly_order_input.text())
-            _fft_N = np.int(self.data_settings_gb.fft_N_input.text())
+            _fft_N = np.int(self.data_settings_gb.fft_N_input.value())
+            self.fft_check = _fft_N
+            self.fft_check_signal.emit()
+            if self.fft_check_result == 1:
+                 raise RuntimeWarning()
             _op_method = self.refine_settings_gb.op_method_input.currentText()
             _disp = np.int(self.refine_settings_gb.disp_check.isChecked())
             _maxiter = np.int(self.refine_settings_gb.maxiter_input.text())
@@ -133,6 +141,12 @@ class PreferencesDialog(QDialog):
         # Handle for missing values
         except ValueError:
             _message = ['Missing Values!', 'Please ensures all values are set properly']
+            self.error_msg = ErrorMessageBox(_message)
+            self.error_msg.show()
+            return
+
+        except RuntimeWarning:
+            _message = ['\'N\' out of range!', 'Please increase N\nDefault: 12']
             self.error_msg = ErrorMessageBox(_message)
             self.error_msg.show()
             return
@@ -246,7 +260,7 @@ class DataSettingsGroupBox(QGroupBox):
         self.poly_order_input = QLineEdit()
         self.fft_label = QLabel('FFT Options:')
         self.fft_N_label = QLabel('<b><i>N</i></b> | Size of padded array for FFT = 2^N: ')
-        self.fft_N_input = QLineEdit()
+        self.fft_N_input = QSpinBox()
 
         self.hline = QFrame()
         self.hline.setFrameShape(QFrame.HLine)
@@ -256,7 +270,7 @@ class DataSettingsGroupBox(QGroupBox):
     def set_data(self, preferences):
         self.window_length_input.setText(np.str(preferences['window_length']))
         self.poly_order_input.setText(np.str(preferences['poly_order']))
-        self.fft_N_input.setText(np.str(preferences['fft_N']))
+        self.fft_N_input.setValue(preferences['fft_N'])
 
     def style_widgets(self):
         self.smoothing_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
@@ -275,7 +289,7 @@ class DataSettingsGroupBox(QGroupBox):
         
         self.fft_N_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         self.fft_N_input.setAlignment(Qt.AlignRight)
-        self.fft_N_input.setValidator(QIntValidator())
+        self.fft_N_input.setRange(1,20)
         self.fft_N_input.setMaximumWidth(70)
 
     def create_layout(self):

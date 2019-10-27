@@ -201,6 +201,22 @@ class OptimPlotWidget(QWidget):
              _data['impr_fr_x'] = data_utils.interp_nan(_data['impr_fr_x'])
 
         _window = len(_data['cor_x_cut'])
+        # For the F(r) the r step = pi/q_max. Because the data is padded this
+        # q_max is larger than the original q_max. i.e. q_max = dq * 2**N/2
+        # Then: r_max = 2**N/2 * dr = pi/(dq * 2**N/2) * 2**N/2 = pi/dq
+        # Displaying the full length data is not necessary as most of the 
+        # useful information is contained at fairly low r, and the length of r
+        # is controlled only by sampling frequency in Q-space. At high r-values
+        # the F(r) is dominated by ripples from the truncated integral (0-qmax)
+        # The max value of r with 'real' q resolution is 1/dq.
+        try:
+            _dq = _data['iq_x'][1] - _data['iq_x'][0]
+            try:
+                _window = np.argmax(_data['fr_x'] >= (1/_dq))
+            except ValueError:
+                 pass
+        except IndexError:
+            pass
 
         self.p1 = self.data_plot.plot(x=_data['cor_x_cut'], y=_data['cor_y_cut'], pen={'color': 0.1, 'width': 1.2})
         self.p2_a = self.iq_plot.plot(x=_data['iq_x'], y=_data['int_func'], pen={'color': 0.1, 'width': 1.2})
@@ -344,20 +360,28 @@ class ResultsPlotWidget(QWidget):
         if np.isnan(_data['rdf_y']).any():
              _data['rdf_y'] = data_utils.interp_nan(_data['rdf_y'])
 
-        # Determine data window for length of sq (pre fft)
-        _window = len(_data['sq_x'])
+        # Determine data window for Q-space resolution, dq
+        try:
+            _dq = _data['sq_x'][1] - _data['sq_x'][0]
+            try:
+                _window = np.argmax(_data['gr_x'] >= (1/_dq))
+            except ValueError:
+                 pass
+        except IndexError:
+            pass
 
         self.p1 = self.sq_plot.plot(x=_data['sq_x'], y=_data['sq_y'], pen={'color': 0.1, 'width': 1.2})
         self.p2 = self.gr_plot.plot(x=_data['gr_x'][:_window], y=_data['gr_y'][:_window], pen={'color': 0.1, 'width': 1.2})
         self.p3 = self.rdf_plot.plot(x=_data['rdf_x'][:_window], y=_data['rdf_y'][:_window], pen={'color': 0.1, 'width': 1.2})
 
-        self.x_max_gr = 12
-        _gr_cut = np.nan_to_num(_data['gr_y'][np.where(_data['gr_x'] < self.x_max_gr)])
+        # Limit the inital view to important information
+        self.x_max = _data['sq_x'][-1]
+
+        _gr_cut = np.nan_to_num(_data['gr_y'][np.where(_data['gr_x'] < self.x_max)])
         self.y_min_gr = np.min(_gr_cut)
         self.y_max_gr = np.max(_gr_cut)
 
-        self.x_max_rdf = 8
-        _rdf_cut = np.nan_to_num(_data['rdf_y'][np.where(_data['rdf_x'] < self.x_max_rdf)])
+        _rdf_cut = np.nan_to_num(_data['rdf_y'][np.where(_data['rdf_x'] < self.x_max)])
         self.y_min_rdf = np.min(_rdf_cut)
         self.y_max_rdf = np.max(_rdf_cut)
 
@@ -368,14 +392,14 @@ class ResultsPlotWidget(QWidget):
 
     def set_gr_window(self):
         try:
-            self.gr_plot.vb.setRange(xRange=(0, self.x_max_gr),
+            self.gr_plot.vb.setRange(xRange=(0, self.x_max),
                                      yRange=(self.y_min_gr, self.y_max_gr))
         except:
             return
 
     def set_rdf_window(self):
         try:
-            self.rdf_plot.vb.setRange(xRange=(0, self.x_max_rdf),
+            self.rdf_plot.vb.setRange(xRange=(0, self.x_max),
                                       yRange=(self.y_min_rdf, self.y_max_rdf))
         except:
             return
