@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Utility functions for common data operations 
+Utility functions for common data operations
 """
 __author__ = "Benedict J Heinen"
 __copyright__ = "Copyright 2018-2019, Benedict J Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
+from functools import lru_cache, wraps
 import numpy as np
 import scipy.interpolate
 from scipy.signal import savgol_filter
@@ -42,8 +43,8 @@ def interp_nan(y):
      Uses interpolation to fix nan values in an array
      This is useful for nan values at start of interference function array
      which cannot be set to zero with np.nan_to_num
-     '''     
-     # Array of True/False values for nan location 
+     '''
+     # Array of True/False values for nan location
      nans = np.isnan(y)
      # Return nonzero (non-nan) values
      f = lambda z: z.nonzero()[0]
@@ -90,3 +91,30 @@ def smooth_data(data, method='savitzky-golay', window_length=31, poly_order=3):
     '''
     if method == 'savitzky-golay':
         return savgol_filter(data, window_length, poly_order)
+
+
+def data_cache(*args, **kwargs):
+    '''
+    Provides a decorator to cache the result of functions of the form
+    f(hashable_type, 1d_Array). The numpy array is converted to a tuple so
+    that functools.lru_cache can be used.
+
+    Here it is used to cache the computation of element/Q specific form-
+    factors and compton scattering.
+    '''
+    def decorator(function):
+        @wraps(function)
+        def wrapper(hashable_arg, np_array):
+            hashable_array = tuple(np_array)
+            return cached_wrapper(hashable_arg, hashable_array)
+
+        @lru_cache(*args, **kwargs)
+        def cached_wrapper(hashable_arg, hashable_array):
+            array = np.array(hashable_array)
+            return function(hashable_arg, array)
+
+        wrapper.cache_info = cached_wrapper.cache_info
+        wrapper.cache_clear = cached_wrapper.cache_clear
+
+        return wrapper
+    return decorator

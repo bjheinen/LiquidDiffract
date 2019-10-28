@@ -3,8 +3,8 @@
 """
 LiquidDiffract core functions module
 
-Python implementation of iterative method for liquid structure factor 
-normalisation based on Eggert et al., 2002. 
+Python implementation of iterative method for liquid structure factor
+normalisation based on Eggert et al., 2002.
 Optimises the normalisation factor, alpha, and allows refinement of sample density, rho.
 
 Provides functions for:
@@ -22,6 +22,7 @@ __author__ = 'Benedict J. Heinen'
 __copyright__ = 'Copyright 2018-2019, Benedict J Heinen'
 __email__ = 'benedict.heinen@gmail.com'
 
+from functools import lru_cache
 import numpy as np
 from scipy.integrate import simps
 import scipy.interpolate
@@ -34,15 +35,17 @@ except ImportError:
 
 # Get version number from version.py
 from LiquidDiffract.version import __appname__, __version__
+from LiquidDiffract.core.data_utils import data_cache
+
 
 def calc_mol_mass(composition):
     '''
     Calculates the molecular mass for a given composition and returns
     the average molecular mass for one atom
-    
+
     composition is dictionary in the form: (Z, charge, n)
     where n is number of atoms in formula unit
-    '''    
+    '''
     with importlib_resources.open_binary('LiquidDiffract.resources', 'mass_data.npy') as fp:
         mass_dict = np.load(fp, allow_pickle=True).item()
     mol_mass = np.sum([mass_dict[element]*(composition[element][2]) for element in composition])
@@ -58,17 +61,17 @@ def conv_density(rho, composition):
     mol_mass = calc_mol_mass(composition)
     # Calculate number of atoms and scale mol_mass
     N = np.sum(composition[el][2] for el in composition)
-    # Calculate atoms/cm3 > then moles/cm3 
+    # Calculate atoms/cm3 > then moles/cm3
     mass_density = (rho * 10 / 6.0221408) * (mol_mass/N)
     return mass_density
 
 
 def calc_Z_sum(composition):
     '''
-    Calculates the sum of the atomic numbers of all atoms in a 
-    compositional unit 
-    
-    Args: 
+    Calculates the sum of the atomic numbers of all atoms in a
+    compositional unit
+
+    Args:
         composition - dictionary of atomic elements with values as tuples of
         the form (Z,charge,n)
     Returns:
@@ -87,12 +90,20 @@ def calc_Z_sum(composition):
     return Z_tot
 
 
-def calc_atomic_ff(element,Q):
+@lru_cache(maxsize=1)
+def load_ff_data():
+    with importlib_resources.open_binary('LiquidDiffract.resources', 'form_factors.npy') as fp:
+        ff_data = np.load(fp, allow_pickle=True)
+    return ff_data
+
+
+@data_cache(maxsize=32)
+def calc_atomic_ff(element, Q):
     '''
-    Calculates the atomic form factors fp(Q) of an element, p, over the 
-    Q values, Q. Uses the analytic tabulation published in the International 
-    Tables of Crystallography. 
-    
+    Calculates the atomic form factors fp(Q) of an element, p, over the
+    Q values, Q. Uses the analytic tabulation published in the International
+    Tables of Crystallography.
+
     This data is also freely available at:
     http://lampx.tugraz.at/~hadley/ss1/crystaldiffraction/atomicformfactors/formfactors.php
 
@@ -100,7 +111,7 @@ def calc_atomic_ff(element,Q):
         element - tuple of form (Z, charge, *_)
         Q - Data in Q space and units Angstroms^-1
 
-    Returns: 
+    Returns:
         form_factor - NumPy array of atomic form factors at each Q value
 
     note: calc_atomic_ff ignores n values - atomic fractions or number of
@@ -108,16 +119,16 @@ def calc_atomic_ff(element,Q):
           calculates form factor for 1 atom in the compositional unit.
     '''
     atomic_number, charge, *_ = element
-    
-    with importlib_resources.open_binary('LiquidDiffract.resources', 'form_factors.npy') as fp:
-        ff_data = np.load(fp, allow_pickle=True)   
-        
-    ff_data = ff_data[np.where((ff_data[:,0]==charge) & (ff_data[:,10]==atomic_number))][0,1:10]
+
+    # Data is loaded in a separate function so it can be cached
+    ff_data = np.copy(load_ff_data())
+    ff_data = ff_data[np.where((ff_data[:, 0] == charge) &
+                               (ff_data[:, 10] == atomic_number))][0, 1:10]
     # s = Q / 4pi, s here is s^2
     s = (Q / (4 * np.pi))**2
-    form_factor = (ff_data[0] * np.exp(-ff_data[1] * s) + 
-                   ff_data[2] * np.exp(-ff_data[3] * s) + 
-                   ff_data[4] * np.exp(-ff_data[5] * s) + 
+    form_factor = (ff_data[0] * np.exp(-ff_data[1] * s) +
+                   ff_data[2] * np.exp(-ff_data[3] * s) +
+                   ff_data[4] * np.exp(-ff_data[5] * s) +
                    ff_data[6] * np.exp(-ff_data[7] * s) + ff_data[8]
                    )
     return form_factor
@@ -127,65 +138,70 @@ def calc_effective_ff(composition, Q):
     '''
     Calculates the effective electronic form factor as defined in Eq. 10 of
     Eggert et al., 2002.
-    
+
     i.e.
-    
+
     f_e(Q) = SUM f_p(Q) / Z_tot
-    where f_p(Q) are the atomic form factors and Z_tot is the total atomic 
+    where f_p(Q) are the atomic form factors and Z_tot is the total atomic
     number of the compositional unit
-    
+
     Args:
-        composition - composition dictionary where values are tuples of the 
+        composition - composition dictionary where values are tuples of the
         form (Z, charge, n)
         Q - q space values to evaluate over
-    
+
     Returns:
         effective_ff - effective electronic form factor at Q values
         atomic_ff - atomic form factors at Q values for each element
-    '''    
+    '''
     Z_tot = calc_Z_sum(composition)
     # Expand composition dictionary to list of tuples with entries repeated
     # where n>1
-    composition_atoms = [element for expanded in 
-                         [[composition[species]]*composition[species][2] 
-                          for species in composition] 
+    composition_atoms = [tuple(element) for expanded in
+                         [[composition[species]]*composition[species][2]
+                          for species in composition]
                          for element in expanded]
-    atomic_ff = []       
+    atomic_ff = []
     for atom in composition_atoms:
-        atomic_ff.append(calc_atomic_ff(atom,Q))
+        atomic_ff.append(np.copy(calc_atomic_ff(atom, Q)))
     atomic_ff = np.asarray(atomic_ff)
-    effective_ff = np.sum(atomic_ff,0) / Z_tot
+    effective_ff = np.sum(atomic_ff, 0) / Z_tot
     return effective_ff, atomic_ff
 
 
 def calc_average_scattering(composition, Q):
     '''
-    for <f2> need to loop over every atom and get fp for them
-    then square the fps, then sum
-    then normalise
-    is this q dependent then? - yes seems so
-    
-    
-    for <f>2 need to loop over every combination of atoms in the list
-    
-    both start with making a nice list of the tuples
-    
-    then the function if f_p / f_q
-    
-    f_i is atomic form factor
-    
-    call calc_atomic_ff directly as it takes tuple as argument
-    
-    Calculates <f2> which is equal to <f>2 for monatomic case
+    Computes the average scattering functions, <f>2 and <f2> required for the
+    faber-ziman formalism of total structure factor S(Q).
+
+    <f2> = 1/N Σ_p (f_p(Q))^2
+    <f>2 = 1/N**2 Σ_p Σ_q f_p(Q) * f_q(Q)
+
+    where:
+        N is the number of atoms in the composition (e.g. MgSiO3: N = 5)
+        f_p(Q) are the atomic atomic form factors of an element, p, calculated
+        over the Q values, Q
+
+    <f2> is equal to <f>2 for the monatomic case
+
+    Args:
+        composition - dictionary with keys that are element symbols and values
+                      are tuples of the form (Z, charge, n_atoms)
+        Q - Q-space values to evaluate over
+
+    Returns:
+        average_scattering - list of average scattering functions
+            average_scattering[0] --> <f2>
+            average_scattering[1] --> <f>2
     '''
     # Expand composition dictionary to list of tuples with entries repeated
     # where n>1
-    composition_atoms = [element for expanded in 
-                         [[composition[species]]*composition[species][2] 
-                          for species in composition] 
+    composition_atoms = [tuple(element) for expanded in
+                         [[composition[species]]*composition[species][2]
+                          for species in composition]
                          for element in expanded]
     N = len(composition_atoms)
-    atomic_ff = []       
+    atomic_ff = []
     for atom in composition_atoms:
         atomic_ff.append(calc_atomic_ff(atom, Q))
     atomic_ff = np.asarray(atomic_ff)
@@ -205,22 +221,30 @@ def calc_average_scattering(composition, Q):
     return average_scattering
 
 
+@lru_cache(maxsize=8)
+def load_compton_data(element):
+    element_data_fname = element + '.npy'
+    with importlib_resources.open_binary('LiquidDiffract.resources.hubbel_compton', element_data_fname) as fp:
+        cs_Q, _, cs_comp = np.load(fp, allow_pickle=True)
+    return cs_Q, cs_comp
+
+
+@data_cache(maxsize=32)
 def calc_compton_scattering(element, Q):
     '''
-    Interpolates compton scattering from tabulated data to estimate scattering 
+    Interpolates compton scattering from tabulated data to estimate scattering
     intensity at each Q value.
-    
-    The analytical tabulations of compton scattering intensity are taken 
+
+    The analytical tabulations of compton scattering intensity are taken
     from Hubbel et al., 1975, J. Phys. Chem. Ref. Data 4, 471.
-    
+
     Args:
         element - dictionary entry from 'comp' where keys are element symbols
         Q - Q values to estimate compton scattering intensity at
     '''
-
-    element_data = element + '.npy'
-    with importlib_resources.open_binary('LiquidDiffract.resources.hubbel_compton', element_data) as fp:
-        cs_Q, _, cs_comp = np.load(fp, allow_pickle=True)
+    # Element specific compton data is cached to save i/o calls
+    cs_Q, cs_comp = load_compton_data(element)
+    cs_Q, cs_comp = np.copy(cs_Q), np.copy(cs_comp)
 
     # The data is tabulated using s values instead of Q > Q = 4*pi*s
     cs_Q *= (np.pi * 4)
@@ -238,9 +262,9 @@ def calc_total_compton_scattering(composition, Q):
     '''
     compton_scattering = []
     for element in composition:
-        compton_scattering.append(calc_compton_scattering(element,Q) *
-                                     composition[element][2])
-    compton_scattering = np.sum(np.asarray(compton_scattering),0)
+        compton_scattering.append(np.copy(calc_compton_scattering(element, Q)) *
+                                  composition[element][2])
+    compton_scattering = np.sum(np.asarray(compton_scattering), 0)
     return compton_scattering
 
 
@@ -257,17 +281,17 @@ def calc_J(composition, Q):
 
         Q - Q values to evaluate
     '''
-    effective_ff, _ = calc_effective_ff(composition,Q)
-    Z_tot = calc_Z_sum(composition)        
-    compton_scattering = calc_total_compton_scattering(composition,Q)
+    effective_ff, _ = calc_effective_ff(composition, Q)
+    Z_tot = calc_Z_sum(composition)
+    compton_scattering = calc_total_compton_scattering(composition, Q)
     J = compton_scattering / (Z_tot**2 * effective_ff**2)
     return J
 
 
 def calc_K_p(composition, Q):
     '''
-    Calculates average effective atomic numbers of each atomic element 
-    in a formula unit over a set Q range as defined in Eqs 11 & 14 of 
+    Calculates average effective atomic numbers of each atomic element
+    in a formula unit over a set Q range as defined in Eqs 11 & 14 of
     Eggert et al., 2002.
 
     i.e.
@@ -279,7 +303,7 @@ def calc_K_p(composition, Q):
         f_e(Q) is the effective electronic form factor of the total composition
         f_p(Q) are the atomic form factors for each atom, p, in the formula unit
         K_p(Q) is the Q-dependent effective atomic number for each atom, p
-        K_p is the average effective atomic number 
+        K_p is the average effective atomic number
 
 
     Args:
@@ -292,7 +316,7 @@ def calc_K_p(composition, Q):
         K_p - numpy array of K_p values with length equal to number of atoms
               in a formula unit of the composition
     '''
-    effective_ff, atomic_ff = calc_effective_ff(composition,Q)
+    effective_ff, atomic_ff = calc_effective_ff(composition, Q)
     K_p = atomic_ff / effective_ff
     K_p = np.mean(K_p, 1)
     return K_p
@@ -303,7 +327,7 @@ def calc_S_inf(composition, Q, method='ashcroft-langreth'):
     Caclulates the value S_inf as defined in Eq 19 of Eggert et al., 2002
     i.e. S_inf = SUM K^2_p / Z_tot^2
     S_inf defaults to 1 if the composition is monatomic
-    
+
     For the Faber-Ziman structure factor formulation, the interference
     function, i(Q) is defined as S(Q) - 1. calc_S_inf is still called in the
     program to aid readability and avoid too many if statement blocks in the
@@ -312,12 +336,12 @@ def calc_S_inf(composition, Q, method='ashcroft-langreth'):
     if method == 'faber-ziman':
         S_inf = 1.0
 
-    elif method == 'ashcroft-langreth':    
+    elif method == 'ashcroft-langreth':
         N = np.sum([composition[el][2] for el in composition])
         if N == 1:
             S_inf = 1.0
         elif N > 1:
-            K_p = calc_K_p(composition,Q)
+            K_p = calc_K_p(composition, Q)
             Z_tot = calc_Z_sum(composition)
             S_inf = np.sum(K_p**2) / Z_tot**2
         else:
@@ -329,17 +353,17 @@ def calc_S_inf(composition, Q, method='ashcroft-langreth'):
     return S_inf
 
 
-def calc_alpha(Q_cor, I_cor, rho, 
+def calc_alpha(Q_cor, I_cor, rho,
                Z_tot=None, J=None, S_inf=None, effective_ff=None,
                average_scattering=None, compton_scattering=None,
                method='ashcroft-langreth'):
     '''
-    Calculates 'alpha' - the normalisation factor 
-    
-    For the Ashcroft-Langreth formalisation this is defined in 
+    Calculates 'alpha' - the normalisation factor
+
+    For the Ashcroft-Langreth formalisation this is defined in
     Eq.34 of Eggert et al., 2002.
-    
-    For the Faber-Ziman formalism this is defined in equation A13 of 
+
+    For the Faber-Ziman formalism this is defined in equation A13 of
     Morard, 2013 but note there is a missing bracket - refer to the definition
     in Decremps et al., 2016, PhysRev B 93, 054209 instead.
 
@@ -355,13 +379,13 @@ def calc_alpha(Q_cor, I_cor, rho,
         J - J value as defined in Eq 35 of Eggert et al., 2002
         S_inf - S_inf value as defined in Eq 19 of Eggert et al., 2002
         effective_ff - effective electronic form factor
-        
+
         For FZ:
         ------
-        average_scattering - Average scattering functions <f2> and <f>2 
+        average_scattering - Average scattering functions <f2> and <f>2
                              see calc_average_scattering for definitions
         compton_scattering - Compton scattering intensity
-        
+
     Returns:
         alpha
     '''
@@ -373,7 +397,7 @@ def calc_alpha(Q_cor, I_cor, rho,
         alpha = Z_tot**2 * (((-2 * np.pi**2 * rho) + int_1) / int_2)
         return alpha
     elif method == 'faber-ziman':
-        # define the two integrals in the equation    
+        # define the two integrals in the equation
         int_1 = simps(((compton_scattering + average_scattering[0])/average_scattering[1]) * Q_cor**2, Q_cor)
         int_2 = simps(((Q_cor**2 * I_cor) / average_scattering[1]), Q_cor)
         # Calculate alpha
@@ -383,7 +407,7 @@ def calc_alpha(Q_cor, I_cor, rho,
         raise ValueError()
 
 
-def calc_coherent_scattering(Q_sample, I_sample, composition, alpha, 
+def calc_coherent_scattering(Q_sample, I_sample, composition, alpha,
                              compton_scattering=None, method='ashcroft-langreth'):
     '''
     Calculates coherent scattering intensity for a given composition
@@ -414,7 +438,7 @@ def calc_coherent_scattering(Q_sample, I_sample, composition, alpha,
         pass
     coherent_scattering = (alpha * I_sample) - compton_scattering
     if method=='ashcroft-langreth':
-        # N - number of atoms in compositional unit (molecule)        
+        # N - number of atoms in compositional unit (molecule)
         n_atoms = sum(composition[el][2] for el in composition)
         # Normalise coherent scattering
         coherent_scattering *= n_atoms
@@ -432,7 +456,7 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langr
     Args:
         Q_cor - Rebinned Q space data
         I_cor - Bkgd corrected intensity data
-        composition - dictionary of atomic elements, with values as tuples in 
+        composition - dictionary of atomic elements, with values as tuples in
                       the form (Z,charge,n)
         rho - actual or initial estimate of atomic density in atoms/Angstrom^3
 
@@ -443,26 +467,26 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langr
 
     S_FZ(Q) = I^COHERENT(Q) - (<f^2> - <f>^2 ) / <f>^2
 
-    I^COHERENT (the coherent scattering component of measured scattering 
+    I^COHERENT (the coherent scattering component of measured scattering
     intensity) has a different formulation for AL & FZ methods.
 
     I^COH_AL = N [alpha_AL * I^SAMPLE(Q) - SUM_p[I^COMPTON_p(Q)] ]
 
     I^COH_FZ = alpha_FZ * I^SAMPLE(Q) - SUM_p[I^COMPTON_p(Q)]
 
-    I^COMPTON_p is the compton (incoherent) scattering of each atom 
+    I^COMPTON_p is the compton (incoherent) scattering of each atom
     (see core.calc_compton_scattering)
 
     alpha is the normalisation factor (see core.calc_alpha)
 
-    N is the total number of atomic species in a formula unit 
+    N is the total number of atomic species in a formula unit
     (e.g. for SiO2 N=3)
 
     Z_TOT is the total Z number of a formula unit
 
     f_e(Q) is the effective electronic form factor
 
-    <f^2> and <f>^2 are intermediate functions which quantify average 
+    <f^2> and <f>^2 are intermediate functions which quantify average
     scattering in a similar way to the effective electronic form factor used
     in the Ashcroft-Langreth formulation
     '''
@@ -474,11 +498,11 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langr
         # Calculate intermediate functions for alpha/coherent scattering for
         # computational efficiency
         J = calc_J(composition, Q_cor)
-        S_inf = calc_S_inf(composition,Q_cor, method=method)
+        S_inf = calc_S_inf(composition, Q_cor, method=method)
         # effective electronic form factor also used to calculate alpha
-        effective_ff, _ = calc_effective_ff(composition,Q_cor)
-        alpha = calc_alpha(Q_cor, I_cor, rho, 
-                           Z_tot=Z_tot, J=J, S_inf=S_inf, 
+        effective_ff, _ = calc_effective_ff(composition, Q_cor)
+        alpha = calc_alpha(Q_cor, I_cor, rho,
+                           Z_tot=Z_tot, J=J, S_inf=S_inf,
                            effective_ff=effective_ff, method='ashcroft-langreth')
         coherent_scattering = calc_coherent_scattering(Q_cor, I_cor, composition, alpha, method=method)
         structure_factor = coherent_scattering / (n_atoms * Z_tot**2 * effective_ff**2)
@@ -486,22 +510,22 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langr
 
     elif method == 'faber-ziman':
         # Calculate average scattering functions <f^2> & <f>^2
-        avg_scattering_f = calc_average_scattering(composition, Q_cor)    
+        avg_scattering_f = calc_average_scattering(composition, Q_cor)
         # Calculate compton (incoherent scattering) used in alpha_FZ
         compton_scattering = calc_total_compton_scattering(composition, Q_cor)
         compton_scattering = compton_scattering / n_atoms
         # Calculate alpha
-        alpha = calc_alpha(Q_cor, I_cor, rho, 
-                           average_scattering=avg_scattering_f, 
-                           compton_scattering=compton_scattering, 
+        alpha = calc_alpha(Q_cor, I_cor, rho,
+                           average_scattering=avg_scattering_f,
+                           compton_scattering=compton_scattering,
                            method='faber-ziman')
         # Calculate coherent scattering
-        coherent_scattering = calc_coherent_scattering(Q_cor, I_cor, 
-                                                       composition, alpha, 
-                                                       compton_scattering=compton_scattering, 
+        coherent_scattering = calc_coherent_scattering(Q_cor, I_cor,
+                                                       composition, alpha,
+                                                       compton_scattering=compton_scattering,
                                                        method=method)
         # Calculate structure factor
-        structure_factor = (coherent_scattering - 
+        structure_factor = (coherent_scattering -
                             (avg_scattering_f[0] - avg_scattering_f[1])
                            ) / avg_scattering_f[1]
         return structure_factor
@@ -511,7 +535,7 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langr
 
 def get_mod_func(q, mod_func, window_start):
     '''
-    Returns the modification function to scale S(q) before FFT 
+    Returns the modification function to scale S(q) before FFT
 
     Implemented modification functions:
     ----------------------------------
@@ -524,10 +548,10 @@ def get_mod_func(q, mod_func, window_start):
 
         M(Q) = 1 if Q < Q1
         M(Q) = 0.5[1 + cos(x*pi / N-1)] if Q1 <= Q <= Qmax
-            
+
         where N is width of the window function
         and x is an integer with values from 0 - (N-1) across the window
-            
+
         if cosine-window is selected, optional kwarg window-start must
         be passed (Q1)
     '''
@@ -537,7 +561,7 @@ def get_mod_func(q, mod_func, window_start):
         window_length = len(window)
         modification = 0.5 * (1 + np.cos(window*np.pi/(window_length-1)))
         modification = np.concatenate((pre_window, modification))
-        
+
     elif mod_func == 'Lorch':
         with np.errstate(divide='ignore', invalid='ignore'):
             modification = np.sin(np.pi * q / np.max(q)) / (np.pi * q / np.max(q))
@@ -547,68 +571,68 @@ def get_mod_func(q, mod_func, window_start):
     return modification
 
 
-def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None, 
+def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
              window_start=None, function='density_func'):
     '''
-    Calculates the fourier transform of the interference function 
+    Calculates the fourier transform of the interference function
     i(Q) = S(Q) - S_inf to obtain the pair-distribution function [g(r)], the
-    density function [F(r)] or the radial distribution function [RDF(r)]. This 
+    density function [F(r)] or the radial distribution function [RDF(r)]. This
     conversion to real-space is useful for PDF-analysis.
-    
+
     Example:
-    
+
     F(q) --> G(r) transformation
     FFT here is sine-only and so assumes F(q) is an odd function
-    F(q) is therefore padded with its odd image and zero-padded in the middle 
+    F(q) is therefore padded with its odd image and zero-padded in the middle
     for efficiency and for interpolation in r-space (padded len =  2^n).
 
     i.e. F(q) = [0 1 3 2] --> F(q)_pad = [0 1 3 2 0 -2 -3 -1]
 
     Values of G(r) are the imaginary components of the fourier transorm of
-    F(q). The real components are all zero. Only the first half of the 
+    F(q). The real components are all zero. Only the first half of the
     transformed array is used as the second is its odd image.
-    
+
     dr correponds to the minimum frequency available for the entire Q-range.
-    i.e.:  
+    i.e.:
         dr = 2 * np.pi / (len(F(q)_padded) * dq)
 
     Therefore for the reverse transformation
         dq = np.pi / (len(r) * dr)
 
-    The pair-distribution function is proportional to the probability of 
+    The pair-distribution function is proportional to the probability of
     finding an atom at a distance r from an average atom taken as the origin.
-    The radial distribution function gives atomic coordination numbers when 
+    The radial distribution function gives atomic coordination numbers when
     integratd across peaks. The density function is used in the analysis here
     to normalise i(q).
 
     Pair-distribution function g(r):
-        
+
         g(r) - 1 = 1/(2 * pi^2 * r * rho_0) * INT[ q[i(q)] sin(qr) dq]
-    
+
     Density function, D(r) = F(r):
-        
+
         F(r) = 4 * pi * r * rho_0 * [g(r) - 1]
         F(r) = 2/pi * INT[ q[i(q)] sin(qr) dq]
-        
+
     Radial distribution function, RDF(r):
-        
+
         RDF(r) = 4 * pi * r^2 * rho_0 * g(r)
         RDF(r) = (2r/pi)*INT[ q[i(q)] sin(qr) dq] + 4*pi*r^2*rho_0
-    
+
     Args:
         x   - Q values (numpy array)
         y   - Corresponding values of the interference function (numpy array)
         rho - atomic density (float)
         dq  - steps of q values (which need to be constant)
-              this defaults to 0.02, but can also be calculated in function if 
+              this defaults to 0.02, but can also be calculated in function if
               set to 'check'
-        N   - Sets size of array for fft where array_size = 2^N, defaults to 12 
+        N   - Sets size of array for fft where array_size = 2^N, defaults to 12
         mod_func - Modification function to scale S(Q) before FFT
         function - density_func, pair_dist_func, radial_dist_func
-        
+
     Returns:
         r   - Array of r values
-        F_r/g_r/RDF_r - Corresponding array of values for calculated function 
+        F_r/g_r/RDF_r - Corresponding array of values for calculated function
     '''
     # Define dx (qstep) if not passed to function
     if dx == 'check':
@@ -640,7 +664,7 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
         pass
     padding_zeros = np.int(2**N - (len(z)*2 - 1))
     # Pad array with odd image of function
-    z = np.concatenate((z, np.zeros(padding_zeros), -np.flip(z[1::],0)))
+    z = np.concatenate((z, np.zeros(padding_zeros), -np.flip(z[1::], 0)))
     # Fourier transform here uses scipy.fftpack over numpy.fft
     # ifft used as converting from frequency (intensity) domain
     # This means no array-length scaling is needed and the result is not negative
@@ -655,7 +679,7 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
     dr = np.pi*2/(len(z)*dx)
     r = np.arange(len(fft_z))*dr
     if function == 'density_func':
-        # Scale by factor 2/pi 
+        # Scale by factor 2/pi
         F_r = fft_z * 2/np.pi
         return r, F_r
     elif function == 'pair_dist_func':
@@ -666,7 +690,7 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
         return r, g_r
     elif function == 'radial_dist_func':
         RDF_r = (2 * r * fft_z / np.pi) + (4 * np.pi * rho * r**2)
-        return r, RDF_r        
+        return r, RDF_r
     else:
         raise ValueError('arg \'function\' must be valid option')
 
@@ -679,7 +703,7 @@ def calc_F_r_iteration_term(delta_F_r, N=12, dq=0.02):
     i.e. Delta_alpha * Q * S_inf = INT 0>r_min [Delta_F(r) sin(Qr) dr]
 
     Delta_F(r) is the difference between F(r) and its expected behaviour
-    
+
     N defines the size of the array to be fourier transormed (2**N)
     This should be the same as used to calculate F(r) from i(Q) to
     preserve correct scaling factors
@@ -688,11 +712,11 @@ def calc_F_r_iteration_term(delta_F_r, N=12, dq=0.02):
     if len(delta_F_r) > (2**N/2):
         raise ValueError('Length of array > [(2**N)/2]')
     else:
-        pass        
+        pass
     padding_zeros = np.int(2**N - (len(delta_F_r)*2 - 1))
-    z = np.concatenate((delta_F_r, 
-                        np.zeros(padding_zeros), 
-                        -np.flip(delta_F_r[1::],0)))
+    z = np.concatenate((delta_F_r,
+                        np.zeros(padding_zeros),
+                        -np.flip(delta_F_r[1::], 0)))
     # For the forward fourier transform we need the negative of the imaginary components
     # in the first half of the array
     fft_z = -np.imag(scipy.fftpack.fft(z))
@@ -702,30 +726,30 @@ def calc_F_r_iteration_term(delta_F_r, N=12, dq=0.02):
     fft_scaling = 2**N / 2 * dq
     fft_z = fft_z / fft_scaling
     # For the forward transform here
-
     return fft_z
 
 
-def calc_model_F_intra_r(Q, r, composition, rho, use_intra_model=False):
+@data_cache(maxsize=128)
+def calc_model_F_intra_r(rho, r):
     '''
-    Returns the model behaviour of F(r) at r < r_min, where r_min is the 
-    largest distance (0 -- r-min) where no atom can be found. 
+    Returns the model behaviour of F(r) at r < r_min, where r_min is the
+    largest distance (0 -- r-min) where no atom can be found.
     In a liquid, this should be the distance of the 1st coordination shell.
-    
+
     The model behaviour is:
-         
+
          F_(r<r_min) = F_intra(r) − 4πrρ
-         
+
          F_intra(r) is the expected contribution of *intra*molecular forces
          i.e. interaction of atoms within the same molecule
-         
+
          This can be calculated using a fixed model approach
          (see eq. 42 in Eggert et al., 2002)
-         
+
          There are also further intermolecular contributions at r<r_min
          if the sample has intermolecular coordination between compositional
          units (e.g. polymeric liquids or framework glasses)
-         
+
      LiquidDiffract assumes F_intra(r) is negligible. This is only true for
      some compositions (e.g. monatomic metallic liquids). This functionality
      may be added in future releases however.
@@ -733,22 +757,23 @@ def calc_model_F_intra_r(Q, r, composition, rho, use_intra_model=False):
     model_F_intra_r = -4 * np.pi * r * rho
     return model_F_intra_r
 
+
 def calc_chi_squared(r_intra, delta_F_r, method='simps'):
     '''
-    Calculates a chi squared figure of merit as in equation 50 of Eggert. This 
+    Calculates a chi squared figure of merit as in equation 50 of Eggert. This
     is a measure of how small Delta_F_i(r) is, to be used as a tolerance factor
     to check convergence of i_i+1(q) and in the optimisation routine of rho/s.
-    
+
     Chi^2 = INT 0-r_min [Delta_F(r)]^2 dr
-    
+
     The value chi^2 is defined as the area under the curve Delta_F(r) limited
     to r_min (squared to remove negatives).
-    
+
     The Chi^2 value used in LiquidDiffract is scaled by 1e6 to enable easier minimisation.
 
     Args:
         delta_F_r - numpy array of delta_F_r from r=0 to r=r_min
-    
+
     Returns:
         chi_squared - Value of chi^2
     '''
@@ -760,12 +785,12 @@ def calc_chi_squared(r_intra, delta_F_r, method='simps'):
     return chi_squared * 1e6
 
 
-def stop_iteration(stop_condition='count', count=None, 
+def stop_iteration(stop_condition='count', count=None,
                    iter_limit=5, chi_squared=None):
     '''Helper function for checking stop condition of iteration
-    
+
     Currently LiquidDiffract uses an iteration limit only so this function
-    is very unnecessary/a little . It is left here to make any changes
+    is very unnecessary/a little expensive. It is left here to make any changes
     easier to implement (i.e. checking for chi^2 convergence)
     '''
     if stop_condition == 'count':
@@ -781,7 +806,7 @@ def calc_impr_interference_func(rho, *args):
     iterative procedure described in Eggert et al., 2002. This is done by
     scaling the data and forcing its behaviour in the low r region to some
     modelled behaviour.
-    
+
     The form of this function also enables it to be passed to an optimisation
     routine to estimate rho by minimising chi^2.
 
@@ -816,7 +841,13 @@ def calc_impr_interference_func(rho, *args):
         fft_N - Sets size of array for fft where array_size = 2^N
         opt_flag - Function returns chi_squared to minimisation routine if true
                    Returns improved interference_func and chi squared if false
+
+    Returns:
+        interference_func_impr, chi_sq (when opt_flag == 0)
+        chi_sq (when opt_flag == 1)
     '''
+    # Unpack rho - solver passes rho as a single element array
+    rho = np.float64(rho)
     # Unpack static parameters & arguments
     *_, opt_flag = args
     if opt_flag == False:
@@ -835,15 +866,15 @@ def calc_impr_interference_func(rho, *args):
 
     dq = q_data[1] - q_data[0]
     # Calculate initial F(r)
-    r, F_r = calc_F_r(q_data, interference_func, rho, 
+    r, F_r = calc_F_r(q_data, interference_func, rho,
                       mod_func=mod_func, window_start=window_start,
                       dx=dq, N=fft_N)
     # Calculate expected behaviour of F(r) for intramolecular distances (r<r_min)
-    model_F_intra_r = calc_model_F_intra_r(q_data, r, composition, rho)
+    model_F_intra_r = np.copy(calc_model_F_intra_r(rho, r))
     # Calculate static terms of iterative proceduce
     with np.errstate(divide='ignore', invalid='ignore'):
         t1 = 1 / q_data
-    t2_divisor = calc_S_inf(composition,q_data, method=method) + calc_J(composition,q_data)
+    t2_divisor = calc_S_inf(composition, q_data, method=method) + calc_J(composition, q_data)
 
     # Count no. iterations for verbosity or control
     # Function set up to call stop_looping func in case want to modify
@@ -854,13 +885,13 @@ def calc_impr_interference_func(rho, *args):
         try:
             done_looping = stop_iteration(stop_condition='count', count=count, iter_limit=iter_limit)
             interference_func = interference_func_impr
-            r, F_r = calc_F_r(q_data, interference_func, rho, 
+            r, F_r = calc_F_r(q_data, interference_func, rho,
                               mod_func=mod_func, window_start=window_start,
                               dx=dq, N=fft_N)
         except NameError:
             pass
 
-        delta_F_r = (F_r - model_F_intra_r)[np.where(r<r_min)]
+        delta_F_r = (F_r - model_F_intra_r)[np.where(r < r_min)]
         r_intra = r[np.where(r<r_min)]
         chi_squared = calc_chi_squared(r_intra, delta_F_r)
 
