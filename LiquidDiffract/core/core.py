@@ -203,7 +203,7 @@ def calc_average_scattering(composition, Q):
     N = len(composition_atoms)
     atomic_ff = []
     for atom in composition_atoms:
-        atomic_ff.append(calc_atomic_ff(atom, Q))
+        atomic_ff.append(np.copy(calc_atomic_ff(atom, Q)))
     atomic_ff = np.asarray(atomic_ff)
 
     # Create list to hold both function
