@@ -172,7 +172,8 @@ def calc_effective_ff(composition, Q):
 def calc_average_scattering(composition, Q):
     '''
     Computes the average scattering functions, <f>2 and <f2> required for the
-    faber-ziman formalism of total structure factor S(Q).
+    faber-ziman formalism of total structure factor S(Q). <f>2 is the square of
+    the mean scattering factors, whereas <f2> is the mean square average.
 
     <f2> = 1/N Σ_p (f_p(Q))^2
     <f>2 = 1/N**2 Σ_p Σ_q f_p(Q) * f_q(Q)
@@ -871,11 +872,21 @@ def calc_impr_interference_func(rho, *args):
                       dx=dq, N=fft_N)
     # Calculate expected behaviour of F(r) for intramolecular distances (r<r_min)
     model_F_intra_r = np.copy(calc_model_F_intra_r(rho, r))
+    # Specific scaling of modelled F(r) for AL-S(Q)
+    if method == 'ashcroft-langreth':
+        # For the ashcroft-langreth i(Q) the range is between -1*S_inf -- 0 and not
+        # -1 -- 0 as for FZ. This means the modelled behaviour at low r should also
+        # be scaled.
+        model_F_intra_r *= calc_S_inf(composition, q_data, method=method)
+        # F_AL(r) = 4πrρ * [Σci*f_p(Q) (Q=0)]^2 / Σci*f_p(Q)**2 (Q=0)
+        # This is simply <f>2 / <f2>, where <f>2 and <f2> are the average
+        # scattering function used in the faber-ziman S(Q) formalism.
+        avg_scattering_f = calc_average_scattering(composition, np.array([0]))
+        model_F_intra_r *= (avg_scattering_f[1] / avg_scattering_f[0])
     # Calculate static terms of iterative proceduce
     with np.errstate(divide='ignore', invalid='ignore'):
         t1 = 1 / q_data
     t2_divisor = calc_S_inf(composition, q_data, method=method) + calc_J(composition, q_data)
-
     # Count no. iterations for verbosity or control
     # Function set up to call stop_looping func in case want to modify
     # to use chi-squared value as tolerance value instead
