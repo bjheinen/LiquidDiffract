@@ -28,6 +28,7 @@ Please see the documentation on the LiquidDiffract homepage for more details.
 
 Copyright (c) 2019 Benedict J. Heinen
 
+Licensed under the GNU General Public License (GPL), version 3 or later.
 
 '''
 from LiquidDiffract.version import __version__

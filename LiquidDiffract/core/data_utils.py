@@ -3,7 +3,7 @@
 Utility functions for common data operations
 """
 __author__ = "Benedict J Heinen"
-__copyright__ = "Copyright 2018-2019, Benedict J Heinen"
+__copyright__ = "Copyright 2018-2019, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
 from functools import lru_cache, wraps
