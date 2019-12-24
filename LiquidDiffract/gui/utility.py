@@ -607,7 +607,7 @@ class AboutDialog(QDialog):
         super(AboutDialog, self).__init__()
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.setWindowTitle
-        self.title = __appname__ + 'v' + __version__
+        self.title = __appname__ + ' v' + __version__
         self.setWindowTitle(self.title)
         self.resize(590, 555)
 
