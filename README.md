@@ -2,7 +2,8 @@
 <p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/icons/logo.png"></p>
 
 <p align="center">
-A GUI program to treat experimental X-ray diffraction data of liquids and amorphous solids. LiquidDiffract can retrieve normalised total molecular structure factors, pair-distribution functions, and atomic number density. LiquidDiffract can perform background subtraction, fourier transforms, and other common data (quantitative structure factor) processing operations. 
+A GUI program to process experimental X-ray diffraction data of liquids and amorphous solids. <br />
+LiquidDiffract can calculate normalised total molecular structure factors, pair-distribution functions, and retrieve estimates of atomic number density.
 </p>
 
 
