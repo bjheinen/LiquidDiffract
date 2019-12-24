@@ -330,13 +330,13 @@ class SolverSettingsGroupBox(QGroupBox):
     def create_widgets(self):
         self.op_method_label = QLabel('Minimisation Algorithm: ')
         self.op_method_input = QComboBox()
-        # Use limited-memory BFGS code for optimising rho
+        # Default is to use limited-memory BFGS code for optimising rho
         # See http://users.iems.northwestern.edu/~nocedal/lbfgsb.html for details
         self.op_method_input.insertItem(0, 'L-BFGS-B')
         self.op_method_input.insertItem(1, 'SLSQP')
         self.op_method_input.insertItem(2, 'COBYLA')
 
-        _app_url = '"https://github.com/bjheinen/LiquidDiffract"'
+        _app_url = '"https://github.com/bjheinen/LiquidDiffract#density-ρ-refinement"'
         _text = (f'<a href={_app_url}><span style="color: #0c0263;"><span '
                  f'lang="zxx"><u>More information...</u></span></span></a>')
 
