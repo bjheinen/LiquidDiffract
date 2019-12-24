@@ -609,7 +609,7 @@ class AboutDialog(QDialog):
         self.setWindowTitle
         self.title = __appname__ + ' v' + __version__
         self.setWindowTitle(self.title)
-        self.resize(590, 555)
+        self.resize(595, 630)
 
         self.vlayout = QVBoxLayout()
         self.vlayout.setContentsMargins(5, 15, 5, 7)
