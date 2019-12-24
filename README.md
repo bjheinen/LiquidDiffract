@@ -1,3 +1,4 @@
+[![DOI](https://zenodo.org/badge/147495370.svg)](https://zenodo.org/badge/latestdoi/147495370)
 
 <p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/icons/logo.png"></p>
 
