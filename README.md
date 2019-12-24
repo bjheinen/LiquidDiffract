@@ -2,8 +2,7 @@
 <p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/icons/logo.png"></p>
 
 <p align="center">
-A GUI program to process experimental X-ray diffraction data of liquids and amorphous solids. <br />
-LiquidDiffract can calculate normalised total molecular structure factors, pair-distribution functions, and retrieve estimates of atomic number density.
+A GUI program to process experimental X-ray diffraction data of liquids and amorphous solids. LiquidDiffract can calculate normalised total molecular structure factors, pair-distribution functions, and retrieve estimates of atomic number density through the normalisation procedure.
 </p>
 
 
@@ -26,7 +25,7 @@ Benedict J. Heinen (benedict.heinen@gmail.com)
     * [Iterative Structure Factor Refinement](#iterative-structure-factor-refinement)
     * [Density (&rho;) Refinement](#density-%CF%81-refinement)
       * [Global optimisation capability](#global-optimisation-capability)
-    * [Note on Number of Iterations in the Eggert Procedure & *&Chi;<sup>2</sup>* Minimisation](#note-on-number-of-iterations-in-the-eggert-procedure--sup2sup-minimisation)
+    * [Note on Number of Iterations in the Eggert Procedure & *&Chi;<sup>2</sup>* Minimisation](#note-on-number-of-iterations-in-the-eggert-procedure--χ2-minimisation)
     * [Terminal & Log-file Output](#terminal--log-file-output)
   * [PDF Calculation (Output) Tab](#pdf-calculation-output-tab)
   * [Using LiquidDiffract Core Library](#using-liquiddiffract-core-library)
