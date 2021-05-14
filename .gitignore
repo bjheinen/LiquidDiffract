@@ -4,3 +4,5 @@
 *~
 # Test directory / files
 tests
+# Local files
+.directory
