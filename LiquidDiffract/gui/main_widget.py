@@ -21,6 +21,7 @@ from PyQt5.QtGui import QIcon
 from LiquidDiffract.gui import bkg_ui
 from LiquidDiffract.gui import optim_ui
 from LiquidDiffract.gui import results_ui
+from LiquidDiffract.gui import structure_ui
 from LiquidDiffract.gui import utility
 from LiquidDiffract.version import __appname__, __version__
 
@@ -155,9 +156,11 @@ class MainContainer(QWidget):
         self.bkg_ui = bkg_ui.BkgUI(self)
         self.optim_ui = optim_ui.OptimUI(self)
         self.results_ui = results_ui.ResultsUI(self)
+        self.structure_ui = structure_ui.StructureUI(self)
         self.tabs.addTab(self.bkg_ui, 'Background Subtraction')
         self.tabs.addTab(self.optim_ui, 'Refine Structure Factor')
         self.tabs.addTab(self.results_ui, 'Calculate PDF')
+        self.tabs.addTab(self.structure_ui, 'Structural Information')
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
 
