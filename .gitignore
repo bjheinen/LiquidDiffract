@@ -4,5 +4,7 @@
 *~
 # Test directory / files
 tests
+# egg
+LiquidDiffract.egg-info
 # Local files
 .directory
