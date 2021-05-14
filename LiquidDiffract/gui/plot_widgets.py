@@ -467,6 +467,100 @@ class ResultsPlotWidget(QWidget):
         self.pos_label.setText(_pos_str)
 
 
+class StructurePlotWidget(QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(StructurePlotWidget, self).__init__(*args, **kwargs)
+
+        self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(8)
+        self.create_plots()
+        self.style_plots()
+
+        self.create_signals()
+
+        self.setLayout(self.layout)
+
+    def create_plots(self):
+        self.pg_layout_widget = pg.GraphicsLayoutWidget()
+        self.pg_layout = pg.GraphicsLayout()
+        self.pg_layout.setContentsMargins(0, 0, 0, 0)
+        self.pg_layout_widget.setContentsMargins(0, 0, 0, 0)
+
+        self.rdf_plot = WindowedPlotItem()
+
+        self.rdf_plot.plot(x=[], y=[])
+
+        self.pg_layout.addItem(self.rdf_plot, row=1, col=0)
+
+        self.pg_layout_widget.addItem(self.pg_layout)
+
+        self.layout.addWidget(self.pg_layout_widget)
+
+    def style_plots(self):
+
+        self.rdf_plot.setLabel('bottom', text='r (A)')
+        self.rdf_plot.setLabel('left', text='RDF(r)')
+
+        self.pos_label = pg.LabelItem(justify='right')
+        self.pg_layout.addItem(self.pos_label, col=0, row=0)
+
+    def update_plots(self, _data):
+        try:
+            self.p1.clear()
+            self.p2.clear()
+            self.p3.clear()
+        except AttributeError:
+            pass
+        
+        #self.p1 = self.sq_plot.plot(x=_data['sq_x'], y=_data['sq_y'], pen={'color': 0.1, 'width': 1.2})
+        #self.p2 = self.gr_plot.plot(x=_data['gr_x'][:_window], y=_data['gr_y'][:_window], pen={'color': 0.1, 'width': 1.2})
+        #self.p3 = self.rdf_plot.plot(x=_data['rdf_x'][:_window], y=_data['rdf_y'][:_window], pen={'color': 0.1, 'width': 1.2})
+
+        self.set_gr_window()
+        self.set_rdf_window()
+
+
+    def set_gr_window(self):
+        try:
+            self.gr_plot.vb.setRange(xRange=(0, self.x_max),
+                                     yRange=(self.y_min_gr, self.y_max_gr))
+        except:
+            return
+
+    def set_rdf_window(self):
+        try:
+            self.rdf_plot.vb.setRange(xRange=(0, self.x_max),
+                                      yRange=(self.y_min_rdf, self.y_max_rdf))
+        except:
+            return
+
+    def create_signals(self):
+        self.mouse_proxy = pg.SignalProxy(self.pg_layout.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved)
+        self.rdf_plot.reset_window.connect(self.set_rdf_window)
+
+    def mouse_moved(self, __evt):
+        # Using signal proxy turns original args into tuple
+        __pos = __evt[0]
+        if self.rdf_plot.sceneBoundingRect().contains(__pos):
+            __mousePoint = self.rdf_plot.vb.mapSceneToView(__pos)
+            self.set_mouse_pos_label(__mousePoint)
+
+            self.rdf_plot.vline.setPos(__mousePoint.x())
+            self.rdf_plot.hline.setPos(__mousePoint.y())
+
+            self.rdf_plot.vline.setPen((0, 135, 153), width=0.75)
+            self.rdf_plot.hline.setPen((0, 135, 153), width=0.75)
+
+
+    def set_mouse_pos_label(self, pos):
+        _pos_str = (f'<span style="font-size: 11pt; color:#008799">x='
+                    f'{pos.x():.2f}, y={pos.y():.2f}</span'
+                    )
+        self.pos_label.setText(_pos_str)
+
+
 class CustomPlotItem(pg.PlotItem):
 
     def __init__(self, *args, **kwargs):
