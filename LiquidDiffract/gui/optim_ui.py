@@ -18,7 +18,8 @@ from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QHBoxLayout, QGroupBox, QPushButton, QLineEdit, \
                             QComboBox, QTableWidget, QTableWidgetItem, \
                             QLabel, QCheckBox, QButtonGroup, QRadioButton, \
-                            QScrollArea, QSplitter
+                            QScrollArea, QSplitter, QSizePolicy,  \
+                            QAbstractScrollArea, QHeaderView
 from LiquidDiffract.gui import plot_widgets
 from LiquidDiffract.gui import utility
 from LiquidDiffract.core import data_utils
@@ -55,7 +56,6 @@ class OptimUI(QWidget):
         self.config_scroll_area.setFrameShape(QFrame.NoFrame)
         self.config_scroll_area.setWidget(self.optim_config_widget)
         self.config_scroll_area.setWidgetResizable(True)
-        # can be explicity: self.scroll_area.setFixedHeight(1080)
 
         self.hsplitter = QSplitter(Qt.Horizontal)
         self.hsplitter.addWidget(self.config_scroll_area)
@@ -64,7 +64,6 @@ class OptimUI(QWidget):
         self.hsplitter.setStretchFactor(1, 5)
 
         self.layout.addWidget(self.hsplitter)
-
         self.setLayout(self.layout)
 
         self.data = {'cor_x': np.asarray([]), 'cor_y': np.asarray([]),
@@ -403,6 +402,7 @@ class OptimConfigWidget(QWidget):
         self.vlayout.addWidget(self.data_options_gb)
         self.vlayout.addWidget(self.optim_options_gb)
         self.vlayout.addWidget(self.optim_results_gb)
+
         self.setLayout(self.vlayout)
 
         self.create_signals()
@@ -468,7 +468,7 @@ class CompositionGroupBox(QGroupBox):
         self.composition_table.horizontalHeader().setVisible(True)
         self.composition_table.verticalHeader().setVisible(False)
         self.composition_table.setContentsMargins(0, 0, 0, 0)
-        self.composition_table.horizontalHeader().setStretchLastSection(True)
+        self.composition_table.horizontalHeader().setStretchLastSection(False)
         self.composition_table.setHorizontalHeaderLabels(['Element', 'Z', 'Charge', 'n'])
         self.composition_table.horizontalHeaderItem(0).setToolTip('Atomic element ')
         self.composition_table.horizontalHeaderItem(1).setToolTip('Atomic number ')
@@ -485,6 +485,10 @@ class CompositionGroupBox(QGroupBox):
         self.composition_table.setColumnWidth(1, 66)
         self.composition_table.setColumnWidth(2, 66)
         self.composition_table.setColumnWidth(3, 66)
+
+        self.composition_table.horizontalHeader().setResizeMode(QHeaderView.Stretch)
+        self.composition_table.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
+        self.composition_table.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
 
         self.composition_table.setItemDelegate(utility.ValidatedItemDelegate(self))
 
