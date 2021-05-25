@@ -990,7 +990,7 @@ def integrate_coordination_sphere(r, rdf,
         difficult to determine r_min, as can the broadening of RDF(r) 
         associated with an increase in temperature.
 
-    It should be noted that: N_a < N_b < N_c
+    It should be noted that: N_a < N_b but N_c is not always > N_b
     N_a can be considered a lower-bound on the coordination numeber as the 
     peak is never truly symmetrical. In some cases N_c can provide an upper
     limit, but the value is much more sensitive as r_min is never as well
@@ -1019,17 +1019,17 @@ def integrate_coordination_sphere(r, rdf,
         return N_a, N_b, N_c
 
     elif method == 1:
-        N_a, _ = quadrature(rdf_interp, r_0, rp_max)
+        N_a, _ = quadrature(rdf_interp, r_0, rp_max, maxiter=200)
         N_a *= 2.0
         return N_a
 
     elif method == 2:
-        N_b, _ = quadrature(rdf_interp, r_0, r_max)
+        N_b, _ = quadrature(rdf_interp, r_0, r_max, maxiter=200)
         N_b *= 2.0
         return N_b
 
     elif method == 3:
-        N_c, _ = quadrature(rdf_interp, r_0, r_min)
+        N_c, _ = quadrature(rdf_interp, r_0, r_min, maxiter=200)
         return N_c
 
     else:

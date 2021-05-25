@@ -104,7 +104,7 @@ def smooth_data(data, method='savitzky-golay', window_length=31, poly_order=3):
         return scipy.signal.savgol_filter(data, window_length, poly_order)
 
 
-def find_integration_limits(r, rdf, peak_search_limit=10.0):
+def find_integration_limits(r, rdf, rho=None, peak_search_limit=10.0, search_method='first'):
     '''
     Computes the integration limits used in the calculation of the 
     first coordination number for a monatomic system.
@@ -124,6 +124,9 @@ def find_integration_limits(r, rdf, peak_search_limit=10.0):
     Args:
         r   - r values (numpy array)
         rdf - Corresponding values of the radial distribution function, RDF(r) (numpy array)
+
+        rho - optional kwarg to provide number density (rho). This is used to
+              calculate g(r) if the peak search in rdf(r) fails
 
         peak_search_limit - optional kwarg to set limit on intial peak search
                             this is useful as the most prominent (topographic)
@@ -145,26 +148,50 @@ def find_integration_limits(r, rdf, peak_search_limit=10.0):
     rdf_interp = scipy.interpolate.interp1d(r, rdf, kind='cubic', fill_value='extrapolate')
     Tr_interp = scipy.interpolate.interp1d(r, Tr, kind='cubic', fill_value='extrapolate')
 
-    # Generate list of indices of approximate peak positions in the discrete 
-    # data. Here using scipy.signal but using np.diff(np.sign(np.diff(rdf)) to
-    # avoid the extra import may be less expensive
-    peak_list, _ = scipy.signal.find_peaks(rdf[r<peak_search_limit])
-
-    # Select most prominent peak as 1st coordination sphere and get positions
-    # at the base either side
-    peak_prom, left_bases, right_bases = scipy.signal.peak_prominences(rdf, peak_list)
-    peak_idx = np.argmax(peak_prom)
-    peak_bases = (r[left_bases[peak_idx]], r[right_bases[peak_idx]])
-
-    # Get approximate position of next peak to provide upper bound on r_min
-    next_peak = r[peak_list[peak_idx+1]]
-
     # Take the last root in RDF(r) as the leading edge of the 1st peak, r_0
     # Uses Brent method to find a zero of RDF(r) on the sign changing interval [a , b].
     # First find last sign-changing interval in discrete data
     brent_a = np.argwhere(np.sign(rdf) == -1)[-1]
     # Find root using scipy.optimize.brentq
     r_0 = scipy.optimize.brentq(rdf_interp, r[brent_a], r[brent_a+1])
+
+    # Generate list of indices of approximate peak positions in the discrete 
+    # data. Here using scipy.signal but using np.diff(np.sign(np.diff(rdf)) to
+    # avoid the extra import may be less expensive
+    peak_list, _ = scipy.signal.find_peaks(rdf[r<peak_search_limit])
+
+    # Select 1st peak after r0 as 1st coordination sphere
+    peak_idx_first = np.argmax(peak_list>brent_a)
+
+    # Select most prominent peak as 1st coordination sphere and get positions
+    # at the base either side
+    peak_prom, left_bases, right_bases = scipy.signal.peak_prominences(rdf, peak_list)
+    peak_idx_prom = np.argmax(peak_prom)
+    
+    if search_method == 'first':
+        peak_idx = peak_idx_first
+    elif search_method == 'prominent':
+        peak_idx = peak_idx_prom
+    else:
+        raise AttributeError('\'method\' must be \'first\' or \'prominent\'')
+    
+    peak_bases = (r[left_bases[peak_idx]], r[right_bases[peak_idx]])
+
+    # Get approximate position of next peak to provide upper bound on r_min
+    try:
+        next_peak = r[peak_list[peak_idx+1]]
+    # Handle IndexError if chosen peak is last in peak_list
+    except IndexError:
+        # Re-do peak search in g(r) if density (rho) available
+        if rho != None:
+            with np.errstate(divide='ignore', invalid='ignore'):
+                gr = rdf/(4*np.pi*rho*r**2)
+            gr_peak_list, _ = scipy.signal.find_peak(gr[r<peak_search_limit])
+            # Take the first peak after r0
+            next_peak = r[gr_peak_list[np.argmax(gr_peak_list>brent_a)+1]]
+        # If rho not available use
+        else:
+            next_peak = peak_search_limit
 
     # Refine rp_max (peak centre in r g(r))
     rp_max = scipy.optimize.minimize_scalar(lambda x: -Tr_interp(x), method='bounded', bounds=peak_bases).x
