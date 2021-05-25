@@ -201,9 +201,28 @@ class MainContainer(QWidget):
         self.results_ui.data['sq_method'] = self.optim_ui.data['sq_method']
         self.results_ui.plot_data()
 
+        # Clear data from structure ui
+        self.structure_ui.clear_data()
+
+        self.structure_ui.data['rdf_x'] = self.results_ui.data['rdf_x']
+        self.structure_ui.data['rdf_y'] = self.results_ui.data['rdf_y']
+        self.structure_ui.data['tr_x'] = self.results_ui.data['tr_x']
+        self.structure_ui.data['tr_y'] = self.results_ui.data['tr_y']
+        self.structure_ui.data['fr_x'] = self.results_ui.data['fr_x']
+        self.structure_ui.data['fr_y'] = self.results_ui.data['fr_y']
+        self.structure_ui.data['sq_x'] = self.results_ui.data['sq_x']
+        self.structure_ui.data['rho'] = self.results_ui.data['rho']
+        self.structure_ui.data['composition'] = self.results_ui.data['composition']
+
+        self.structure_ui.set_atoms()
+
+        self.structure_ui.plot_data()
+
     def results_cleared_slot(self):
         self.results_ui.clear_data()
         self.results_ui.results_plot_widget.update_plots(self.results_ui.data)
+        
+        self.structure_ui.clear_data()
 
     def update_filename(self):
         _base_name, _ext = os.path.splitext(self.bkg_ui.data_file)
