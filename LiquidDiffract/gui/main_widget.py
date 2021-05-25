@@ -223,6 +223,7 @@ class MainContainer(QWidget):
         self.results_ui.results_plot_widget.update_plots(self.results_ui.data)
         
         self.structure_ui.clear_data()
+        self.structure_ui.structure_plot_widget.clear_plots(_clear_all=True)
 
     def update_filename(self):
         _base_name, _ext = os.path.splitext(self.bkg_ui.data_file)

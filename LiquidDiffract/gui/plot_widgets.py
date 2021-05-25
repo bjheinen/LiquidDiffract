@@ -542,7 +542,7 @@ class StructurePlotWidget(QWidget):
         self.tr_plot.hline.setPen((0, 135, 153), width=0.75)
 
 
-    def clear_plots(self):
+    def clear_plots(self, _clear_all=False):
         try:
             self.p_rdf.clear()
             self.p_tr.clear()            
@@ -563,6 +563,37 @@ class StructurePlotWidget(QWidget):
             self.p_Nc.clear()
         except AttributeError:
             pass
+        
+        if _clear_all:
+            try:
+                self.rdf_plot.removeItem(self.r0_line_rdf)
+                self.tr_plot.removeItem(self.r0_line_tr)
+                self.rdf_plot.removeItem(self.rpmax_line_rdf)
+                self.tr_plot.removeItem(self.rpmax_line_tr)
+                self.rdf_plot.removeItem(self.rmax_line_rdf)
+                self.tr_plot.removeItem(self.rmax_line_tr)
+                self.rdf_plot.removeItem(self.rmin_line_rdf)
+                self.tr_plot.removeItem(self.rmin_line_rdf)
+                
+                self.r0_line_rdf.deleteLater()
+                self.r0_line_tr.deleteLater()
+                self.rpmax_line_rdf.deleteLater()
+                self.rpmax_line_tr.deleteLater()
+                self.rmax_line_rdf.deleteLater()
+                self.rmax_line_tr.deleteLater()
+                self.rmin_line_rdf.deleteLater()
+                self.rmin_line_rdf.deleteLater()
+                
+                del self.r0_line_rdf
+                del self.r0_line_tr
+                del self.rpmax_line_rdf
+                del self.rpmax_line_tr
+                del self.rmax_line_rdf
+                del self.rmax_line_tr
+                del self.rmin_line_rdf
+                del self.rmin_line_rdf
+            except AttributeError:
+                pass
 
     def update_plots(self, _data):
 
