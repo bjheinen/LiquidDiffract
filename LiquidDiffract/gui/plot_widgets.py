@@ -483,51 +483,205 @@ class StructurePlotWidget(QWidget):
         self.setLayout(self.layout)
 
     def create_plots(self):
-        self.pg_layout_widget = pg.GraphicsLayoutWidget()
-        self.pg_layout = pg.GraphicsLayout()
-        self.pg_layout.setContentsMargins(0, 0, 0, 0)
-        self.pg_layout_widget.setContentsMargins(0, 0, 0, 0)
+        
+        # Seperate widgets for rdf, tr
+        
+        self.pg_layout_widget_rdf = pg.GraphicsLayoutWidget()
+        self.pg_layout_widget_rdf.setContentsMargins(0, 0, 0, 0)
+        self.pg_layout_rdf = pg.GraphicsLayout()
+        self.pg_layout_rdf.setContentsMargins(0, 0, 0, 0)
+        
+        self.pg_layout_widget_tr = pg.GraphicsLayoutWidget()
+        self.pg_layout_widget_tr.setContentsMargins(0, 0, 0, 0)
+        self.pg_layout_tr = pg.GraphicsLayout()
+        self.pg_layout_tr.setContentsMargins(0, 0, 0, 0)        
 
+        # RDF(r) plot
         self.rdf_plot = WindowedPlotItem()
-
         self.rdf_plot.plot(x=[], y=[])
+        self.pg_layout_rdf.addItem(self.rdf_plot, row=1, col=0)
+        self.pg_layout_widget_rdf.addItem(self.pg_layout_rdf)
 
-        self.pg_layout.addItem(self.rdf_plot, row=1, col=0)
-
-        self.pg_layout_widget.addItem(self.pg_layout)
-
-        self.layout.addWidget(self.pg_layout_widget)
+        # T(r) plot
+        self.tr_plot = WindowedPlotItem()
+        self.tr_plot.plot(x=[], y=[])
+        self.pg_layout_tr.addItem(self.tr_plot, row=1, col=0)
+        self.pg_layout_widget_tr.addItem(self.pg_layout_tr)
+        
+        # Set RDF(r) plot as default view
+        self.layout.addWidget(self.pg_layout_widget_rdf)
+        self.layout.addWidget(self.pg_layout_widget_tr)
+        
+        self.pg_layout_widget_rdf.setVisible(True)
+        self.pg_layout_widget_tr.setVisible(False)
 
     def style_plots(self):
 
         self.rdf_plot.setLabel('bottom', text='r (A)')
         self.rdf_plot.setLabel('left', text='RDF(r)')
 
-        self.pos_label = pg.LabelItem(justify='right')
-        self.pg_layout.addItem(self.pos_label, col=0, row=0)
+        self.tr_plot.setLabel('bottom', text='r (A)')
+        self.tr_plot.setLabel('left', text='T(r)')
 
-    def update_plots(self, _data):
+        self.rdf_xaxis = pg.InfiniteLine(pos=0, angle=0, movable=False, pen={'color': 'k', 'width': 0.75})
+        self.rdf_plot.addItem(self.rdf_xaxis)
+        self.tr_xaxis = pg.InfiniteLine(pos=0, angle=0, movable=False, pen={'color': 'k', 'width': 0.75})
+        self.tr_plot.addItem(self.tr_xaxis)
+
+        # Add position label to all plot views
+        self.pos_label_rdf = pg.LabelItem(justify='right')
+        self.pg_layout_rdf.addItem(self.pos_label_rdf, col=0, row=0)
+
+        self.pos_label_tr = pg.LabelItem(justify='right')
+        self.pg_layout_tr.addItem(self.pos_label_tr, col=0, row=0)
+        
+        self.rdf_plot.vline.setPen((0, 135, 153), width=0.75)
+        self.rdf_plot.hline.setPen((0, 135, 153), width=0.75)
+
+        self.tr_plot.vline.setPen((0, 135, 153), width=0.75)
+        self.tr_plot.hline.setPen((0, 135, 153), width=0.75)
+
+    def clear_plots(self):
         try:
-            self.p1.clear()
-            self.p2.clear()
-            self.p3.clear()
+            self.p_rdf.clear()
+            self.p_tr.clear()            
+        except AttributeError:
+            pass      
+
+        try:
+            self.p_Na.clear()
         except AttributeError:
             pass
         
-        #self.p1 = self.sq_plot.plot(x=_data['sq_x'], y=_data['sq_y'], pen={'color': 0.1, 'width': 1.2})
-        #self.p2 = self.gr_plot.plot(x=_data['gr_x'][:_window], y=_data['gr_y'][:_window], pen={'color': 0.1, 'width': 1.2})
-        #self.p3 = self.rdf_plot.plot(x=_data['rdf_x'][:_window], y=_data['rdf_y'][:_window], pen={'color': 0.1, 'width': 1.2})
-
-        self.set_gr_window()
-        self.set_rdf_window()
-
-
-    def set_gr_window(self):
         try:
-            self.gr_plot.vb.setRange(xRange=(0, self.x_max),
-                                     yRange=(self.y_min_gr, self.y_max_gr))
-        except:
+            self.p_Nb.clear()
+        except AttributeError:
+            pass
+        
+        try:
+            self.p_Nc.clear()
+        except AttributeError:
+            pass
+
+    def update_plots(self, _data):
+
+        self.clear_plots()
+   
+        # Some versions of pyqtgraph cannot produce plot if nan values present
+        # Fix nan values by interpolation
+        if np.isnan(_data['rdf_y']).any():
+             _data['rdf_y'] = data_utils.interp_nan(_data['rdf_y'])
+        if np.isnan(_data['tr_y']).any():
+             _data['tr_y'] = data_utils.interp_nan(_data['tr_y'])
+        if np.isnan(_data['fr_y']).any():
+             _data['fr_y'] = data_utils.interp_nan(_data['fr_y'])
+
+        # Interpolate data for smoother plots
+        #_data['rdf_x'], _data['rdf_y'] = data_utils.rebin_data(_data['rdf_x'], _data['rdf_y'], dx=0.01)
+        #_data['tr_x'], _data['tr_y'] = data_utils.rebin_data(_data['tr_x'], _data['tr_y'], dx=0.01)
+
+        self.p_rdf = self.rdf_plot.plot(x=_data['rdf_x'], y=_data['rdf_y'], pen={'color': 0.1, 'width': 1.2})
+        self.p_tr = self.tr_plot.plot(x=_data['tr_x'], y=_data['tr_y'], pen={'color': 0.1, 'width': 1.2})
+        #self.p_fr = self.rdf_plot.plot(x=_data['rdf_x'][:_window], y=_data['rdf_y'][:_window], pen={'color': 0.1, 'width': 1.2})
+
+        # Create areas of N integrals
+        _Na_area_idx = np.where((_data['tr_x'] > _data['r0']) & (_data['tr_x'] < _data['rpmax']))        
+        _Nb_area_idx = np.where((_data['rdf_x'] > _data['r0']) & (_data['rdf_x'] < _data['rmax']))
+        _Nc_area_idx = np.where((_data['rdf_x'] > _data['r0']) & (_data['rdf_x'] < _data['rmin']))
+        
+        _r0_tr_pt = data_utils.interp_data(_data['tr_x'], _data['tr_y'], _data['r0'])
+        _r0_rdf_pt = data_utils.interp_data(_data['rdf_x'], _data['rdf_y'], _data['r0'])
+        _rpmax_tr_pt = data_utils.interp_data(_data['tr_x'], _data['tr_y'], _data['rpmax'])        
+        _rmax_rdf_pt = data_utils.interp_data(_data['rdf_x'], _data['rdf_y'], _data['rmax'])
+        _rmin_rdf_pt = data_utils.interp_data(_data['rdf_x'], _data['rdf_y'], _data['rmin'])
+
+        _Na_area_x = np.concatenate(([_data['r0']], _data['tr_x'][_Na_area_idx], [_data['rpmax']]))
+        _Na_area_y = np.concatenate((_r0_tr_pt, _data['tr_y'][_Na_area_idx], _rpmax_tr_pt))
+        _Nb_area_x = np.concatenate(([_data['r0']], _data['rdf_x'][_Nb_area_idx], [_data['rmax']]))
+        _Nb_area_y = np.concatenate((_r0_rdf_pt, _data['rdf_y'][_Nb_area_idx], _rmax_rdf_pt))
+        _Nc_area_x = np.concatenate(([_data['r0']], _data['rdf_x'][_Nc_area_idx], [_data['rmin']]))
+        _Nc_area_y = np.concatenate((_r0_rdf_pt, _data['rdf_y'][_Nc_area_idx], _rmin_rdf_pt))
+        
+        # Plot fill areas for integrals
+        # Nc is plotted first/behind as it extends beyond Nb
+        # Only plot if r0 < r
+        if _data['r0'] < _data['rmin']:
+            self.p_Nc = self.rdf_plot.plot(x=_Nc_area_x, y=_Nc_area_y, brush=(26,121,199), pen=None, fillLevel=0)
+        if _data['r0'] < _data['rpmax']:
+            self.p_Na = self.tr_plot.plot(x=_Na_area_x, y=_Na_area_y, brush=(199,26,74), pen=None, fillLevel=0)
+        if _data['r0'] < _data['rmax']:
+            self.p_Nb = self.rdf_plot.plot(x=_Nb_area_x, y=_Nb_area_y, brush=(199,26,74), pen=None, fillLevel=0)
+
+    
+        # Limit the inital view to important information
+        try:
+            self.x_max = _data['sq_x'][-1]
+        except IndexError:
             return
+        
+        # Plot integral limits as movable InfLines 
+        try:
+            # Set line positions
+            self.r0_line_rdf.setPos(_data['r0'])
+            self.r0_line_tr.setPos(_data['r0'])
+            
+            self.rpmax_line_rdf.setPos(_data['rpmax'])
+            self.rpmax_line_tr.setPos(_data['rpmax'])
+            
+            self.rmax_line_rdf.setPos(_data['rmax'])
+            self.rmax_line_tr.setPos(_data['rmax'])
+
+            self.rmin_line_rdf.setPos(_data['rmin'])
+            self.rmin_line_tr.setPos(_data['rmin'])
+
+        except AttributeError:
+            # Initial creation of lines
+            # Create draggable lines for r0, rmax, rpmax and rmin
+            self.r0_line_rdf = pg.InfiniteLine(pos=_data['r0'], movable=True, label='r0', bounds=[0, self.x_max], 
+                                               labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='r0')
+            self.r0_line_tr = pg.InfiniteLine(pos=_data['r0'], movable=True, label='r0', bounds=[0, self.x_max], 
+                                              labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='r0')
+    
+            self.rpmax_line_rdf = pg.InfiniteLine(pos=_data['rpmax'], movable=True, label='r\'max', bounds=[0, self.x_max], 
+                                                  labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rpmax')
+            self.rpmax_line_tr = pg.InfiniteLine(pos=_data['rpmax'], movable=True, label='r\'max', bounds=[0, self.x_max], 
+                                                 labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rpmax')
+            
+            self.rmax_line_rdf = pg.InfiniteLine(pos=_data['rmax'], movable=True, label='rmax', bounds=[0, self.x_max], 
+                                                 labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rmax')
+            self.rmax_line_tr = pg.InfiniteLine(pos=_data['rmax'], movable=True, label='rmax', bounds=[0, self.x_max], 
+                                                labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rmax')
+    
+            self.rmin_line_rdf = pg.InfiniteLine(pos=_data['rmin'], movable=True, label='rmin', bounds=[0, self.x_max], 
+                                                 labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rmin')
+            self.rmin_line_tr = pg.InfiniteLine(pos=_data['rmin'], movable=True, label='rmin', bounds=[0, self.x_max], 
+                                                labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rmin')
+
+            self.rdf_plot.addItem(self.r0_line_rdf)
+            self.tr_plot.addItem(self.r0_line_tr)
+    
+            self.rdf_plot.addItem(self.rpmax_line_rdf)
+            self.tr_plot.addItem(self.rpmax_line_tr)
+    
+            self.rdf_plot.addItem(self.rmax_line_rdf)
+            self.tr_plot.addItem(self.rmax_line_tr)
+    
+            self.rdf_plot.addItem(self.rmin_line_rdf)
+            self.tr_plot.addItem(self.rmin_line_tr)        
+                
+
+    def update_plot_windows(self, _data):
+        _rdf_cut = np.nan_to_num(_data['rdf_y'][np.where(_data['rdf_x'] < self.x_max)])
+        self.y_min_rdf = np.min(_rdf_cut)
+        self.y_max_rdf = np.max(_rdf_cut)
+
+        _tr_cut = np.nan_to_num(_data['tr_y'][np.where(_data['tr_x'] < self.x_max)])
+        self.y_min_tr = np.min(_tr_cut)
+        self.y_max_tr = np.max(_tr_cut)
+
+        self.set_rdf_window()
+        self.set_tr_window()       
+        
 
     def set_rdf_window(self):
         try:
@@ -536,29 +690,50 @@ class StructurePlotWidget(QWidget):
         except:
             return
 
+    def set_tr_window(self):
+        try:
+            self.tr_plot.vb.setRange(xRange=(0, self.x_max),
+                                     yRange=(self.y_min_tr, self.y_max_tr))
+        except:
+            return
+
+
     def create_signals(self):
-        self.mouse_proxy = pg.SignalProxy(self.pg_layout.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved)
+        self.rdf_mouse_proxy = pg.SignalProxy(self.pg_layout_rdf.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved_rdf)
+        self.tr_mouse_proxy = pg.SignalProxy(self.pg_layout_tr.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved_tr)
+        
         self.rdf_plot.reset_window.connect(self.set_rdf_window)
 
-    def mouse_moved(self, __evt):
+    def mouse_moved_rdf(self, __evt):
+        # Use different slots as mouse always in scene bounding rectangle
         # Using signal proxy turns original args into tuple
+        
         __pos = __evt[0]
-        if self.rdf_plot.sceneBoundingRect().contains(__pos):
-            __mousePoint = self.rdf_plot.vb.mapSceneToView(__pos)
-            self.set_mouse_pos_label(__mousePoint)
+        #if self.rdf_plot.sceneBoundingRect().contains(__pos):
+        __mousePoint = self.rdf_plot.vb.mapSceneToView(__pos)
+        self.set_mouse_pos_label(__mousePoint)
 
-            self.rdf_plot.vline.setPos(__mousePoint.x())
-            self.rdf_plot.hline.setPos(__mousePoint.y())
+        self.rdf_plot.vline.setPos(__mousePoint.x())
+        self.rdf_plot.hline.setPos(__mousePoint.y())
 
-            self.rdf_plot.vline.setPen((0, 135, 153), width=0.75)
-            self.rdf_plot.hline.setPen((0, 135, 153), width=0.75)
+            
+    def mouse_moved_tr(self, __evt):
+        __pos = __evt[0]
+        #if self.tr_plot.sceneBoundingRect().contains(__pos):
+        __mousePoint = self.tr_plot.vb.mapSceneToView(__pos)
+        self.set_mouse_pos_label(__mousePoint)
+        
+        self.tr_plot.vline.setPos(__mousePoint.x())
+        self.tr_plot.hline.setPos(__mousePoint.y())
+
 
 
     def set_mouse_pos_label(self, pos):
         _pos_str = (f'<span style="font-size: 11pt; color:#008799">x='
                     f'{pos.x():.2f}, y={pos.y():.2f}</span'
                     )
-        self.pos_label.setText(_pos_str)
+        self.pos_label_rdf.setText(_pos_str)
+        self.pos_label_tr.setText(_pos_str)
 
 
 class CustomPlotItem(pg.PlotItem):
