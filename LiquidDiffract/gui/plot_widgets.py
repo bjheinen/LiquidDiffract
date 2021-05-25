@@ -644,14 +644,14 @@ class StructurePlotWidget(QWidget):
                                               labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='r0')
 
             self.rpmax_line_rdf = pg.InfiniteLine(pos=_data['rpmax'], movable=True, label='r\'max', bounds=[0, self.x_max], 
-                                                  labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rpmax')
+                                                  labelOpts={'position': 0.8, 'movable': True, 'color': (0,10,40)}, name='rpmax')
             self.rpmax_line_tr = pg.InfiniteLine(pos=_data['rpmax'], movable=True, label='r\'max', bounds=[0, self.x_max], 
-                                                 labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rpmax')
+                                                 labelOpts={'position': 0.8, 'movable': True, 'color': (0,10,40)}, name='rpmax')
 
             self.rmax_line_rdf = pg.InfiniteLine(pos=_data['rmax'], movable=True, label='rmax', bounds=[0, self.x_max], 
-                                                 labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rmax')
+                                                 labelOpts={'position': 0.85, 'movable': True, 'color': (0,10,40)}, name='rmax')
             self.rmax_line_tr = pg.InfiniteLine(pos=_data['rmax'], movable=True, label='rmax', bounds=[0, self.x_max], 
-                                                labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rmax')
+                                                labelOpts={'position': 0.85, 'movable': True, 'color': (0,10,40)}, name='rmax')
 
             self.rmin_line_rdf = pg.InfiniteLine(pos=_data['rmin'], movable=True, label='rmin', bounds=[0, self.x_max], 
                                                  labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rmin')
