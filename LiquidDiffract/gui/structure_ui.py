@@ -43,13 +43,11 @@ class StructureUI(QWidget):
         self.config_scroll_area.setWidget(self.structure_config_widget)
         self.config_scroll_area.setWidgetResizable(True)
 
-
         # Make vertical line separator
         self.vline = QFrame()
         self.vline.setFrameShape(QFrame.VLine)
         self.vline.setFrameShadow(QFrame.Sunken)
         self.vline.setObjectName('vline')
-
 
         # Make plot widget
         self.structure_plot_widget = plot_widgets.StructurePlotWidget()
@@ -85,6 +83,9 @@ class StructureUI(QWidget):
 
         self.int_limit_signalMapper = QSignalMapper()
         self.int_limit_signalMapper.mapped[QObject].connect(self.update_int_limits)
+
+        self.structure_config_widget.monatomic_gb.find_limits_btn.clicked.connect(self.auto_integration_limits)
+        self.structure_config_widget.monatomic_gb.calc_N_btn.clicked.connect(self.calc_integrals)
 
     def create_int_limit_signals(self):
 
@@ -158,6 +159,9 @@ class StructureUI(QWidget):
         self.data['rmax'] = self.structure_config_widget.monatomic_gb.rmax_input.value()
         self.data['rmin'] = self.structure_config_widget.monatomic_gb.rmin_input.value()
 
+        if not self.data['rdf_y'].size:
+            return
+
         self.structure_plot_widget.update_plots(self.data)
 
         self.create_int_limit_signals()
@@ -174,6 +178,29 @@ class StructureUI(QWidget):
             self.structure_plot_widget.pg_layout_widget_tr.setVisible(True)
         else:
             pass
+
+    def auto_integration_limits(self):
+        if not self.data['rdf_y'].size:
+            return
+        _r_0, _rp_max, _r_max, _r_min = data_utils.find_integration_limits(self.data['rdf_x'], self.data['rdf_y'])
+        self.structure_config_widget.monatomic_gb.r0_input.setValue(_r_0)
+        self.structure_config_widget.monatomic_gb.rpmax_input.setValue(_rp_max)
+        self.structure_config_widget.monatomic_gb.rmax_input.setValue(_r_max)
+        self.structure_config_widget.monatomic_gb.rmin_input.setValue(_r_min)
+
+    def calc_integrals(self):
+        if not self.data['rdf_y'].size:
+            return
+        _Na, _Nb, _Nc = core.integrate_coordination_sphere(self.data['rdf_x'], self.data['rdf_y'],
+                                                           r_0=self.data['r0'], rp_max=self.data['rpmax'],
+                                                           r_max=self.data['rmax'], r_min=self.data['rmin'],
+                                                           method=0)
+        self.structure_config_widget.monatomic_gb.Na_output.setText('{0:.3f}'.format(_Na))
+        self.structure_config_widget.monatomic_gb.Nb_output.setText('{0:.3f}'.format(_Nb))
+        self.structure_config_widget.monatomic_gb.Nc_output.setText('{0:.3f}'.format(_Nc))
+        self.data['N_a'] = _Na
+        self.data['N_b'] = _Nb
+        self.data['N_c'] = _Nc
 
 
 class StructureConfigWidget(QWidget):
