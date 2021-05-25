@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Utility functions for common data operations
+Utility functions for common data operations in LiquidDiffract
 """
 __author__ = "Benedict J Heinen"
-__copyright__ = "Copyright 2018-2019, Benedict J. Heinen"
+__copyright__ = "Copyright 2018-2021, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
 from functools import lru_cache, wraps
 import numpy as np
 import scipy.interpolate
-from scipy.signal import savgol_filter
-
+import scipy.optimize
+import scipy.signal
 
 def rebin_data(x, y, dx=0.02, x_lim=None):
     '''
@@ -101,7 +101,81 @@ def smooth_data(data, method='savitzky-golay', window_length=31, poly_order=3):
                   This must be an integer less than window_length.
     '''
     if method == 'savitzky-golay':
-        return savgol_filter(data, window_length, poly_order)
+        return scipy.signal.savgol_filter(data, window_length, poly_order)
+
+
+def find_integration_limits(r, rdf, peak_search_limit=10.0):
+    '''
+    Computes the integration limits used in the calculation of the 
+    first coordination number for a monatomic system.
+
+    The function returns several values for use in different methods of
+    calculating the coordination number. 
+    See 'core.integrate_coordination_sphere' for more information on
+    the methods implemented in LiquidDiffract.
+
+    The location of the peak corresponding to the first coordination sphere 
+    (the 1st peak in RDF(r)) is first approximated from the discrete data 
+    using a peak finding algorithm. A continuous function is then generated
+    using cubic interpolation and the position of r_0 refined using a root
+    finding algorithm and the positions of r_max, rp_max, and r_min are 
+    refined through calls to scipy.minimize
+
+    Args:
+        r   - r values (numpy array)
+        rdf - Corresponding values of the radial distribution function, RDF(r) (numpy array)
+
+        peak_search_limit - optional kwarg to set limit on intial peak search
+                            this is useful as the most prominent (topographic)
+                            peak is taken and the function can be confused by
+                            choosing a peak at high r. If the main peak is the
+                            nth peak, there must be at least n+1 peaks found
+
+    Returns:
+        r_0 - Leading edge of the 1st peak in RDF(r), taken as the nearest root
+        rp_max - Peak centre in T(r) (equivalent to centre in r*g(r))
+        r_max - Peak centre in RDF(r) (equivalent to centre in r^2*g(r))
+        r_min - Position of 1st minimum after the 1st peak in RDF(r)
+    '''
+    # Calculate T(r)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        Tr = np.nan_to_num(rdf/r)
+
+    # Create continuous functions of RDF(r) and T(r) via cubic interpolation
+    rdf_interp = scipy.interpolate.interp1d(r, rdf, kind='cubic', fill_value='extrapolate')
+    Tr_interp = scipy.interpolate.interp1d(r, Tr, kind='cubic', fill_value='extrapolate')
+
+    # Generate list of indices of approximate peak positions in the discrete 
+    # data. Here using scipy.signal but using np.diff(np.sign(np.diff(rdf)) to
+    # avoid the extra import may be less expensive
+    peak_list, _ = scipy.signal.find_peaks(rdf[r<peak_search_limit])
+
+    # Select most prominent peak as 1st coordination sphere and get positions
+    # at the base either side
+    peak_prom, left_bases, right_bases = scipy.signal.peak_prominences(rdf, peak_list)
+    peak_idx = np.argmax(peak_prom)
+    peak_bases = (r[left_bases[peak_idx]], r[right_bases[peak_idx]])
+
+    # Get approximate position of next peak to provide upper bound on r_min
+    next_peak = r[peak_list[peak_idx+1]]
+
+    # Take the last root in RDF(r) as the leading edge of the 1st peak, r_0
+    # Uses Brent method to find a zero of RDF(r) on the sign changing interval [a , b].
+    # First find last sign-changing interval in discrete data
+    brent_a = np.argwhere(np.sign(rdf) == -1)[-1]
+    # Find root using scipy.optimize.brentq
+    r_0 = scipy.optimize.brentq(rdf_interp, r[brent_a], r[brent_a+1])
+
+    # Refine rp_max (peak centre in r g(r))
+    rp_max = scipy.optimize.minimize_scalar(lambda x: -Tr_interp(x), method='bounded', bounds=peak_bases).x
+    # Refine r_max (peak centre in r^2 g(r))
+    r_max = scipy.optimize.minimize_scalar(lambda x: -rdf_interp(x), method='bounded', bounds=peak_bases).x
+
+    # Refine r_min (position of 1st minimum after 1st peak)
+    # Note: r_min should be global minimum but optimisation may return local min
+    r_min = scipy.optimize.minimize_scalar(rdf_interp, method='bounded', bounds=(r_max, next_peak)).x
+
+    return r_0, rp_max, r_max, r_min
 
 
 def data_cache(*args, **kwargs):

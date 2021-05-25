@@ -25,7 +25,7 @@ __license__ = 'GNU GPL v3'
 
 from functools import lru_cache
 import numpy as np
-from scipy.integrate import simps
+from scipy.integrate import simps, quadrature
 import scipy.interpolate
 import scipy.fftpack
 # importlib.resources only available in python>=3.7
@@ -930,3 +930,107 @@ def calc_impr_interference_func(rho, *args):
         return interference_func_impr, chi_squared
     else:
         raise ValueError('Argument - opt_flag - must be boolean')
+
+
+def integrate_coordination_sphere(r, rdf,
+                                  r_0=None, rp_max=None,
+                                  r_max=None, r_min=None, method=0):
+    '''
+    Calculates the 1st coordination number, N_1, for a monatomic sample by 
+    integrating the area under the first peak in RDF(r)
+
+    The position of the 1st peak in RDF(r) directly gives the average 
+    interatomic bond length, r_ab, between an atom 'a' at the origin and the
+    next-nearest neighbour. The area under this curve gives the average 
+    coordination number of the 1st coordination sphere, N_1. RDF(r) is the 
+    radial distribution function, defined as:
+
+        RDF(r) = 4πρr^2g(r), where g(r) is the pair-distribution function
+
+    The coordination number is fairly sensitive to the upper integration limit 
+    chosen. There are several methods used in the literature to define the 
+    limits based on either physical models or empirical observations. Three 
+    methods are implimented in LiquidDiffract:
+
+        1) Integration of area symmetrical in rg(r)
+
+        This method is based on the assumption that the quantity rg(r) is 
+        symmetrical for a coordination shell about its average position. The
+        coordination number is calculated by integrating across RDF(r) from 
+        the leading edge of the 1st peak, r_0, to the peak centre of the
+        function r*g(r), r'_max. The integral is doubled to account for the 
+        right half of the peak:
+
+            (Eq. 2.5.1 in Waseda, 1980)
+            N_a = 2 * INT 4πρr[rg(r)]_sym dr | r=r_0 --> r=r'_max 
+
+        2) Integration of area symmetrical in r^2g(r)
+
+        This method is similar to method 1 but assumes the peak is symmetrical
+        in r^2g(r) instead of rg(r). The limit r_max is therefore the peak 
+        centre in RDF(r):
+
+            (Eq. 2.5.2 in Waseda, 1980)
+            N_b = 2 * INT 4πρ[r^2g(r)]_sym dr | r=r_0 --> r=r_max
+
+        It should be noted that r_max > r'_max
+
+        3) Integration to the firt minimum in RDF(r)
+
+        This is the most commonly used method to estimate N_1. It is based on
+        the observation that the 1st peak is generally assymetric in 
+        experimental data. The function 4πρr^2g(r) is integrated from r_0 to 
+        the first minimum after the peak:
+
+            (Eq. 2.5.3 in Waseda, 1980)
+            N_c = INT RDF(r) dr | r=r_0 --> r=r_min 
+
+        N_c is sensitive to the value of r_min used and r_min is not always
+        easily refined. Noise and truncation ripples in RDF(r) can make it
+        difficult to determine r_min, as can the broadening of RDF(r) 
+        associated with an increase in temperature.
+
+    It should be noted that: N_a < N_b < N_c
+    N_a can be considered a lower-bound on the coordination numeber as the 
+    peak is never truly symmetrical. In some cases N_c can provide an upper
+    limit, but the value is much more sensitive as r_min is never as well
+    defined as r_0 and r_max/r'_max
+
+    Args:
+        r   - r values (numpy array)
+        rdf - Corresponding values of the radial distribution function, RDF(r) (numpy array)
+        r_0 - Leading edge of the 1st peak in RDF(r)
+        rp_max - r'_max, peak centre in rg(r)
+        r_max - peak centre in r^2g(r)
+        r_min - 1st minimum to the right of the 1st peak in RDF(r)
+
+    Returns:
+        N_a - 1st coordination number computed via method 1.
+        N_b - 1st coordination number computed via method 2.
+        N_c - 1st coordination number computed via method 3.
+    '''
+
+    rdf_interp = scipy.interpolate.interp1d(r, rdf, kind='cubic', fill_value='extrapolate')
+
+    if method == 0:
+        N_a = integrate_coordination_sphere(r, rdf, r_0=r_0, rp_max=rp_max, method=1)
+        N_b = integrate_coordination_sphere(r, rdf, r_0=r_0, r_max=r_max, method=2)
+        N_c = integrate_coordination_sphere(r, rdf, r_0=r_0, r_min=r_min, method=3)
+        return N_a, N_b, N_c
+
+    elif method == 1:
+        N_a, _ = quadrature(rdf_interp, r_0, rp_max)
+        N_a *= 2.0
+        return N_a
+
+    elif method == 2:
+        N_b, _ = quadrature(rdf_interp, r_0, r_max)
+        N_b *= 2.0
+        return N_b
+
+    elif method == 3:
+        N_c, _ = quadrature(rdf_interp, r_0, r_min)
+        return N_c
+
+    else:
+        raise NameError('\'method\' must be one of either 1, 2, 3, or 0')
