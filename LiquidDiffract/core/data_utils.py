@@ -12,17 +12,28 @@ import scipy.interpolate
 from scipy.signal import savgol_filter
 
 
-def rebin_data(x, y, dx=0.02):
+def rebin_data(x, y, dx=0.02, x_lim=None):
     '''
     Re-bins x,y data (using interpolation) to achieve a set step size of x (dx)
     Extrapolates x < x_min to zero
     '''
-    x_rebin = np.arange(0, x[-1], dx)
+    if x_lim != None:
+        x_rebin = np.arange(x_lim[0], x_lim[1], dx)
+    else:
+        x_rebin = np.arange(0, x[-1], dx)
     f_interp = scipy.interpolate.interp1d(x, y,
                                           kind='cubic',
                                           fill_value='extrapolate')
     y_rebin = f_interp(x_rebin)
     return x_rebin, y_rebin
+
+def interp_data(x, y, x2):
+    '''
+    Helper function to return interpolated y-value at given x2 for f(x)=y
+    '''
+    f_interp = scipy.interpolate.interp1d(x, y, kind='cubic',
+                                          fill_value='extrapolate')
+    return f_interp(x2).flatten()
 
 
 def convert_two_theta(two_theta, wavelength):
