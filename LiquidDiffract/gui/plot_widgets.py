@@ -483,14 +483,14 @@ class StructurePlotWidget(QWidget):
         self.setLayout(self.layout)
 
     def create_plots(self):
-        
+
         # Seperate widgets for rdf, tr
-        
+
         self.pg_layout_widget_rdf = pg.GraphicsLayoutWidget()
         self.pg_layout_widget_rdf.setContentsMargins(0, 0, 0, 0)
         self.pg_layout_rdf = pg.GraphicsLayout()
         self.pg_layout_rdf.setContentsMargins(0, 0, 0, 0)
-        
+
         self.pg_layout_widget_tr = pg.GraphicsLayoutWidget()
         self.pg_layout_widget_tr.setContentsMargins(0, 0, 0, 0)
         self.pg_layout_tr = pg.GraphicsLayout()
@@ -507,11 +507,11 @@ class StructurePlotWidget(QWidget):
         self.tr_plot.plot(x=[], y=[])
         self.pg_layout_tr.addItem(self.tr_plot, row=1, col=0)
         self.pg_layout_widget_tr.addItem(self.pg_layout_tr)
-        
+
         # Set RDF(r) plot as default view
         self.layout.addWidget(self.pg_layout_widget_rdf)
         self.layout.addWidget(self.pg_layout_widget_tr)
-        
+
         self.pg_layout_widget_rdf.setVisible(True)
         self.pg_layout_widget_tr.setVisible(False)
 
@@ -534,12 +534,13 @@ class StructurePlotWidget(QWidget):
 
         self.pos_label_tr = pg.LabelItem(justify='right')
         self.pg_layout_tr.addItem(self.pos_label_tr, col=0, row=0)
-        
+
         self.rdf_plot.vline.setPen((0, 135, 153), width=0.75)
         self.rdf_plot.hline.setPen((0, 135, 153), width=0.75)
 
         self.tr_plot.vline.setPen((0, 135, 153), width=0.75)
         self.tr_plot.hline.setPen((0, 135, 153), width=0.75)
+
 
     def clear_plots(self):
         try:
@@ -552,12 +553,12 @@ class StructurePlotWidget(QWidget):
             self.p_Na.clear()
         except AttributeError:
             pass
-        
+
         try:
             self.p_Nb.clear()
         except AttributeError:
             pass
-        
+
         try:
             self.p_Nc.clear()
         except AttributeError:
@@ -566,7 +567,7 @@ class StructurePlotWidget(QWidget):
     def update_plots(self, _data):
 
         self.clear_plots()
-   
+
         # Some versions of pyqtgraph cannot produce plot if nan values present
         # Fix nan values by interpolation
         if np.isnan(_data['rdf_y']).any():
@@ -588,7 +589,7 @@ class StructurePlotWidget(QWidget):
         _Na_area_idx = np.where((_data['tr_x'] > _data['r0']) & (_data['tr_x'] < _data['rpmax']))        
         _Nb_area_idx = np.where((_data['rdf_x'] > _data['r0']) & (_data['rdf_x'] < _data['rmax']))
         _Nc_area_idx = np.where((_data['rdf_x'] > _data['r0']) & (_data['rdf_x'] < _data['rmin']))
-        
+
         _r0_tr_pt = data_utils.interp_data(_data['tr_x'], _data['tr_y'], _data['r0'])
         _r0_rdf_pt = data_utils.interp_data(_data['rdf_x'], _data['rdf_y'], _data['r0'])
         _rpmax_tr_pt = data_utils.interp_data(_data['tr_x'], _data['tr_y'], _data['rpmax'])        
@@ -601,7 +602,7 @@ class StructurePlotWidget(QWidget):
         _Nb_area_y = np.concatenate((_r0_rdf_pt, _data['rdf_y'][_Nb_area_idx], _rmax_rdf_pt))
         _Nc_area_x = np.concatenate(([_data['r0']], _data['rdf_x'][_Nc_area_idx], [_data['rmin']]))
         _Nc_area_y = np.concatenate((_r0_rdf_pt, _data['rdf_y'][_Nc_area_idx], _rmin_rdf_pt))
-        
+
         # Plot fill areas for integrals
         # Nc is plotted first/behind as it extends beyond Nb
         # Only plot if r0 < r
@@ -612,22 +613,22 @@ class StructurePlotWidget(QWidget):
         if _data['r0'] < _data['rmax']:
             self.p_Nb = self.rdf_plot.plot(x=_Nb_area_x, y=_Nb_area_y, brush=(199,26,74), pen=None, fillLevel=0)
 
-    
+
         # Limit the inital view to important information
         try:
             self.x_max = _data['sq_x'][-1]
         except IndexError:
             return
-        
+
         # Plot integral limits as movable InfLines 
         try:
             # Set line positions
             self.r0_line_rdf.setPos(_data['r0'])
             self.r0_line_tr.setPos(_data['r0'])
-            
+
             self.rpmax_line_rdf.setPos(_data['rpmax'])
             self.rpmax_line_tr.setPos(_data['rpmax'])
-            
+
             self.rmax_line_rdf.setPos(_data['rmax'])
             self.rmax_line_tr.setPos(_data['rmax'])
 
@@ -641,17 +642,17 @@ class StructurePlotWidget(QWidget):
                                                labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='r0')
             self.r0_line_tr = pg.InfiniteLine(pos=_data['r0'], movable=True, label='r0', bounds=[0, self.x_max], 
                                               labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='r0')
-    
+
             self.rpmax_line_rdf = pg.InfiniteLine(pos=_data['rpmax'], movable=True, label='r\'max', bounds=[0, self.x_max], 
                                                   labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rpmax')
             self.rpmax_line_tr = pg.InfiniteLine(pos=_data['rpmax'], movable=True, label='r\'max', bounds=[0, self.x_max], 
                                                  labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rpmax')
-            
+
             self.rmax_line_rdf = pg.InfiniteLine(pos=_data['rmax'], movable=True, label='rmax', bounds=[0, self.x_max], 
                                                  labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rmax')
             self.rmax_line_tr = pg.InfiniteLine(pos=_data['rmax'], movable=True, label='rmax', bounds=[0, self.x_max], 
                                                 labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rmax')
-    
+
             self.rmin_line_rdf = pg.InfiniteLine(pos=_data['rmin'], movable=True, label='rmin', bounds=[0, self.x_max], 
                                                  labelOpts={'position': 0.75, 'movable': True, 'color': (0,10,40)}, name='rmin')
             self.rmin_line_tr = pg.InfiniteLine(pos=_data['rmin'], movable=True, label='rmin', bounds=[0, self.x_max], 
@@ -659,16 +660,16 @@ class StructurePlotWidget(QWidget):
 
             self.rdf_plot.addItem(self.r0_line_rdf)
             self.tr_plot.addItem(self.r0_line_tr)
-    
+
             self.rdf_plot.addItem(self.rpmax_line_rdf)
             self.tr_plot.addItem(self.rpmax_line_tr)
-    
+
             self.rdf_plot.addItem(self.rmax_line_rdf)
             self.tr_plot.addItem(self.rmax_line_tr)
-    
+
             self.rdf_plot.addItem(self.rmin_line_rdf)
             self.tr_plot.addItem(self.rmin_line_tr)        
-                
+
 
     def update_plot_windows(self, _data):
         _rdf_cut = np.nan_to_num(_data['rdf_y'][np.where(_data['rdf_x'] < self.x_max)])
@@ -681,7 +682,7 @@ class StructurePlotWidget(QWidget):
 
         self.set_rdf_window()
         self.set_tr_window()       
-        
+
 
     def set_rdf_window(self):
         try:
@@ -701,13 +702,13 @@ class StructurePlotWidget(QWidget):
     def create_signals(self):
         self.rdf_mouse_proxy = pg.SignalProxy(self.pg_layout_rdf.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved_rdf)
         self.tr_mouse_proxy = pg.SignalProxy(self.pg_layout_tr.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved_tr)
-        
+
         self.rdf_plot.reset_window.connect(self.set_rdf_window)
 
     def mouse_moved_rdf(self, __evt):
         # Use different slots as mouse always in scene bounding rectangle
         # Using signal proxy turns original args into tuple
-        
+
         __pos = __evt[0]
         #if self.rdf_plot.sceneBoundingRect().contains(__pos):
         __mousePoint = self.rdf_plot.vb.mapSceneToView(__pos)
@@ -716,16 +717,15 @@ class StructurePlotWidget(QWidget):
         self.rdf_plot.vline.setPos(__mousePoint.x())
         self.rdf_plot.hline.setPos(__mousePoint.y())
 
-            
+
     def mouse_moved_tr(self, __evt):
         __pos = __evt[0]
         #if self.tr_plot.sceneBoundingRect().contains(__pos):
         __mousePoint = self.tr_plot.vb.mapSceneToView(__pos)
         self.set_mouse_pos_label(__mousePoint)
-        
+
         self.tr_plot.vline.setPos(__mousePoint.x())
         self.tr_plot.hline.setPos(__mousePoint.y())
-
 
 
     def set_mouse_pos_label(self, pos):
