@@ -24,6 +24,7 @@ __email__ = 'benedict.heinen@gmail.com'
 __license__ = 'GNU GPL v3'
 
 from functools import lru_cache
+from itertools import product as cartesian_product
 import numpy as np
 from scipy.integrate import simps, quadrature
 import scipy.interpolate
@@ -322,6 +323,51 @@ def calc_K_p(composition, Q):
     K_p = atomic_ff / effective_ff
     K_p = np.mean(K_p, 1)
     return K_p
+
+
+def calculate_weights(composition, Q):
+    '''
+    Calculate X-ray scattering weightings for atomic pair correlations in
+    the composition for a set Q-range. Uses the Warren-Krutter-Morningstar
+    approximation for average effective atomic number.
+    '''
+    # Get average effective atomic numbers for each atom
+    K_p_list = calc_K_p(composition, Q)
+    # Number of atoms in composition
+    N = len(K_p_list)
+    # K_p_norm - normalise to number of atoms in composition
+    K_p_norm = (np.sum(K_p_list)/N)**2
+    # List of atoms in composition
+    atom_list = [atom for expanded in
+                 [[species]*composition[species][2]
+                  for species in composition.keys()]
+                 for atom in expanded]
+    # Dict of Kp for each atom species
+    K_p_dict = dict(zip(atom_list, K_p_list))
+    # List of atom (alpha-beta) pairs
+    pairs = list(set(cartesian_product(atom_list, repeat=2)))
+    weights = {}
+    c_dict = {}
+
+    for pair in pairs:
+        alpha = pair[0]
+        beta = pair[1]
+        c_alpha = composition[alpha][2]/N
+        c_beta = composition[beta][2]/N
+        K_alpha = K_p_dict[alpha]
+        K_beta = K_p_dict[beta]
+        # Kronecker delta - i.e. delta = 1 of a==b and delta = 0 if a!=b
+        delta = int(alpha == beta)
+        # Calculate weight for alpha-beta pair
+        w_alphabeta = (c_alpha*K_alpha * c_beta*K_beta * (2-delta))/K_p_norm
+
+        weights[(alpha,beta)] = w_alphabeta
+
+    for atom in composition:
+        c_beta = composition[atom][2]/N
+        c_dict[atom] = c_beta
+
+    return weights, c_dict
 
 
 def calc_S_inf(composition, Q, method='ashcroft-langreth'):
