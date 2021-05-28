@@ -95,6 +95,8 @@ class ResultsUI(QWidget):
         __header = (f'Refined S(Q)\n'
                     f'{__appname__} v{__version__}\n'
                     f'See refinement_log for more info\n'
+                    f'Composition {{element: (Z, charge, n)}}: {self.data["composition"]}\n'
+                    f'Rho = {self.data["rho"]}\n'
                     f'S(Q) formalism : {self.data["sq_method"]}\n'
                     f'S(Q) = i(Q) + S_inf\n'
                     f'S_inf = {np.str(self.data["S_inf"])}\n'
@@ -120,6 +122,8 @@ class ResultsUI(QWidget):
         __header = (f'Refined g(r)\n'
                     f'{__appname__} v{__version__}\n'
                     f'See refinement_log for more info\n'
+                    f'Composition {{element: (Z, charge, n)}}: {self.data["composition"]}\n'
+                    f'Rho = {self.data["rho"]}\n'
                     f'r|g(r)'
                     )
         __data = np.column_stack((self.data['gr_x'], self.data['gr_y']))
@@ -135,6 +139,8 @@ class ResultsUI(QWidget):
         __header = (f'Refined rdf\n'
                     f'{__appname__} v{__version__}\n'
                     f'See refinement_log for more info\n'
+                    f'Composition {{element: (Z, charge, n)}}: {self.data["composition"]}\n'
+                    f'Rho = {self.data["rho"]}\n'
                     f'r|rdf'
                     )
         __data = np.column_stack((self.data['rdf_x'], self.data['rdf_y']))
