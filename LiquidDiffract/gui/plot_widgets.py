@@ -520,8 +520,8 @@ class StructurePlotWidget(QWidget):
 
         # Create fit range selection tool
         self.fit_limits = pg.LinearRegionItem(values=(0, 10), orientation='vertical', span=(0, 1), movable=True, swapMode='block', brush=pg.mkBrush(None), hoverBrush=pg.mkBrush(None))
-        self.deselect_lower = pg.LinearRegionItem(values=(0, 0), orientation='vertical', span=(0, 1), movable=False, swapMode='block', pen=pg.mkPen(None), brush=pg.mkBrush((40,40,60,100)), hoverPen=pg.mkPen(None), hoverBrush=None)
-        self.deselect_upper = pg.LinearRegionItem(values=(10, 10), orientation='vertical', span=(0, 1), movable=False, swapMode='block', pen=pg.mkPen(None), hoverPen=pg.mkPen(None), hoverBrush=None)
+        self.deselect_lower = pg.LinearRegionItem(values=(0, 0), orientation='vertical', span=(0, 1), movable=False, swapMode='block', pen=pg.mkPen(None), brush=pg.mkBrush((229,229,229,205)), hoverPen=pg.mkPen(None), hoverBrush=None)
+        self.deselect_upper = pg.LinearRegionItem(values=(10, 10), orientation='vertical', span=(0, 1), movable=False, swapMode='block', pen=pg.mkPen(None), brush=pg.mkBrush((229,229,229,205)), hoverPen=pg.mkPen(None), hoverBrush=None)
         self.fr_plot.addItem(self.fit_limits)
         self.fr_plot.addItem(self.deselect_lower)
         self.fr_plot.addItem(self.deselect_upper)
@@ -570,6 +570,7 @@ class StructurePlotWidget(QWidget):
         self.fr_plot.addItem(self.fr_xaxis)
         self.res_xaxis = pg.InfiniteLine(pos=0, angle=0, movable=False, pen={'color': 'k', 'width': 0.75})
         self.res_plot.addItem(self.res_xaxis)
+        self.fr_xaxis.setZValue(3)
 
         # Make fit_limits region invisible to start
         self.toggle_fit_limits(False)
@@ -594,6 +595,16 @@ class StructurePlotWidget(QWidget):
         self.fr_plot.hline.setPen((0, 135, 153), width=0.75)
         self.res_plot.vline.setPen((0, 135, 153), width=0.75)
         self.res_plot.hline.setPen((0, 135, 153), width=0.75)
+
+        # Set Z-value of selection region to plot above curves
+        self.deselect_lower.setZValue(1)
+        self.deselect_upper.setZValue(1)
+        self.fit_limits.setZValue(2)
+
+        self.fr_plot.vline.setZValue(6)
+        self.fr_plot.hline.setZValue(6)
+
+        self.fr_plot.getAxis('bottom').setZValue(7)
 
     def toggle_fit_limits(self, toggle_bool, fr_x=None, sq_x=None):
         self.fit_limits.setVisible(toggle_bool)
@@ -717,11 +728,11 @@ class StructurePlotWidget(QWidget):
         # Nc is plotted first/behind as it extends beyond Nb
         # Only plot if r0 < r
         if _data['r0'] < _data['rmin']:
-            self.p_Nc = self.rdf_plot.plot(x=_Nc_area_x, y=_Nc_area_y, brush=(26,121,199, 100), pen=None, fillLevel=0)
+            self.p_Nc = self.rdf_plot.plot(x=_Nc_area_x, y=_Nc_area_y, brush=(26,121,199, 245), pen=None, fillLevel=0)
         if _data['r0'] < _data['rpmax']:
-            self.p_Na = self.tr_plot.plot(x=_Na_area_x, y=_Na_area_y, brush=(199,26,74, 100), pen=None, fillLevel=0)
+            self.p_Na = self.tr_plot.plot(x=_Na_area_x, y=_Na_area_y, brush=(199,26,74, 245), pen=None, fillLevel=0)
         if _data['r0'] < _data['rmax']:
-            self.p_Nb = self.rdf_plot.plot(x=_Nb_area_x, y=_Nb_area_y, brush=(199,26,74, 100), pen=None, fillLevel=0)
+            self.p_Nb = self.rdf_plot.plot(x=_Nb_area_x, y=_Nb_area_y, brush=(199,26,74, 245), pen=None, fillLevel=0)
 
         # Plot data/functions RDF(r), T(r), and F/D(r)
         self.p_rdf = self.rdf_plot.plot(x=_data['rdf_x'], y=_data['rdf_y'], pen={'color': 0.1, 'width': 1.2})
@@ -789,19 +800,16 @@ class StructurePlotWidget(QWidget):
             self.p_peaks = []
             for _peak_model in _data['gauss_peaks']:
                 _p_peak = self.fr_plot.plot(x=_data['fr_x'], y=_peak_model, pen={'color': (26,121,199), 'width': 1.2})
+                _p_peak.setZValue(4)
                 self.p_peaks.append(_p_peak)
             # Plot gaussian model (sum of individual peaks)
             # change color of this
             self.p_gauss_model = self.fr_plot.plot(x=_data['fr_x'], y=_data['gauss_model'], pen={'color': (199,26,74), 'width': 1.8, 'style':Qt.DashLine})
+            self.p_gauss_model.setZValue(5)
             # Plot residuals over whole r range in grey
-            self.p_res_full = self.res_plot.plot(x=_data['fr_x'], y=_data['gauss_residuals_full'], pen={'color': 0.3, 'width': 1.2})
+            self.p_res_full = self.res_plot.plot(x=_data['fr_x'], y=_data['gauss_residuals_full'], pen={'color': 0.75, 'width': 1.2})
             # Plot residuals over fit range in colour
             self.p_res = self.res_plot.plot(x=_data['fit_r'], y=_data['gauss_residuals'], pen={'color': (26,121,199), 'width': 1.5})
-
-        # Set Z-value of selection region to plot above curves
-        # TODO - decide how best to plot this (may need to re-raise axes)
-        self.deselect_lower.setZValue(1)
-        self.deselect_upper.setZValue(1)
 
         # TODO - label peaks?
 
