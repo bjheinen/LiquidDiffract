@@ -25,7 +25,7 @@ setup(
     url='https://github.com/bjheinen/LiquidDiffract',
     packages=find_packages(),
     python_requires='>=3.5',
-    install_requires=['numpy', 'scipy', 'PyQt5', 'pyqtgraph',
+    install_requires=['numpy', 'scipy', 'PyQt5', 'pyqtgraph', 'lmfit',
                       "importlib_resources ; python_version<'3.7'"],
     package_data={'LiquidDiffract': ['resources/*', 'resources/icons/*',
                                      'resources/hubbel_compton/*',
