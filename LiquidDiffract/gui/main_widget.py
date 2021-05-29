@@ -4,7 +4,7 @@ GUI frontend for LiquidDiffract
 <https://github.com/bjheinen/LiquidDiffract>
 """
 __author__ = "Benedict J. Heinen"
-__copyright__ = "Copyright 2018, Benedict J. Heinen"
+__copyright__ = "Copyright 2018-2021, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
 import os.path
@@ -114,6 +114,7 @@ class App(QMainWindow):
         self.table_widget.optim_ui.global_minimisation = self.preferences['global_minimisation']
         self.table_widget.optim_ui.global_min_options = self.preferences['global_min_options']
         self.table_widget.optim_ui.append_log_mode = self.preferences['append_log_mode']
+        self.table_widget.structure_ui.append_log_mode = self.preferences['append_log_mode']
         self.table_widget.optim_ui.window_length = self.preferences['window_length']
         self.table_widget.optim_ui.poly_order = self.preferences['poly_order']
         # Set N for FFT
@@ -215,7 +216,10 @@ class MainContainer(QWidget):
         self.structure_ui.data['composition'] = self.results_ui.data['composition']
 
         self.structure_ui.set_atoms()
-
+        self.structure_ui.set_weights()
+        self.structure_ui.structure_plot_widget.toggle_fit_limits(True,
+                                                                  fr_x=self.structure_ui.data['fr_x'],
+                                                                  sq_x=self.structure_ui.data['sq_x'])
         self.structure_ui.plot_data()
 
     def results_cleared_slot(self):
@@ -229,4 +233,6 @@ class MainContainer(QWidget):
         _base_name, _ext = os.path.splitext(self.bkg_ui.data_file)
         self.results_ui.base_filename = _base_name
         self.optim_ui.base_filename = _base_name
+        self.structure_ui.base_filename = _base_name
         self.optim_ui.filename_ext = _ext
+        self.structure_ui.filename_ext = _ext
