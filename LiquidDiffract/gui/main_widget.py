@@ -210,7 +210,7 @@ class MainContainer(QWidget):
         self.structure_ui.data['tr_x'] = self.results_ui.data['tr_x']
         self.structure_ui.data['tr_y'] = self.results_ui.data['tr_y']
         self.structure_ui.data['fr_x'] = self.results_ui.data['fr_x']
-        self.structure_ui.data['fr_y'] = self.results_ui.data['fr_y']
+        self.structure_ui.data['fr_y'] = self.results_ui.data['fr_y'] + np.abs(np.min(self.results_ui.data['fr_y']))
         self.structure_ui.data['sq_x'] = self.results_ui.data['sq_x']
         self.structure_ui.data['rho'] = self.results_ui.data['rho']
         self.structure_ui.data['composition'] = self.results_ui.data['composition']
