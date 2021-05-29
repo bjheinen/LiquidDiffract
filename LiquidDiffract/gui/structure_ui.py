@@ -3,33 +3,25 @@ __author__ = "Benedict J. Heinen"
 __copyright__ = "Copyright 2021, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
-# What imports do I need??
-
-import os
+import os.path
+import datetime
 import numpy as np
+import lmfit
 from PyQt5.QtCore import Qt, pyqtSignal, QSignalMapper, QObject
-from PyQt5.QtGui import QDoubleValidator, QFont
+from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QHBoxLayout, QGroupBox, QPushButton, QRadioButton, \
                             QLineEdit, QDoubleSpinBox, QLabel, QScrollArea, \
-                            QMessageBox, QCheckBox, QSplitter, QToolTip, QComboBox, QStyle
+                            QCheckBox, QSplitter, QComboBox, QStyle
 # LiquidDiffract imports
 from LiquidDiffract.gui import plot_widgets
-from LiquidDiffract.gui import utility
 from LiquidDiffract.core import data_utils
+from LiquidDiffract.core import peak_fit
 import LiquidDiffract.core.core as core
 from LiquidDiffract.version import __appname__, __version__
 
 
 class StructureUI(QWidget):
-
-    # plots_changed is handled in main_widget.MainContainer and allows the
-    # next tab to be updated
-    #copy###plots_changed = pyqtSignal()
-    # file_name_changed connects to main_widget.MainContainer.update_filename
-    # this method is used to set the working directory based on the data_file
-    # that is loaded
-    #copy###file_name_changed = pyqtSignal()
 
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
@@ -67,7 +59,7 @@ class StructureUI(QWidget):
 
         self.setLayout(self.layout)
 
-        # Initialise some data?
+        # Initialise data
         self.clear_data()
 
         self.create_signals()
@@ -75,6 +67,8 @@ class StructureUI(QWidget):
     def create_signals(self):
 
         self.structure_config_widget.plot_view_gb.rdf_btn.toggled.connect(self.toggle_plot_view)
+        self.structure_config_widget.plot_view_gb.tr_btn.toggled.connect(self.toggle_plot_view)
+        self.structure_config_widget.plot_view_gb.dr_btn.toggled.connect(self.toggle_plot_view)
 
         self.structure_config_widget.monatomic_gb.r0_input.valueChanged.connect(self.update_plot_data)
         self.structure_config_widget.monatomic_gb.rpmax_input.valueChanged.connect(self.update_plot_data)
@@ -87,8 +81,18 @@ class StructureUI(QWidget):
         self.structure_config_widget.monatomic_gb.find_limits_btn.clicked.connect(self.auto_integration_limits)
         self.structure_config_widget.monatomic_gb.calc_N_btn.clicked.connect(self.calc_integrals)
 
-    def create_int_limit_signals(self):
+        self.structure_config_widget.monatomic_gb.toggled.connect(self.toggle_monatomic_gb)
+        self.structure_config_widget.polyatomic_gb.toggled.connect(self.toggle_polyatomic_gb)
 
+        self.structure_plot_widget.fit_limits.sigRegionChanged.connect(self.update_fit_limits_sb)
+        self.structure_config_widget.polyatomic_gb.min_limit_input.valueChanged.connect(self.update_fit_limits_plot)
+        self.structure_config_widget.polyatomic_gb.max_limit_input.valueChanged.connect(self.update_fit_limits_plot)
+
+        self.structure_config_widget.polyatomic_gb.fit_peaks_btn.clicked.connect(self.on_click_fit_peaks)
+        self.structure_config_widget.polyatomic_gb.guess_peak.connect(self.guess_peak_params)
+        self.structure_config_widget.polyatomic_gb.gauss_params_changed_relay.connect(self.make_peak_plots)
+
+    def create_int_limit_signals(self):
         try:
             self.int_limit_signalMapper.setMapping(self.structure_plot_widget.r0_line_rdf, self.structure_plot_widget.r0_line_rdf)
             self.int_limit_signalMapper.setMapping(self.structure_plot_widget.r0_line_tr, self.structure_plot_widget.r0_line_tr)
@@ -107,10 +111,8 @@ class StructureUI(QWidget):
             self.structure_plot_widget.rmax_line_tr.sigDragged.connect(self.int_limit_signalMapper.map)
             self.structure_plot_widget.rmin_line_rdf.sigDragged.connect(self.int_limit_signalMapper.map)
             self.structure_plot_widget.rmin_line_tr.sigDragged.connect(self.int_limit_signalMapper.map)
-
         except AttributeError:
             return
-
 
     def update_int_limits(self, _sender):
 
@@ -128,13 +130,18 @@ class StructureUI(QWidget):
         else:
             raise ValueError
 
-
     def clear_data(self):
 
         self.data = {'rdf_x': np.asarray([]), 'rdf_y': np.asarray([]),
                      'tr_x': np.asarray([]), 'tr_y': np.asarray([]),
                      'fr_x': np.asarray([]), 'fr_y': np.asarray([]),
+                     'fit_r': np.asarray([]), 'gauss_peaks': [],
+                     'gauss_model': np.asarray([]),
+                     'gauss_residuals': np.asarray([]),
+                     'gauss_residuals_full': np.asarray([]),
                      'rho': None, 'composition': None, 'sq_x': np.asarray([])}
+        self.weights = {}
+        self.c_dict = {}
 
     def set_atoms(self):
 
@@ -147,9 +154,7 @@ class StructureUI(QWidget):
             for _peak in self.structure_config_widget.polyatomic_gb.peak_dict.values():
                 _peak.populate_atom_list(_atom_list)
 
-
     def plot_data(self):
-
         self.update_plot_data()
         self.structure_plot_widget.update_plot_windows(self.data)
 
@@ -169,15 +174,62 @@ class StructureUI(QWidget):
     def toggle_plot_view(self):
 
         if self.structure_config_widget.plot_view_gb.rdf_btn.isChecked():
+            self.structure_plot_widget.gauss_layout_widget.setVisible(False)
             self.structure_plot_widget.pg_layout_widget_tr.setVisible(False)
             self.structure_plot_widget.pg_layout_widget_rdf.setVisible(True)
 
-
         elif self.structure_config_widget.plot_view_gb.tr_btn.isChecked():
+            self.structure_plot_widget.gauss_layout_widget.setVisible(False)
             self.structure_plot_widget.pg_layout_widget_rdf.setVisible(False)
             self.structure_plot_widget.pg_layout_widget_tr.setVisible(True)
+
+        elif self.structure_config_widget.plot_view_gb.dr_btn.isChecked():
+            self.structure_plot_widget.pg_layout_widget_tr.setVisible(False)
+            self.structure_plot_widget.pg_layout_widget_rdf.setVisible(False)
+            self.structure_plot_widget.gauss_layout_widget.setVisible(True)
+
+    def toggle_monatomic_gb(self):
+
+        if self.structure_config_widget.monatomic_gb.isChecked():
+            # Toggled to enable monatomic (integration) gb
+            # Disable gaussian fitting gb
+            self.structure_config_widget.polyatomic_gb.setChecked(False)
+            # Set plot view buttons
+            self.structure_config_widget.plot_view_gb.rdf_btn.setEnabled(True)
+            self.structure_config_widget.plot_view_gb.tr_btn.setEnabled(True)
+            self.structure_config_widget.plot_view_gb.dr_btn.setEnabled(False)
+            #self.structure_config_widget.plot_view_gb.residuals_cb.setEnabled(False)
+
+            if self.structure_config_widget.plot_view_gb.dr_btn.isChecked():
+                self.structure_config_widget.plot_view_gb.rdf_btn.setChecked(True)
         else:
+            # Toggle to disable monatomic gb
             pass
+
+    def toggle_polyatomic_gb(self):
+
+        if self.structure_config_widget.polyatomic_gb.isChecked():
+            # Toggled to enable polyatomic (gaussian fitting) gb
+            # Disable monatomic (integration) gb
+            self.structure_config_widget.monatomic_gb.setChecked(False)
+            # Set plot view buttons
+            self.structure_config_widget.plot_view_gb.rdf_btn.setEnabled(False)
+            self.structure_config_widget.plot_view_gb.tr_btn.setEnabled(False)
+            self.structure_config_widget.plot_view_gb.dr_btn.setEnabled(True)
+            #self.structure_config_widget.plot_view_gb.residuals_cb.setEnabled(True)
+
+            if not self.structure_config_widget.plot_view_gb.dr_btn.isChecked():
+                self.structure_config_widget.plot_view_gb.dr_btn.setChecked(True)
+
+    def update_fit_limits_sb(self):
+        _min, _max = self.structure_plot_widget.fit_limits.getRegion()
+        self.structure_config_widget.polyatomic_gb.min_limit_input.setValue(_min)
+        self.structure_config_widget.polyatomic_gb.max_limit_input.setValue(_max)
+
+    def update_fit_limits_plot(self):
+        _min = self.structure_config_widget.polyatomic_gb.min_limit_input.value()
+        _max = self.structure_config_widget.polyatomic_gb.max_limit_input.value()
+        self.structure_plot_widget.fit_limits.setRegion((_min, _max))
 
     def auto_integration_limits(self):
         if not self.data['rdf_y'].size:
@@ -201,6 +253,262 @@ class StructureUI(QWidget):
         self.data['N_a'] = _Na
         self.data['N_b'] = _Nb
         self.data['N_c'] = _Nc
+
+    def set_weights(self):
+        self.weights, self.c_dict = core.calculate_weights(self.data['composition'], self.data['sq_x'])
+
+    def guess_peak_params(self, _idx):
+        _peak_dict = self.structure_config_widget.polyatomic_gb.peak_dict
+        _peak_widget = _peak_dict[_idx]
+        if self.data['fr_y'].size:
+            # When data is present, guess the peak parameters
+            # Not yet implemented - currently just set r to middle of
+            # fitting range
+            _lb, _ub = self.structure_plot_widget.fit_limits.getRegion()
+            _lb = round(_lb, 1)
+            _ub = round(_ub, 1)
+            _pos = round((_lb + _ub)/2, 1)
+            _peak_widget.r_input.setText(str(_pos))
+            _peak_widget.r_lb.setText(str(_lb))
+            _peak_widget.r_ub.setText(str(_ub))
+
+        else:
+            # If not data present set default parameters here
+            # Currently default parameters are set for N/s in groupbox
+            # Here we just set r to 3.0 as a default
+            _peak_widget.r_input.setText('3.0')
+            _peak_widget.r_lb.setText('1.0')
+            _peak_widget.r_ub.setText('4.0')
+
+    def make_peak_params(self):
+        # Clear peak_fit_dict each time
+        self.peak_fit_dict = {}
+        self.fit_result = None
+
+        _peak_dict = self.structure_config_widget.polyatomic_gb.peak_dict
+        self.peak_dict = _peak_dict
+        _peak_idx_list = list(_peak_dict.keys())
+        for _peak_idx in _peak_idx_list:
+            _peak_idx_str = str(_peak_idx)
+            _peak_widget = _peak_dict[_peak_idx]
+            _alpha = _peak_widget.alpha_input.currentText()
+            _beta = _peak_widget.beta_input.currentText()
+
+            try:
+                _N = np.float(_peak_widget.N_input.text())
+            except ValueError:
+                _N = 0.0
+            _N_lb = np.float(_peak_widget.N_lb.text())
+            _N_ub = np.float(_peak_widget.N_ub.text())
+            _N_refine = _peak_widget.N_refine.isChecked()
+
+            try:
+                _r = np.float(_peak_widget.r_input.text())
+            except ValueError:
+                _r = 0.0
+            _r_lb = np.float(_peak_widget.r_lb.text())
+            _r_ub = np.float(_peak_widget.r_ub.text())
+            _r_refine = _peak_widget.r_refine.isChecked()
+
+            try:
+                _s = np.float(_peak_widget.s_input.text())
+            except ValueError:
+                _s = 0.0
+            _s_lb = np.float(_peak_widget.s_lb.text())
+            _s_ub = np.float(_peak_widget.s_ub.text())
+            _s_refine = _peak_widget.s_refine.isChecked()
+
+            # Make peak name
+            _name = _alpha + '-' + _beta
+
+            try:
+                # Make kwarg dict
+                _W = self.weights[(_alpha,_beta)]
+                _cb = self.c_dict[_beta]
+                _kwargs = {'W'+_peak_idx_str: _W, 'c_b'+_peak_idx_str: _cb}
+                # Make parameter object
+                _params = lmfit.Parameters()
+                # Form for lmfit parameters
+                # (NAME VALUE VARY MIN  MAX  EXPR  BRUTE_STEP)
+                _params.add_many(
+                    ('N'+_peak_idx_str, _N, _N_refine, _N_lb, _N_ub, None, None),
+                    ('r'+_peak_idx_str, _r, _r_refine, _r_lb, _r_ub, None, None),
+                    ('s'+_peak_idx_str, _s, _s_refine, _s_lb, _s_ub, None, None))
+                # Store name, params, kwargs in peak_fit_dict
+                self.peak_fit_dict['name'+_peak_idx_str] = _name
+                self.peak_fit_dict['kwargs'+_peak_idx_str] = _kwargs
+                self.peak_fit_dict['params'+_peak_idx_str] = _params
+
+            except KeyError:
+                # If alpha/beta not set remove peak from the list
+                _peak_idx_list.remove(_peak_idx)
+
+        # Store peak_idx_list in peak_fit_dict
+        self.peak_fit_dict['peak_idx_list'] = _peak_idx_list
+
+        # Combine param objects
+        _obj_params = lmfit.Parameters()
+        for _peak_idx in _peak_idx_list:
+            _peak_idx_str = str(_peak_idx)
+            _peak_params = self.peak_fit_dict['params'+_peak_idx_str]
+            for _param in list(_peak_params):
+                _obj_params.add(_peak_params[_param])
+        # Store combined parameters for objective function
+        self.peak_fit_dict['obj_params'] = _obj_params
+
+        # Sqrt(2pi) needed for gauss function
+        _sqrt_2pi = np.sqrt(2 * np.pi)
+        # Combine kwarg dicts for objective function
+        _obj_kwargs = {}
+        for _peak_idx in _peak_idx_list:
+            _peak_idx_str = str(_peak_idx)
+            _obj_kwargs.update(self.peak_fit_dict['kwargs'+_peak_idx_str])
+            # Store sqrt2pi in each peak kwarg dict
+            self.peak_fit_dict['kwargs'+_peak_idx_str]['sqrt_2pi'] = _sqrt_2pi
+            # Stor peak idx (as peak_idx_list) in each kwarg dict
+            self.peak_fit_dict['kwargs'+_peak_idx_str]['peak_idx_list'] = [_peak_idx]
+
+        # Store combined kwargs in peak_fit_dict
+        self.peak_fit_dict['obj_kwargs'] = _obj_kwargs
+        # Store peak_idx_list in objective kwargs also
+        self.peak_fit_dict['obj_kwargs']['peak_idx_list'] = _peak_idx_list
+        # Store sqrt_2pi in objective kwargs also
+        self.peak_fit_dict['obj_kwargs']['sqrt_2pi'] = _sqrt_2pi
+
+        # Cut data at the fit range
+        _fit_min = self.structure_config_widget.polyatomic_gb.min_limit_input.value()
+        _fit_max = self.structure_config_widget.polyatomic_gb.max_limit_input.value()
+        _fit_range = np.where((self.data['fr_x'] >= _fit_min) & (self.data['fr_x'] <= _fit_max))
+        self.data['fit_r'] = self.data['fr_x'][_fit_range]
+        self.data['fit_dr'] = self.data['fr_y'][_fit_range]
+
+    def on_click_fit_peaks(self):
+
+        self.make_peak_params()
+        # Exit if no peaks present
+        if not self.peak_fit_dict['peak_idx_list']:
+            return
+
+        # Double check there are no NaNs in data-set - can occur if x-lim is 0
+        if np.isnan(self.data['fit_dr']).any():
+            self.data['fit_dr'] = data_utils.interp_nan(self.data['fit_dr'])
+
+        self.fit_result = lmfit.minimize(peak_fit.gauss_obj_func,
+                                         self.peak_fit_dict['obj_params'],
+                                         args=(self.data['fit_r'], self.data['fit_dr']),
+                                         kws=self.peak_fit_dict['obj_kwargs'])
+
+        # Save peak fit results to file
+        # Make log of peak IDs/atom-pairs
+        _peak_log = (f'Peak IDs\n{"-"*8}\n')
+        for _peak_idx in self.peak_fit_dict['peak_idx_list']:
+            _peak_id_str = f'{_peak_idx} :  {self.peak_fit_dict["name"+str(_peak_idx)]}\n'
+            _peak_log += _peak_id_str
+        # Make log string
+        log_string = (
+            f'refinement_log (fit peaks)\n'
+            f'{__appname__} v{__version__}\n\n'
+            f'{"-"*25}\n'
+            f'Data File : {self.base_filename}{self.filename_ext}\n'
+            f'Composition [Element: (Z, Charge, n)]: {self.data["composition"]}\n'
+            f'{_peak_log}'
+            f'{"*"*25}\n'
+            f'Using lmfit v{lmfit.__version__}\n'
+            f'Peak fit success?: {self.fit_result.success} | {self.fit_result.message}\n'
+            f'{lmfit.fit_report(self.fit_result)}\n'
+        )
+        # Append to log file or overwrite?
+        if self.append_log_mode:
+            _log_file = open(os.path.join(os.path.dirname(self.base_filename), 'refinement.log'), 'ab')
+            # Add timestamp to top of log_string
+            log_string = (f'{"#"*30}\n'
+                          f'{datetime.datetime.now()}\n'
+                          f'{"#"*30}\n' +
+                          log_string
+                          )
+            np.savetxt(_log_file, [log_string], fmt='%s')
+            _log_file.close()
+        else:
+            _log_file = self.base_filename + '_refinement.log'
+            np.savetxt(_log_file, [log_string], fmt='%s')
+
+        # Set refined peak parameters
+        self.set_peak_params()
+
+    def set_peak_params(self):
+
+        # Get parameter object
+        _params = self.fit_result.params
+        # can loop through peak list
+        _peak_idx_list = self.peak_fit_dict['peak_idx_list']
+        for _peak_idx in _peak_idx_list:
+            _peak_idx_str = str(_peak_idx)
+            _peak_widget = self.peak_dict[_peak_idx]
+            # Reset alpha and beta
+            _name = self.peak_fit_dict['name'+_peak_idx_str]
+            _alpha, _beta = _name.split('-')
+            _peak_widget.alpha_input.setCurrentText(_alpha)
+            _peak_widget.beta_input.setCurrentText(_beta)
+            # Set N
+            _N_param = _params['N'+_peak_idx_str]
+            _peak_widget.N_input.setText('{0:.2f}'.format(_N_param.value))
+            _peak_widget.N_lb.setText('{0:.1f}'.format(_N_param.min))
+            _peak_widget.N_ub.setText('{0:.1f}'.format(_N_param.max))
+            _peak_widget.N_refine.setChecked(_N_param.vary)
+
+            # Set r
+            _r_param = _params['r'+_peak_idx_str]
+            _peak_widget.r_input.setText('{0:.2f}'.format(_r_param.value))
+            _peak_widget.r_lb.setText('{0:.1f}'.format(_r_param.min))
+            _peak_widget.r_ub.setText('{0:.1f}'.format(_r_param.max))
+            _peak_widget.r_refine.setChecked(_r_param.vary)
+
+            # Set sigma
+            _s_param = _params['s'+_peak_idx_str]
+            _peak_widget.s_input.setText('{0:.2f}'.format(_s_param.value))
+            _peak_widget.s_lb.setText('{0:.1f}'.format(_s_param.min))
+            _peak_widget.s_ub.setText('{0:.1f}'.format(_s_param.max))
+            _peak_widget.s_refine.setChecked(_s_param.vary)
+
+        # Clear the peak fit dict
+        self.peak_fit_dict = {}
+        # Clear fitting results
+        self.fit_result = None
+
+    def make_peak_plots(self):
+        # Make peak_fit_dict
+        self.make_peak_params()
+        # Do not plot if no peaks present
+        if not self.peak_fit_dict['peak_idx_list']:
+            self.structure_plot_widget.clear_gauss_curves()
+            return
+        # Evaluate objective function over whole r range
+        self.data['gauss_model'] = peak_fit.gauss_obj_func(self.peak_fit_dict['obj_params'],
+                                                           self.data['fr_x'], data=None,
+                                                           **self.peak_fit_dict['obj_kwargs'])
+
+        # Calculate residuals from objective function over min < r < max
+        self.data['gauss_residuals'] = peak_fit.gauss_obj_func(self.peak_fit_dict['obj_params'],
+                                                               self.data['fit_r'], data=self.data['fit_dr'],
+                                                               **self.peak_fit_dict['obj_kwargs'])
+        # Calculate residuals from objective function over total r range
+        self.data['gauss_residuals_full'] = peak_fit.gauss_obj_func(
+                                                self.peak_fit_dict['obj_params'],
+                                                self.data['fr_x'], data=self.data['fr_y'],
+                                                **self.peak_fit_dict['obj_kwargs'])
+
+        # Evaluate each individual peak over r range
+        # List to store each individual peak
+        self.data['gauss_peaks'] = []
+        for _peak_idx in self.peak_fit_dict['peak_idx_list']:
+            _peak_idx_str = str(_peak_idx)
+            _peak_model = peak_fit.gauss_obj_func(self.peak_fit_dict['params'+_peak_idx_str],
+                                                  self.data['fr_x'], data=None,
+                                                  **self.peak_fit_dict['kwargs'+_peak_idx_str])
+            self.data['gauss_peaks'].append(_peak_model)
+
+        # Call update_plots
+        self.structure_plot_widget.update_plots(self.data)
 
 
 class StructureConfigWidget(QWidget):
@@ -245,15 +553,20 @@ class PlotViewGroupBox(QGroupBox):
         self.rdf_btn = QRadioButton('RDF(r)')
         self.tr_btn = QRadioButton('T(r)')
         self.dr_btn = QRadioButton('D(r)')
+        self.residuals_cb = QCheckBox('Plot residuals? ')
 
     def style_widgets(self):
 
         self.rdf_btn.setToolTip('RDF(r) = 4πρr<sup>2</sup>g(r)')
         self.tr_btn.setToolTip('T(r) = RDF(r) / r')
         self.dr_btn.setToolTip('D(r) = 4πρr[g(r) - 1]')
-        #self.residuals_btn.setToolTip('Plot residuals from fit?')
+        self.residuals_cb.setToolTip('Plot residuals from fit?')
 
         self.rdf_btn.setChecked(True)
+        self.residuals_cb.setChecked(True)
+
+        self.dr_btn.setEnabled(False)
+        self.residuals_cb.setEnabled(False)
 
     def create_layout(self):
 
@@ -261,10 +574,12 @@ class PlotViewGroupBox(QGroupBox):
         self.main_layout.setContentsMargins(20, 1, 20, 5)
         self.main_layout.setSpacing(1)
 
-        self.hbtn_layout = QHBoxLayout()
+        self.hbtn_layout = QGridLayout()
         self.hbtn_layout.setContentsMargins(0, 0, 0, 0)
-        self.hbtn_layout.addWidget(self.rdf_btn)
-        self.hbtn_layout.addWidget(self.tr_btn)
+        self.hbtn_layout.addWidget(self.rdf_btn, 0, 0)
+        self.hbtn_layout.addWidget(self.tr_btn, 0, 1)
+        self.hbtn_layout.addWidget(self.dr_btn, 1, 0)
+        self.hbtn_layout.addWidget(self.residuals_cb, 1, 1)
 
         self.main_layout.addWidget(self.plot_view_label)
         self.main_layout.addLayout(self.hbtn_layout)
@@ -282,6 +597,7 @@ class MonatomicGroupBox(QGroupBox):
         self.setAlignment(Qt.AlignLeft)
         self.setStyleSheet('GroupBox::title{subcontrol-origin: margin; subcontrol-position: top left;}')
         self.setCheckable(True)
+        self.setChecked(True)
 
         self.create_widgets()
         self.style_widgets()
@@ -343,7 +659,6 @@ class MonatomicGroupBox(QGroupBox):
 
         # Set input spinbox settings
         # Might need to set minimum width also to stop scale miss
-        # Does dblsb need a validator? - check and the ndelete this comment
         self.r0_input.setSingleStep(0.01)
         self.r0_input.setDecimals(3)
         self.r0_input.setAlignment(Qt.AlignRight)
@@ -396,7 +711,7 @@ class MonatomicGroupBox(QGroupBox):
         self.int_limits_layout = QVBoxLayout()
         self.int_limits_layout.setContentsMargins(0, 0, 0, 0)
         self.int_limits_layout.setSpacing(15)
-        
+
         self.int_results_layout = QVBoxLayout()
         self.int_results_layout.setContentsMargins(0, 0, 0, 0)
         self.int_results_layout.setSpacing(15)
@@ -442,12 +757,18 @@ class MonatomicGroupBox(QGroupBox):
 
 class PolyatomicGroupBox(QGroupBox):
 
+    # Create custom signals emmitted when peaks added/changed
+    guess_peak = pyqtSignal(int)
+    # Relay signal from GaussianPeakGroupBox
+    gauss_params_changed_relay = pyqtSignal()
+
     def __init__(self, *args):
         super(PolyatomicGroupBox, self).__init__(*args)
         self.setTitle('Fit Gaussians (Polyatomic)')
         self.setAlignment(Qt.AlignLeft)
         self.setStyleSheet('GroupBox::title{subcontrol-origin: margin; subcontrol-position: top left;}')
         self.setCheckable(True)
+        self.setChecked(False)
 
         self.create_widgets()
         self.style_widgets()
@@ -464,8 +785,10 @@ class PolyatomicGroupBox(QGroupBox):
         self.min_limit_label = QLabel('min: ')
         self.max_limit_label = QLabel('max: ')
 
-        self.min_limit_input = QLineEdit()
-        self.max_limit_input = QLineEdit()
+        self.min_limit_input = QDoubleSpinBox()
+        self.max_limit_input = QDoubleSpinBox()
+
+        self.fit_peaks_btn = QPushButton('Fit')
 
         self.add_peak_btn = QPushButton('Add Peak')
 
@@ -478,9 +801,13 @@ class PolyatomicGroupBox(QGroupBox):
         self.min_limit_input.setMaximumWidth(82)
         self.max_limit_input.setMaximumWidth(82)
 
-        # Set validators
-        self.min_limit_input.setValidator(QDoubleValidator())
-        self.max_limit_input.setValidator(QDoubleValidator())
+        self.min_limit_input.setSingleStep(0.1)
+        self.min_limit_input.setDecimals(2)
+        self.min_limit_input.setAlignment(Qt.AlignRight)
+
+        self.max_limit_input.setSingleStep(0.1)
+        self.max_limit_input.setDecimals(2)
+        self.max_limit_input.setAlignment(Qt.AlignRight)
 
     def create_layout(self):
         self.outer_layout = QVBoxLayout()
@@ -490,7 +817,7 @@ class PolyatomicGroupBox(QGroupBox):
         self.fit_settings_grid = QGridLayout()
         self.fit_settings_grid.setContentsMargins(0, 0, 0, 0)
         self.fit_settings_grid.setSpacing(15)
-        
+
         self.fit_settings_grid.addWidget(self.fit_limit_label, 0, 0)
         self.fit_settings_grid.addWidget(self.min_limit_label, 0, 1)
         self.fit_settings_grid.addWidget(self.min_limit_input, 0, 2)
@@ -498,13 +825,13 @@ class PolyatomicGroupBox(QGroupBox):
         self.fit_settings_grid.addWidget(self.max_limit_input, 1, 2)
 
         self.outer_layout.addLayout(self.fit_settings_grid)
+        self.outer_layout.addWidget(self.fit_peaks_btn)
         self.outer_layout.addWidget(self.add_peak_btn)
 
         self.setLayout(self.outer_layout)
 
     def init_peaks(self):
-
-        self.peak_count = 0
+        self.peak_count = 1
         self.peak_dict = {}
 
     def create_signals(self):
@@ -517,6 +844,9 @@ class PolyatomicGroupBox(QGroupBox):
         self.rename_peak_signalMapper = QSignalMapper()
         self.rename_peak_signalMapper.mapped[int].connect(self.rename_peak)
 
+        self.min_limit_input.valueChanged.connect(self.gauss_params_changed_relay)
+        self.max_limit_input.valueChanged.connect(self.gauss_params_changed_relay)
+
     def add_peak(self):
 
         if len(self.peak_dict) == 0:
@@ -524,8 +854,9 @@ class PolyatomicGroupBox(QGroupBox):
 
         _new_peak = GaussianPeakGroupBox()
         _new_peak._unique_idx = self.peak_count
-        _new_peak.title.setText(_new_peak.title.text() + ' #' + str(_new_peak._unique_idx+1) + ' ')
+        _new_peak.title.setText(_new_peak.title.text() + ' #' + str(_new_peak._unique_idx) + ' ')
         _new_peak.populate_atom_list(self.atom_list)
+
         self.peak_dict[_new_peak._unique_idx] = _new_peak
         self.outer_layout.addWidget(_new_peak)
 
@@ -542,6 +873,12 @@ class PolyatomicGroupBox(QGroupBox):
 
         self.peak_count += 1
 
+        # Re-emit parameter changed signal
+        self.peak_dict[_new_peak._unique_idx].gauss_params_changed.connect(self.gauss_params_changed_relay)
+
+        # Emit signal to guess peak parameters of new peak
+        self.guess_peak.emit(_new_peak._unique_idx)
+
         del _new_peak
 
     def del_peak(self, _peak_index):
@@ -555,6 +892,8 @@ class PolyatomicGroupBox(QGroupBox):
         # Remove peak entry from dict
         del self.peak_dict[_peak_index]
         del _peak_index
+        # Update the plots
+        self.gauss_params_changed_relay.emit()
 
     def rename_peak(self, _peak_index):
 
@@ -571,13 +910,16 @@ class PolyatomicGroupBox(QGroupBox):
 
 class GaussianPeakGroupBox(QFrame):
 
+    # Create signal emmitted on parameter change
+    gauss_params_changed = pyqtSignal()
+
     def __init__(self, *args):
         super(GaussianPeakGroupBox, self).__init__(*args)
 
         self.create_widgets()
         self.style_widgets()
         self.create_layout()
-        #self.create_signals()
+        self.create_signals()
 
     def create_widgets(self):
 
@@ -600,17 +942,25 @@ class GaussianPeakGroupBox(QFrame):
         self.beta_input.setCurrentIndex(-1)
 
         self.refine_label = QLabel('Refine?')
+        self.lb_label = QLabel('min')
+        self.ub_label = QLabel('max')
 
         self.N_label = QLabel('N: ')
-        self.N_input = QLineEdit()
+        self.N_input = QLineEdit('2.0')
+        self.N_lb = QLineEdit('0')
+        self.N_ub = QLineEdit('10.0')
         self.N_refine = QCheckBox()
 
         self.r_label = QLabel('r: ')
-        self.r_input = QLineEdit()
+        self.r_input = QLineEdit('2.0')
+        self.r_lb = QLineEdit('1.0')
+        self.r_ub = QLineEdit('3.0')
         self.r_refine = QCheckBox()
 
         self.s_label = QLabel('sigma: ')
-        self.s_input = QLineEdit()
+        self.s_input = QLineEdit('0.1')
+        self.s_lb = QLineEdit('0')
+        self.s_ub = QLineEdit('1.0')
         self.s_refine = QCheckBox()
 
     def style_widgets(self):
@@ -626,18 +976,38 @@ class GaussianPeakGroupBox(QFrame):
 
         self.refine_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
 
+        self.lb_label.setAlignment(Qt.AlignVCenter | Qt.AlignCenter)
+        self.ub_label.setAlignment(Qt.AlignVCenter | Qt.AlignCenter)
+
         self.N_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.r_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.s_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
 
-        self.N_input.setMaximumWidth(82)
-        self.r_input.setMaximumWidth(82)
-        self.s_input.setMaximumWidth(82)
+        self.N_input.setMaximumWidth(100)
+        self.r_input.setMaximumWidth(100)
+        self.s_input.setMaximumWidth(100)
+
+        self.N_lb.setMaximumWidth(100)
+        self.N_ub.setMaximumWidth(100)
+        self.r_lb.setMaximumWidth(100)
+        self.r_ub.setMaximumWidth(100)
+        self.s_lb.setMaximumWidth(100)
+        self.s_ub.setMaximumWidth(100)
 
         # Set validators
         self.N_input.setValidator(QDoubleValidator())
         self.r_input.setValidator(QDoubleValidator())
         self.s_input.setValidator(QDoubleValidator())
+        self.N_lb.setValidator(QDoubleValidator())
+        self.N_ub.setValidator(QDoubleValidator())
+        self.r_lb.setValidator(QDoubleValidator())
+        self.r_ub.setValidator(QDoubleValidator())
+        self.s_lb.setValidator(QDoubleValidator())
+        self.s_ub.setValidator(QDoubleValidator())
+
+        self.N_refine.setChecked(True)
+        self.r_refine.setChecked(True)
+        self.s_refine.setChecked(True)
 
     def create_layout(self):
 
@@ -670,22 +1040,44 @@ class GaussianPeakGroupBox(QFrame):
         self.params_grid_layout.setContentsMargins(0, 0, 0, 0)
         self.params_grid_layout.setSpacing(10)
 
-        self.params_grid_layout.addWidget(self.refine_label, 0, 2)
+        self.params_grid_layout.addWidget(self.lb_label, 0, 2)
+        self.params_grid_layout.addWidget(self.ub_label, 0, 3)
+
+        self.params_grid_layout.addWidget(self.refine_label, 0, 4)
+
         self.params_grid_layout.addWidget(self.N_label, 1, 0)
         self.params_grid_layout.addWidget(self.N_input, 1, 1)
-        self.params_grid_layout.addWidget(self.N_refine, 1, 2)
+        self.params_grid_layout.addWidget(self.N_lb, 1, 2)
+        self.params_grid_layout.addWidget(self.N_ub, 1, 3)
+        self.params_grid_layout.addWidget(self.N_refine, 1, 4)
+
         self.params_grid_layout.addWidget(self.r_label, 2, 0)
         self.params_grid_layout.addWidget(self.r_input, 2, 1)
-        self.params_grid_layout.addWidget(self.r_refine, 2, 2)
+        self.params_grid_layout.addWidget(self.r_lb, 2, 2)
+        self.params_grid_layout.addWidget(self.r_ub, 2, 3)
+        self.params_grid_layout.addWidget(self.r_refine, 2, 4)
+
         self.params_grid_layout.addWidget(self.s_label, 3, 0)
         self.params_grid_layout.addWidget(self.s_input, 3, 1)
-        self.params_grid_layout.addWidget(self.s_refine, 3, 2)
+        self.params_grid_layout.addWidget(self.s_lb, 3, 2)
+        self.params_grid_layout.addWidget(self.s_ub, 3, 3)
+        self.params_grid_layout.addWidget(self.s_refine, 3, 4)
 
         self.vlayout.addLayout(self.title_layout)
         self.vlayout.addLayout(self.atoms_grid_layout)
         self.vlayout.addLayout(self.params_grid_layout)
 
         self.setLayout(self.vlayout)
+
+    def create_signals(self):
+        self.alpha_input.currentIndexChanged.connect(self.emit_param_change)
+        self.beta_input.currentIndexChanged.connect(self.emit_param_change)
+        self.N_input.textChanged.connect(self.emit_param_change)
+        self.r_input.textChanged.connect(self.emit_param_change)
+        self.s_input.textChanged.connect(self.emit_param_change)
+
+    def emit_param_change(self):
+        self.gauss_params_changed.emit()
 
     def populate_atom_list(self, _atom_list):
         self.alpha_input.clear()
