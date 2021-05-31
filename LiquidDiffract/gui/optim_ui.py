@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 __author__ = "Benedict J. Heinen"
-__copyright__ = "Copyright 2018, Benedict J. Heinen"
+__copyright__ = "Copyright 2018-2021, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
 import os.path
@@ -641,8 +641,8 @@ class DataOptionsGroupBox(QGroupBox):
         self.method_button_group = QButtonGroup()
         self.al_btn = QRadioButton('Ashcroft-Langreth')
         self.fb_btn = QRadioButton('Faber-Ziman')
-        self.method_button_group.addButton(self.al_btn)
         self.method_button_group.addButton(self.fb_btn)
+        self.method_button_group.addButton(self.al_btn)
 
         self.method_lbl = QLabel('S(Q) formulation: ')
 
@@ -671,7 +671,7 @@ class DataOptionsGroupBox(QGroupBox):
 
         self.window_start_input.setValidator(QDoubleValidator())
         self.window_start_input.setEnabled(False)
-        self.al_btn.setChecked(True)
+        self.fb_btn.setChecked(True)
 
     def create_layout(self):
         self.main_layout = QVBoxLayout()
@@ -702,8 +702,8 @@ class DataOptionsGroupBox(QGroupBox):
         self.grid_layout.addWidget(self.method_lbl, 5, 0)
 
         self.hbtn_layout = QHBoxLayout()
-        self.hbtn_layout.addWidget(self.al_btn)
         self.hbtn_layout.addWidget(self.fb_btn)
+        self.hbtn_layout.addWidget(self.al_btn)
 
         self.main_layout.addLayout(self.grid_layout)
         self.main_layout.addLayout(self.hbtn_layout)
