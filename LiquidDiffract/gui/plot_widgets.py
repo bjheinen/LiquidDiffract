@@ -484,65 +484,71 @@ class StructurePlotWidget(QWidget):
 
     def create_plots(self):
 
-        # Seperate widgets for rdf, tr, fr
-        self.pg_layout_widget_rdf = pg.GraphicsLayoutWidget()
-        self.pg_layout_widget_rdf.setContentsMargins(0, 0, 0, 0)
-        self.pg_layout_rdf = pg.GraphicsLayout()
-        self.pg_layout_rdf.setContentsMargins(0, 0, 0, 0)
+        # Seperate widgets for integrating RDF, int Tr, and curve fitting
+        # Widget for integrating across RDF
+        self.rdf_int_layout_widget = pg.GraphicsLayoutWidget()
+        self.rdf_int_layout_widget.setContentsMargins(0, 0, 0, 0)
+        self.rdf_int_layout = pg.GraphicsLayout()
+        self.rdf_int_layout.setContentsMargins(0, 0, 0, 0)
+        # Widget for integrating T(r)
+        # Separate widget used as easier than handling all the children
+        self.tr_int_layout_widget = pg.GraphicsLayoutWidget()
+        self.tr_int_layout_widget.setContentsMargins(0, 0, 0, 0)
+        self.tr_int_layout = pg.GraphicsLayout()
+        self.tr_int_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.pg_layout_widget_tr = pg.GraphicsLayoutWidget()
-        self.pg_layout_widget_tr.setContentsMargins(0, 0, 0, 0)
-        self.pg_layout_tr = pg.GraphicsLayout()
-        self.pg_layout_tr.setContentsMargins(0, 0, 0, 0)        
-
-        # TODO - rename to pg_layout_gauss for consistency
-        self.gauss_layout_widget = pg.GraphicsLayoutWidget()
-        self.gauss_layout_widget.setContentsMargins(0, 0, 0, 0)
-        self.gauss_layout = pg.GraphicsLayout()
-        self.gauss_layout.setContentsMargins(0, 0, 0, 0)
-        self.gauss_layout.setSpacing(0)
+        # Curve fitting widget
+        # One widget for RDF and Tr and only data and label change - all the
+        # user added curves stay the same on switch
+        self.fit_layout_widget = pg.GraphicsLayoutWidget()
+        self.fit_layout_widget.setContentsMargins(0, 0, 0, 0)
+        self.fit_layout = pg.GraphicsLayout()
+        self.fit_layout.setContentsMargins(0, 0, 0, 0)
+        self.fit_layout.setSpacing(0)
 
         # RDF(r) plot
         self.rdf_plot = WindowedPlotItem()
         self.rdf_plot.plot(x=[], y=[])
-        self.pg_layout_rdf.addItem(self.rdf_plot, row=1, col=0)
-        self.pg_layout_widget_rdf.addItem(self.pg_layout_rdf)
+        self.rdf_int_layout.addItem(self.rdf_plot, row=1, col=0)
+        self.rdf_int_layout_widget.addItem(self.rdf_int_layout)
 
         # T(r) plot
         self.tr_plot = WindowedPlotItem()
         self.tr_plot.plot(x=[], y=[])
-        self.pg_layout_tr.addItem(self.tr_plot, row=1, col=0)
-        self.pg_layout_widget_tr.addItem(self.pg_layout_tr)
+        self.tr_int_layout.addItem(self.tr_plot, row=1, col=0)
+        self.tr_int_layout_widget.addItem(self.tr_int_layout)
 
-        # Gaussian fitting (F(r)) plot
-        self.fr_plot = WindowedPlotItem()
-        self.fr_plot.plot(x=[], y=[])
+        # Curve (Gaussian) fitting plot
+        self.fit_plot = WindowedPlotItem()
+        self.fit_plot.plot(x=[], y=[])
 
         # Create fit range selection tool
         self.fit_limits = pg.LinearRegionItem(values=(0, 10), orientation='vertical', span=(0, 1), movable=True, swapMode='block', brush=pg.mkBrush(None), hoverBrush=pg.mkBrush(None))
         self.deselect_lower = pg.LinearRegionItem(values=(0, 0), orientation='vertical', span=(0, 1), movable=False, swapMode='block', pen=pg.mkPen(None), brush=pg.mkBrush((229,229,229,205)), hoverPen=pg.mkPen(None), hoverBrush=None)
         self.deselect_upper = pg.LinearRegionItem(values=(10, 10), orientation='vertical', span=(0, 1), movable=False, swapMode='block', pen=pg.mkPen(None), brush=pg.mkBrush((229,229,229,205)), hoverPen=pg.mkPen(None), hoverBrush=None)
-        self.fr_plot.addItem(self.fit_limits)
-        self.fr_plot.addItem(self.deselect_lower)
-        self.fr_plot.addItem(self.deselect_upper)
+        self.fit_plot.addItem(self.fit_limits)
+        self.fit_plot.addItem(self.deselect_lower)
+        self.fit_plot.addItem(self.deselect_upper)
 
+        # Fitting residuals plot
         self.res_plot = WindowedPlotItem()
         self.res_plot.plot(x=[], y=[])
-        self.res_plot.setXLink(self.fr_plot)
-        self.gauss_layout.addItem(self.fr_plot, row=1, col=0)
-        self.gauss_layout.addItem(self.res_plot, row=2, col=0)
-        self.gauss_layout.layout.setRowStretchFactor(1, 3)
-        self.gauss_layout.layout.setRowStretchFactor(2, 2)
-        self.gauss_layout_widget.addItem(self.gauss_layout)
+        self.res_plot.setXLink(self.fit_plot)
+        self.fit_layout.addItem(self.fit_plot, row=1, col=0)
+        self.fit_layout.addItem(self.res_plot, row=2, col=0)
+        self.fit_layout.layout.setRowStretchFactor(1, 3)
+        self.fit_layout.layout.setRowStretchFactor(2, 2)
+        self.fit_layout_widget.addItem(self.fit_layout)
 
-        # Set RDF(r) plot as default view
-        self.layout.addWidget(self.pg_layout_widget_rdf)
-        self.layout.addWidget(self.pg_layout_widget_tr)
-        self.layout.addWidget(self.gauss_layout_widget)
+        # Add widgets to the layout
+        self.layout.addWidget(self.rdf_int_layout_widget)
+        self.layout.addWidget(self.tr_int_layout_widget)
+        self.layout.addWidget(self.fit_layout_widget)
 
-        self.pg_layout_widget_rdf.setVisible(True)
-        self.pg_layout_widget_tr.setVisible(False)
-        self.gauss_layout_widget.setVisible(False)
+        # Set RDF(r) plot (integration) as default view
+        self.rdf_int_layout_widget.setVisible(True)
+        self.tr_int_layout_widget.setVisible(False)
+        self.fit_layout_widget.setVisible(False)
 
     def style_plots(self):
 
@@ -552,38 +558,38 @@ class StructurePlotWidget(QWidget):
         self.tr_plot.setLabel('bottom', text='r (A)')
         self.tr_plot.setLabel('left', text='T(r)')
 
-        # No label on fr_plot when showing residuals
-        #self.fr_plot.setLabel('bottom', text='r (A)')
-        self.fr_plot.setLabel('left', text='D(r)')
+        # No label on fit_plot - just on residuals
+        self.fit_plot.setLabel('left', text='RDF(r)')
         self.res_plot.setLabel('bottom', text='r (A)')
         self.res_plot.setLabel('left', text='residuals')
-
-        self.fr_plot.getAxis('bottom').setStyle(showValues=False)
-        self.fr_plot.getAxis('left').setWidth(55)
+        # Fix axis width so plots are aligned
+        self.fit_plot.getAxis('bottom').setStyle(showValues=False)
+        self.fit_plot.getAxis('left').setWidth(55)
         self.res_plot.getAxis('left').setWidth(55)
 
+        # TODO - check if can just use the same object
         self.rdf_xaxis = pg.InfiniteLine(pos=0, angle=0, movable=False, pen={'color': 'k', 'width': 0.75})
         self.rdf_plot.addItem(self.rdf_xaxis)
         self.tr_xaxis = pg.InfiniteLine(pos=0, angle=0, movable=False, pen={'color': 'k', 'width': 0.75})
         self.tr_plot.addItem(self.tr_xaxis)
-        self.fr_xaxis = pg.InfiniteLine(pos=0, angle=0, movable=False, pen={'color': 'k', 'width': 0.75})
-        self.fr_plot.addItem(self.fr_xaxis)
+        self.fit_xaxis = pg.InfiniteLine(pos=0, angle=0, movable=False, pen={'color': 'k', 'width': 0.75})
+        self.fit_plot.addItem(self.fit_xaxis)
         self.res_xaxis = pg.InfiniteLine(pos=0, angle=0, movable=False, pen={'color': 'k', 'width': 0.75})
         self.res_plot.addItem(self.res_xaxis)
-        self.fr_xaxis.setZValue(3)
+        self.fit_xaxis.setZValue(3)
 
         # Make fit_limits region invisible to start
         self.toggle_fit_limits(False)
 
         # Add position label to all plot views
         self.pos_label_rdf = pg.LabelItem(justify='right')
-        self.pg_layout_rdf.addItem(self.pos_label_rdf, col=0, row=0)
+        self.rdf_int_layout.addItem(self.pos_label_rdf, col=0, row=0)
 
         self.pos_label_tr = pg.LabelItem(justify='right')
-        self.pg_layout_tr.addItem(self.pos_label_tr, col=0, row=0)
+        self.tr_int_layout.addItem(self.pos_label_tr, col=0, row=0)
 
-        self.pos_label_gauss = pg.LabelItem(justify='right')
-        self.gauss_layout.addItem(self.pos_label_gauss, col=0, row=0)
+        self.pos_label_fit = pg.LabelItem(justify='right')
+        self.fit_layout.addItem(self.pos_label_fit, col=0, row=0)
 
         self.rdf_plot.vline.setPen((0, 135, 153), width=0.75)
         self.rdf_plot.hline.setPen((0, 135, 153), width=0.75)
@@ -591,8 +597,8 @@ class StructurePlotWidget(QWidget):
         self.tr_plot.vline.setPen((0, 135, 153), width=0.75)
         self.tr_plot.hline.setPen((0, 135, 153), width=0.75)
 
-        self.fr_plot.vline.setPen((0, 135, 153), width=0.75)
-        self.fr_plot.hline.setPen((0, 135, 153), width=0.75)
+        self.fit_plot.vline.setPen((0, 135, 153), width=0.75)
+        self.fit_plot.hline.setPen((0, 135, 153), width=0.75)
         self.res_plot.vline.setPen((0, 135, 153), width=0.75)
         self.res_plot.hline.setPen((0, 135, 153), width=0.75)
 
@@ -600,22 +606,21 @@ class StructurePlotWidget(QWidget):
         self.deselect_lower.setZValue(1)
         self.deselect_upper.setZValue(1)
         self.fit_limits.setZValue(2)
+        self.fit_plot.vline.setZValue(6)
+        self.fit_plot.hline.setZValue(6)
+        self.fit_plot.getAxis('bottom').setZValue(7)
 
-        self.fr_plot.vline.setZValue(6)
-        self.fr_plot.hline.setZValue(6)
-
-        self.fr_plot.getAxis('bottom').setZValue(7)
-
-    def toggle_fit_limits(self, toggle_bool, fr_x=None, sq_x=None):
+    # TODO PLOT VIEW
+    def toggle_fit_limits(self, toggle_bool, obj_x=None, sq_x=None):
         self.fit_limits.setVisible(toggle_bool)
         self.deselect_lower.setVisible(toggle_bool)
         self.deselect_upper.setVisible(toggle_bool)
         if toggle_bool:
             # Set fit_limits default region and bounds to new data
             self.deselect_lower.setRegion([0,0])
-            self.deselect_upper.setRegion([sq_x[-1],fr_x[-1]])
-            self.fit_limits.setRegion([fr_x[0],sq_x[-1]])
-            self.fit_limits.setBounds([0, fr_x[-1]])
+            self.deselect_upper.setRegion([sq_x[-1],obj_x[-1]])
+            self.fit_limits.setRegion([obj_x[0],sq_x[-1]])
+            self.fit_limits.setBounds([0, obj_x[-1]])
 
     def clear_gauss_curves(self):
         try:
@@ -633,7 +638,7 @@ class StructurePlotWidget(QWidget):
         try:
             self.p_rdf.clear()
             self.p_tr.clear()
-            self.p_fr.clear()
+            self.p_fit.clear()
         except AttributeError:
             pass
 
@@ -698,8 +703,6 @@ class StructurePlotWidget(QWidget):
              _data['rdf_y'] = data_utils.interp_nan(_data['rdf_y'])
         if np.isnan(_data['tr_y']).any():
              _data['tr_y'] = data_utils.interp_nan(_data['tr_y'])
-        if np.isnan(_data['fr_y']).any():
-             _data['fr_y'] = data_utils.interp_nan(_data['fr_y'])
 
         # Interpolate data for smoother plots
         # Ignoring for now
@@ -734,11 +737,12 @@ class StructurePlotWidget(QWidget):
         if _data['r0'] < _data['rmax']:
             self.p_Nb = self.rdf_plot.plot(x=_Nb_area_x, y=_Nb_area_y, brush=(199,26,74, 245), pen=None, fillLevel=0)
 
-        # Plot data/functions RDF(r), T(r), and F/D(r)
+        # Plot data/functions RDF(r), T(r)
         self.p_rdf = self.rdf_plot.plot(x=_data['rdf_x'], y=_data['rdf_y'], pen={'color': 0.1, 'width': 1.2})
         self.p_tr = self.tr_plot.plot(x=_data['tr_x'], y=_data['tr_y'], pen={'color': 0.1, 'width': 1.2})
-        self.p_fr = self.fr_plot.plot(x=_data['fr_x'], y=_data['fr_y'], pen={'color': 0.1, 'width': 1.2})
+        self.p_fit = self.fit_plot.plot(x=_data['rdf_x'], y=_data['obj_fun'], pen={'color': 0.1, 'width': 1.2})
 
+        # TODO FIX INIT VIEWS!
         # Limit the inital view to important information
         try:
             self.x_max = _data['sq_x'][-1]
@@ -795,28 +799,29 @@ class StructurePlotWidget(QWidget):
             self.rdf_plot.addItem(self.rmin_line_rdf)
             self.tr_plot.addItem(self.rmin_line_tr)        
 
+        # TODO - Plot residuals always?
         if _data['gauss_model'].size:
             # Plot individual gaussian peaks
             self.p_peaks = []
             for _peak_model in _data['gauss_peaks']:
-                _p_peak = self.fr_plot.plot(x=_data['fr_x'], y=_peak_model, pen={'color': (26,121,199), 'width': 1.2})
+                _p_peak = self.fit_plot.plot(x=_data['rdf_x'], y=_peak_model, pen={'color': (26,121,199), 'width': 1.2})
                 _p_peak.setZValue(4)
                 self.p_peaks.append(_p_peak)
             # Plot gaussian model (sum of individual peaks)
             # change color of this
-            self.p_gauss_model = self.fr_plot.plot(x=_data['fr_x'], y=_data['gauss_model'], pen={'color': (199,26,74), 'width': 1.8, 'style':Qt.DashLine})
+            self.p_gauss_model = self.fit_plot.plot(x=_data['rdf_x'], y=_data['gauss_model'], pen={'color': (199,26,74), 'width': 1.8, 'style':Qt.DashLine})
             self.p_gauss_model.setZValue(5)
             # Plot residuals over whole r range in grey
-            self.p_res_full = self.res_plot.plot(x=_data['fr_x'], y=_data['gauss_residuals_full'], pen={'color': 0.75, 'width': 1.2})
+            self.p_res_full = self.res_plot.plot(x=_data['rdf_x'], y=_data['gauss_residuals_full'], pen={'color': 0.75, 'width': 1.2})
             # Plot residuals over fit range in colour
             self.p_res = self.res_plot.plot(x=_data['fit_r'], y=_data['gauss_residuals'], pen={'color': (26,121,199), 'width': 1.5})
 
         # TODO - label peaks?
 
         # Force repaint
-        self.pg_layout_rdf.update()
-        self.pg_layout_tr.update()
-        self.gauss_layout.update()
+        self.rdf_int_layout.update()
+        self.tr_int_layout.update()
+        self.fit_layout.update()
 
     def update_plot_windows(self, _data):
         _rdf_cut = np.nan_to_num(_data['rdf_y'][np.where(_data['rdf_x'] < self.x_max)])
@@ -827,13 +832,14 @@ class StructurePlotWidget(QWidget):
         self.y_min_tr = np.min(_tr_cut)
         self.y_max_tr = np.max(_tr_cut)
 
-        _fr_cut = np.nan_to_num(_data['fr_y'][np.where(_data['fr_x'] < self.x_max)])
-        self.y_min_fr = np.min(_fr_cut)
-        self.y_max_fr = np.max(_fr_cut)
+        _obj_fun_cut = np.nan_to_num(_data['obj_fun'][np.where(_data['rdf_x'] < self.x_max)])
+        self.y_min_fit = np.min(_obj_fun_cut)
+        self.y_max_fit = np.max(_obj_fun_cut)
 
         self.set_rdf_window()
         self.set_tr_window()
-        self.set_fr_window()
+        self.set_fit_window()
+        self.set_res_window(_data)
 
     def set_rdf_window(self):
         try:
@@ -849,22 +855,30 @@ class StructurePlotWidget(QWidget):
         except:
             return
 
-    def set_fr_window(self):
+    def set_fit_window(self):
         try:
-            self.fr_plot.vb.setRange(xRange=(0, self.x_max),
-                                     yRange=(self.y_min_fr, self.y_max_fr))
+            self.fit_plot.vb.setRange(xRange=(0, self.x_max),
+                                     yRange=(self.y_min_fit, self.y_max_fit))
+        except:
+            return
+
+    def set_res_window(self, _data):
+        try:
+            self.y_min_res = np.min(_data['gauss_residuals'])
+            self.y_max_res = np.max(_data['gauss_residuals'])
+            self.res_plot.vb.setRange(yRange=(self.y_min_res, self.y_max_res))
         except:
             return
 
     def create_signals(self):
-        self.rdf_mouse_proxy = pg.SignalProxy(self.pg_layout_rdf.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved_rdf)
-        self.tr_mouse_proxy = pg.SignalProxy(self.pg_layout_tr.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved_tr)
-        self.gauss_mouse_proxy = pg.SignalProxy(self.gauss_layout.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved_gauss)
+        self.rdf_mouse_proxy = pg.SignalProxy(self.rdf_int_layout.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved_rdf)
+        self.tr_mouse_proxy = pg.SignalProxy(self.tr_int_layout.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved_tr)
+        self.gauss_mouse_proxy = pg.SignalProxy(self.fit_layout.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved_fit)
 
         self.rdf_plot.reset_window.connect(self.set_rdf_window)
         self.tr_plot.reset_window.connect(self.set_tr_window)
-        self.fr_plot.reset_window.connect(self.set_fr_window)
-        self.res_plot.reset_window.connect(self.set_fr_window)
+        self.fit_plot.reset_window.connect(self.set_fit_window)
+        self.res_plot.reset_window.connect(self.set_fit_window)
 
         self.fit_limits.sigRegionChanged.connect(self.update_linear_region)
 
@@ -891,15 +905,15 @@ class StructurePlotWidget(QWidget):
         self.tr_plot.vline.setPos(__mousePoint.x())
         self.tr_plot.hline.setPos(__mousePoint.y())
 
-    def mouse_moved_gauss(self, __evt):
+    def mouse_moved_fit(self, __evt):
         __pos = __evt[0]
-        if self.fr_plot.sceneBoundingRect().contains(__pos):
-            __mousePoint = self.fr_plot.vb.mapSceneToView(__pos)
+        if self.fit_plot.sceneBoundingRect().contains(__pos):
+            __mousePoint = self.fit_plot.vb.mapSceneToView(__pos)
             self.set_mouse_pos_label(__mousePoint)
-            self.fr_plot.vline.setPos(__mousePoint.x())
-            self.fr_plot.hline.setPos(__mousePoint.y())
-            self.fr_plot.vline.setPen((0, 135, 153), width=0.75)
-            self.fr_plot.hline.setPen((0, 135, 153), width=0.75)
+            self.fit_plot.vline.setPos(__mousePoint.x())
+            self.fit_plot.hline.setPos(__mousePoint.y())
+            self.fit_plot.vline.setPen((0, 135, 153), width=0.75)
+            self.fit_plot.hline.setPen((0, 135, 153), width=0.75)
             self.res_plot.vline.setPen(None)
             self.res_plot.hline.setPen(None)
 
@@ -910,8 +924,8 @@ class StructurePlotWidget(QWidget):
             self.res_plot.hline.setPos(__mousePoint.y())
             self.res_plot.vline.setPen((0, 135, 153), width=0.75)
             self.res_plot.hline.setPen((0, 135, 153), width=0.75)
-            self.fr_plot.vline.setPen(None)
-            self.fr_plot.hline.setPen(None)
+            self.fit_plot.vline.setPen(None)
+            self.fit_plot.hline.setPen(None)
 
     def set_mouse_pos_label(self, pos):
         _pos_str = (f'<span style="font-size: 11pt; color:#008799">x='
@@ -919,7 +933,7 @@ class StructurePlotWidget(QWidget):
                     )
         self.pos_label_rdf.setText(_pos_str)
         self.pos_label_tr.setText(_pos_str)
-        self.pos_label_gauss.setText(_pos_str)
+        self.pos_label_fit.setText(_pos_str)
 
 
 class CustomPlotItem(pg.PlotItem):
