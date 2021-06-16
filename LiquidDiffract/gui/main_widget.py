@@ -209,16 +209,15 @@ class MainContainer(QWidget):
         self.structure_ui.data['rdf_y'] = self.results_ui.data['rdf_y']
         self.structure_ui.data['tr_x'] = self.results_ui.data['tr_x']
         self.structure_ui.data['tr_y'] = self.results_ui.data['tr_y']
-        self.structure_ui.data['fr_x'] = self.results_ui.data['fr_x']
-        self.structure_ui.data['fr_y'] = self.results_ui.data['fr_y'] + np.abs(np.min(self.results_ui.data['fr_y']))
         self.structure_ui.data['sq_x'] = self.results_ui.data['sq_x']
         self.structure_ui.data['rho'] = self.results_ui.data['rho']
         self.structure_ui.data['composition'] = self.results_ui.data['composition']
 
+        self.structure_ui.update_obj_fun()
         self.structure_ui.set_atoms()
         self.structure_ui.set_weights()
         self.structure_ui.structure_plot_widget.toggle_fit_limits(True,
-                                                                  fr_x=self.structure_ui.data['fr_x'],
+                                                                  obj_x=self.structure_ui.data['rdf_x'],
                                                                   sq_x=self.structure_ui.data['sq_x'])
         self.structure_ui.plot_data()
 
