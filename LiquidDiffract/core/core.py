@@ -64,7 +64,8 @@ def conv_density(rho, composition):
     # Calculate number of atoms and scale mol_mass
     N = np.sum(composition[el][2] for el in composition)
     # Calculate atoms/cm3 > then moles/cm3
-    mass_density = (rho * 10 / 6.0221408) * (mol_mass/N)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        mass_density = (rho * 10 / 6.0221408) * (mol_mass/N)
     return mass_density
 
 
