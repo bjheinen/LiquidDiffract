@@ -182,8 +182,11 @@ class StructureUI(QWidget):
         # Change active view
         if self.structure_config_widget.plot_view_gb.rdf_btn.isChecked():
             self.active_func = 'rdf'
+            # Set label on curve fitting plot
+            self.structure_plot_widget.fit_plot.setLabel('left', text='RDF(r)')
         elif self.structure_config_widget.plot_view_gb.tr_btn.isChecked():
             self.active_func = 'tr'
+            self.structure_plot_widget.fit_plot.setLabel('left', text='T(r)')
         self.update_obj_fun()
 
         # Toggle plots if monatomic gb selected
@@ -499,6 +502,7 @@ class StructureUI(QWidget):
         # Do not plot if no peaks present
         if not self.peak_fit_dict['peak_idx_list']:
             self.structure_plot_widget.clear_gauss_curves()
+            self.plot_data()
             return
         # Evaluate objective function over whole r range
         self.data['gauss_model'] = peak_fit.gauss_obj_func(self.peak_fit_dict['obj_params'],
