@@ -81,6 +81,7 @@ class OptimUI(QWidget):
         self.optim_config_widget.data_options_gb.qmax_input.textChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.qmin_check.stateChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.qmin_input.textChanged.connect(self.plot_data)
+        self.optim_config_widget.composition_gb.mass_density.textChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.calc_sq_btn.clicked.connect(self.on_click_calc_sq)
         self.optim_config_widget.data_options_gb.smooth_data_check.toggled.connect(self.plot_data)
         self.optim_config_widget.optim_options_gb.opt_button.clicked.connect(self.on_click_refine)
@@ -521,6 +522,7 @@ class CompositionGroupBox(QGroupBox):
         self.delete_element_btn.clicked.connect(self.delete_row)
         self.add_element_btn.clicked.connect(self.add_row)
         self.density_input.textChanged.connect(self.update_mass_density)
+        self.composition_table.cellChanged.connect(self.update_mass_density)
 
     def add_row(self):
         _row_position = self.composition_table.rowCount()
@@ -531,6 +533,8 @@ class CompositionGroupBox(QGroupBox):
             _element_editor.insertItem(index, element)
         # Could use a default style? e.g.:
         # _element_editor.setStyle(QStyleFactory.create('Cleanlooks'))
+        # Block composition_table signals while setting the cells
+        self.composition_table.blockSignals(True)
         self.composition_table.setCellWidget(_row_position, 0, _element_editor)
         _element_editor.setCurrentIndex(30)
         # No need to set default here
@@ -538,6 +542,8 @@ class CompositionGroupBox(QGroupBox):
         self.composition_table.setItem(_row_position, 1, QTableWidgetItem('31'))
         self.composition_table.setItem(_row_position, 2, QTableWidgetItem('0'))
         self.composition_table.setItem(_row_position, 3, QTableWidgetItem('1'))
+        # Re-enable signals
+        self.composition_table.blockSignals(False)
 
         self.composition_table.item(_row_position, 1).setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         self.composition_table.item(_row_position, 1).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
