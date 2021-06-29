@@ -190,12 +190,16 @@ class MainContainer(QWidget):
         # Clear old s(q), g(r), rdf(r)
         self.results_ui.clear_data()
         # Set rho
-        if self.optim_ui.optim_config_widget.optim_options_gb.opt_check.isChecked():
+        if (self.optim_ui.optim_config_widget.optim_options_gb.opt_check.isChecked()) & (self.optim_ui.optim_config_widget.optim_options_gb.isChecked()):
             self.results_ui.data['rho'] = self.optim_ui.data['refined_rho']
         else:
             self.results_ui.data['rho'] = np.float(self.optim_ui.optim_config_widget.composition_gb.density_input.text())
-        self.results_ui.data['int_func'] = self.optim_ui.data['impr_int_func']
-        self.results_ui.data['sq_x'] = self.optim_ui.data['impr_iq_x']
+        if self.optim_ui.optim_config_widget.optim_options_gb.isChecked():
+            self.results_ui.data['int_func'] = self.optim_ui.data['impr_int_func']
+            self.results_ui.data['sq_x'] = self.optim_ui.data['impr_iq_x']
+        else:
+            self.results_ui.data['int_func'] = self.optim_ui.data['int_func']
+            self.results_ui.data['sq_x'] = self.optim_ui.data['iq_x']
         self.results_ui.data['composition'] = self.optim_ui.optim_config_widget.composition_gb.get_composition_dict()
         self.results_ui.data['mod_func'] = self.optim_ui.data['mod_func']
         self.results_ui.data['window_start'] = self.optim_ui.data['window_start']

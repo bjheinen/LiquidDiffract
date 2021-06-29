@@ -178,6 +178,7 @@ class OptimUI(QWidget):
             _method = 'ashcroft-langreth'
         elif self.optim_config_widget.data_options_gb.fb_btn.isChecked():
             _method = 'faber-ziman'
+        self.data['sq_method'] = _method
         # Get rho 0 - Force intermediate values passed by QValidator to 0
         try:
             _rho_0 = np.float(self.optim_config_widget.composition_gb.density_input.text())
@@ -195,6 +196,10 @@ class OptimUI(QWidget):
         self.data['modification'] = core.get_mod_func(self.data['iq_x'], self.data['mod_func'], self.data['window_start'])
         self.optim_plot_widget.update_plots(self.data)
         self.results_cleared.emit()
+        # If optimisation gb is not checked pass through Krogh-Moe/Norman S(Q)
+        # to results
+        if not self.optim_config_widget.optim_options_gb.isChecked():
+            self.results_changed.emit()
 
     def on_click_refine(self):
         # Delete previous chi_sq & refined density
@@ -753,7 +758,7 @@ class OptimOptionsGroupBox(QGroupBox):
         self.setAlignment(Qt.AlignLeft)
         self.setStyleSheet('GroupBox::title{subcontrol-origin: margin; subcontrol-position: top left;}')
         self.setCheckable(True)
-        self.setChecked(False)
+        self.setChecked(True)
 
         self.create_widgets()
         self.style_widgets()
@@ -858,7 +863,7 @@ class OptimResultsGroupBox(QGroupBox):
         self.setTitle('Results')
         self.setAlignment(Qt.AlignLeft)
         self.setStyleSheet('GroupBox::title{subcontrol-origin: margin; subcontrol-position: top left;}')
-        self.setEnabled(False)
+        self.setEnabled(True)
 
         self.create_widgets()
         self.style_widgets()
