@@ -77,6 +77,7 @@ class App(QMainWindow):
                             'window_length': 5,
                             'poly_order': 3,
                             'fft_N': 12,
+                            'mod_func_mode': 0,
                             'op_method': 'L-BFGS-B',
                             'minimisation_options':
                                 {'disp': 0,
@@ -109,6 +110,7 @@ class App(QMainWindow):
             self.table_widget.optim_ui.plot_data()
 
     def set_preferences(self):
+        self.table_widget.optim_ui.mod_func_mode = self.preferences['mod_func_mode']
         self.table_widget.optim_ui.op_method = self.preferences['op_method']
         self.table_widget.optim_ui.minimisation_options = self.preferences['minimisation_options']
         self.table_widget.optim_ui.global_minimisation = self.preferences['global_minimisation']

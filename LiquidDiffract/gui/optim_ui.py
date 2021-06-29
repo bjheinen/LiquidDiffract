@@ -254,11 +254,15 @@ class OptimUI(QWidget):
                 return
             if _n_iter > 10:
                  print('Warning: n_iter <= 10 is recommended for convergence!')
+            # Only use mod_func in refinement if option is set (default is no)
+            if self.mod_func_mode:
+                _mod_func = self.data['mod_func']
+            else:
+                _mod_func = None
             _args = (self.data['cor_x_cut'], self.data['cor_y_cut'],
                      _composition, _r_min, _n_iter, _method,
-                     self.data['mod_func'], self.data['window_start'],
+                     _mod_func, self.data['window_start'],
                      self.fft_N, 1)
-
             _solver_kwargs = {'args': _args,
                               'options': dict(self.minimisation_options),
                               'method': self.op_method}
@@ -304,9 +308,14 @@ class OptimUI(QWidget):
         else:
             _rho_temp = _rho_0
 
+        # Only use mod_func in refinement if option is set (default is no)
+        if self.mod_func_mode:
+            _mod_func = self.data['mod_func']
+        else:
+            _mod_func = None
         _args = (self.data['cor_x_cut'], self.data['int_func'],
                  _composition, _r_min, _n_iter, _method,
-                 self.data['mod_func'], self.data['window_start'],
+                 _mod_func, self.data['window_start'],
                  self.fft_N, 0)
         self.data['impr_int_func'], self.data['chi_sq'] = core.calc_impr_interference_func(_rho_temp, *_args)
         self.optim_config_widget.optim_results_gb.chi_sq_output.setText('{:.4e}'.format(self.data['chi_sq']))
@@ -327,7 +336,10 @@ class OptimUI(QWidget):
             _smooth_bool = 'Y'
         else:
             _smooth_bool = 'N'
-
+        if self.mod_func_mode:
+            _mod_func_mode_bool = 'Y'
+        else:
+            _mod_func_mode_bool = 'N'
         if self.optim_config_widget.optim_options_gb.opt_check.isChecked():
             _refine_density_bool = 'Y'
             _refine_density_log = (
@@ -355,6 +367,7 @@ class OptimUI(QWidget):
             f'Q_max : {self.optim_config_widget.data_options_gb.qmax_input.text()}\n'
             f'Data smoothing? : {_smooth_bool}\n'
             f'Modification function : {self.data["mod_func"]}\n'
+            f'Modification func used in iterative refinement? : {_mod_func_mode_bool}\n'
             f'Cosine window start : {self.data["window_start"]}\n'
             f'S(Q) formulation : {_method}\n'
             f'Density : {_rho_0}\n'

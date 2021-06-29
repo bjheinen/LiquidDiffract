@@ -88,6 +88,7 @@ class PreferencesDialog(QDialog):
 
         self.app_settings_gb = AppSettingsGroupBox(preferences)
         self.data_settings_gb = DataSettingsGroupBox(preferences)
+        self.ref_proc_settings_gb = IterativeProcedureSettingsGroupBox(preferences)
         self.refine_settings_gb = SolverSettingsGroupBox(preferences)
         self.global_min_settings_gb = GlobalMinSettingsGroupBox(preferences)
 
@@ -97,6 +98,7 @@ class PreferencesDialog(QDialog):
 
         self.vlayout.addWidget(self.app_settings_gb)
         self.vlayout.addWidget(self.data_settings_gb)
+        self.vlayout.addWidget(self.ref_proc_settings_gb)
         self.vlayout.addWidget(self.refine_settings_gb)
         self.vlayout.addWidget(self.global_min_settings_gb)
         self.vlayout.addWidget(self.button_box)
@@ -123,6 +125,7 @@ class PreferencesDialog(QDialog):
             self.fft_check_signal.emit()
             if self.fft_check_result == 1:
                  raise RuntimeWarning()
+            _mod_func_mode = np.int(self.ref_proc_settings_gb.mod_func_mode_input.isChecked())
             _op_method = self.refine_settings_gb.op_method_input.currentText()
             _disp = np.int(self.refine_settings_gb.disp_check.isChecked())
             _maxiter = np.int(self.refine_settings_gb.maxiter_input.text())
@@ -186,6 +189,7 @@ class PreferencesDialog(QDialog):
                              'window_length': _window_length,
                              'poly_order': _poly_order,
                              'fft_N': _fft_N,
+                             'mod_func_mode': _mod_func_mode,
                              'op_method': _op_method,
                              'minimisation_options': _minimisation_options,
                              'global_minimisation': _global_minimisation,
@@ -308,6 +312,43 @@ class DataSettingsGroupBox(QGroupBox):
         self.grid_layout.addWidget(self.fft_label, 3, 0)
         self.grid_layout.addWidget(self.fft_N_label, 4, 0)
         self.grid_layout.addWidget(self.fft_N_input, 4, 1)
+
+        self.main_layout.addLayout(self.grid_layout)
+        self.setLayout(self.main_layout)
+
+
+class IterativeProcedureSettingsGroupBox(QGroupBox):
+
+    def __init__(self, preferences):
+        super(IterativeProcedureSettingsGroupBox, self).__init__()
+        self.setTitle('Iterative Refinement Options')
+        self.setAlignment(Qt.AlignLeft)
+        self.setStyleSheet('GroupBox::title{subcontrol-origin: margin; subcontrol-position: top left;}')
+
+        self.create_widgets()
+        self.set_data(preferences)
+        self.style_widgets()
+        self.create_layout()
+
+    def create_widgets(self):
+        self.mod_func_mode_label = QLabel('Use modification func in iterative refinement?: ')
+        self.mod_func_mode_input = QCheckBox()
+
+    def set_data(self, preferences):
+        self.mod_func_mode_input.setChecked(preferences['mod_func_mode'])
+
+    def style_widgets(self):
+        self.mod_func_mode_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+
+    def create_layout(self):
+        self.main_layout = QVBoxLayout()
+        self.main_layout.setContentsMargins(20, 10, 20, 7)
+        self.main_layout.setSpacing(25)
+
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setSpacing(15)
+        self.grid_layout.addWidget(self.mod_func_mode_label, 0, 0)
+        self.grid_layout.addWidget(self.mod_func_mode_input, 0, 1)
 
         self.main_layout.addLayout(self.grid_layout)
         self.setLayout(self.main_layout)
