@@ -82,6 +82,8 @@ class OptimUI(QWidget):
         self.optim_config_widget.data_options_gb.qmin_check.stateChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.qmin_input.textChanged.connect(self.plot_data)
         self.optim_config_widget.composition_gb.mass_density.textChanged.connect(self.plot_data)
+        self.optim_config_widget.data_options_gb.al_btn.toggled.connect(self.plot_data)
+        self.optim_config_widget.data_options_gb.mod_func_input.currentIndexChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.calc_sq_btn.clicked.connect(self.on_click_calc_sq)
         self.optim_config_widget.data_options_gb.smooth_data_check.toggled.connect(self.plot_data)
         self.optim_config_widget.optim_options_gb.opt_button.clicked.connect(self.on_click_refine)
@@ -176,7 +178,7 @@ class OptimUI(QWidget):
         # Get S(Q) method
         if self.optim_config_widget.data_options_gb.al_btn.isChecked():
             _method = 'ashcroft-langreth'
-        elif self.optim_config_widget.data_options_gb.fb_btn.isChecked():
+        elif self.optim_config_widget.data_options_gb.fz_btn.isChecked():
             _method = 'faber-ziman'
         self.data['sq_method'] = _method
         # Get rho 0 - Force intermediate values passed by QValidator to 0
@@ -234,7 +236,7 @@ class OptimUI(QWidget):
         # Get S(Q) method
         if self.optim_config_widget.data_options_gb.al_btn.isChecked():
             _method = 'ashcroft-langreth'
-        elif self.optim_config_widget.data_options_gb.fb_btn.isChecked():
+        elif self.optim_config_widget.data_options_gb.fz_btn.isChecked():
             _method = 'faber-ziman'
         # Get density
         _rho_0 = np.float(self.optim_config_widget.composition_gb.density_input.text())
@@ -669,8 +671,8 @@ class DataOptionsGroupBox(QGroupBox):
 
         self.method_button_group = QButtonGroup()
         self.al_btn = QRadioButton('Ashcroft-Langreth')
-        self.fb_btn = QRadioButton('Faber-Ziman')
-        self.method_button_group.addButton(self.fb_btn)
+        self.fz_btn = QRadioButton('Faber-Ziman')
+        self.method_button_group.addButton(self.fz_btn)
         self.method_button_group.addButton(self.al_btn)
 
         self.method_lbl = QLabel('S(Q) formulation: ')
@@ -700,7 +702,7 @@ class DataOptionsGroupBox(QGroupBox):
 
         self.window_start_input.setValidator(QDoubleValidator())
         self.window_start_input.setEnabled(False)
-        self.fb_btn.setChecked(True)
+        self.fz_btn.setChecked(True)
 
     def create_layout(self):
         self.main_layout = QVBoxLayout()
@@ -713,16 +715,15 @@ class DataOptionsGroupBox(QGroupBox):
         self.grid_layout.setColumnStretch(1, 4)
         self.grid_layout.setColumnStretch(2, 2)
 
-        self.grid_layout.addWidget(self.qmax_label, 0, 0)
-        self.grid_layout.addWidget(self.qmax_input, 0, 1)
-        self.grid_layout.addWidget(self.qmax_check, 0, 2)
+        self.grid_layout.addWidget(self.qmin_label, 0, 0)
+        self.grid_layout.addWidget(self.qmin_input, 0, 1)
+        self.grid_layout.addWidget(self.qmin_check, 0, 2)
 
-        self.grid_layout.addWidget(self.qmin_label, 1, 0)
-        self.grid_layout.addWidget(self.qmin_input, 1, 1)
-        self.grid_layout.addWidget(self.qmin_check, 1, 2)
+        self.grid_layout.addWidget(self.qmax_label, 1, 0)
+        self.grid_layout.addWidget(self.qmax_input, 1, 1)
+        self.grid_layout.addWidget(self.qmax_check, 1, 2)
 
         self.grid_layout.addWidget(self.smooth_label, 2, 0)
-        # self.grid_layout.addWidget(QW('-'), 1, 1)
         self.grid_layout.addWidget(self.smooth_data_check, 2, 2)
 
         self.grid_layout.addWidget(self.mod_func_lbl, 3, 0, 1, 2)
@@ -731,7 +732,7 @@ class DataOptionsGroupBox(QGroupBox):
         self.grid_layout.addWidget(self.method_lbl, 5, 0)
 
         self.hbtn_layout = QHBoxLayout()
-        self.hbtn_layout.addWidget(self.fb_btn)
+        self.hbtn_layout.addWidget(self.fz_btn)
         self.hbtn_layout.addWidget(self.al_btn)
 
         self.main_layout.addLayout(self.grid_layout)
