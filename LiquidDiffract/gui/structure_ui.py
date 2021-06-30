@@ -67,14 +67,17 @@ class StructureUI(QWidget):
 
     def create_signals(self):
 
-        # TODO - check should work with just one of these signals!
         self.structure_config_widget.plot_view_gb.rdf_btn.toggled.connect(self.toggle_plot_view)
-        self.structure_config_widget.plot_view_gb.tr_btn.toggled.connect(self.toggle_plot_view)
 
         self.structure_config_widget.monatomic_gb.r0_input.valueChanged.connect(self.update_plot_data)
         self.structure_config_widget.monatomic_gb.rpmax_input.valueChanged.connect(self.update_plot_data)
         self.structure_config_widget.monatomic_gb.rmax_input.valueChanged.connect(self.update_plot_data)
         self.structure_config_widget.monatomic_gb.rmin_input.valueChanged.connect(self.update_plot_data)
+
+        self.structure_config_widget.monatomic_gb.r0_input.valueChanged.connect(self.calc_integrals)
+        self.structure_config_widget.monatomic_gb.rpmax_input.valueChanged.connect(self.calc_integrals)
+        self.structure_config_widget.monatomic_gb.rmax_input.valueChanged.connect(self.calc_integrals)
+        self.structure_config_widget.monatomic_gb.rmin_input.valueChanged.connect(self.calc_integrals)
 
         self.int_limit_signalMapper = QSignalMapper()
         self.int_limit_signalMapper.mapped[QObject].connect(self.update_int_limits)
@@ -289,6 +292,8 @@ class StructureUI(QWidget):
         _peak_dict = self.structure_config_widget.polyatomic_gb.peak_dict
         self.peak_dict = _peak_dict
         _peak_idx_list = list(_peak_dict.keys())
+        print(_peak_idx_list)
+        _peak_idx_remove = []
         for _peak_idx in _peak_idx_list:
             _peak_idx_str = str(_peak_idx)
             _peak_widget = _peak_dict[_peak_idx]
@@ -358,8 +363,12 @@ class StructureUI(QWidget):
 
             except KeyError:
                 # If alpha/beta not set remove peak from the list
-                _peak_idx_list.remove(_peak_idx)
+                _peak_idx_remove.append(_peak_idx)
 
+        # Remove peaks with alpha-beta not set
+        for _peak_to_remove in _peak_idx_remove:
+            print('removing peak no. ', _peak_to_remove)
+            _peak_idx_list.remove(_peak_to_remove)
         # Store peak_idx_list in peak_fit_dict
         self.peak_fit_dict['peak_idx_list'] = _peak_idx_list
 
@@ -484,12 +493,13 @@ class StructureUI(QWidget):
             _peak_widget.s_ub.setText('{0:.1f}'.format(_s_param.max))
             _peak_widget.s_refine.setChecked(_s_param.vary)
 
-            # Set xi (skewness)
-            _xi_param = _params['xi'+_peak_idx_str]
-            _peak_widget.xi_input.setText('{0:.2f}'.format(_xi_param.value))
-            _peak_widget.xi_lb.setText('{0:.1f}'.format(_xi_param.min))
-            _peak_widget.xi_ub.setText('{0:.1f}'.format(_xi_param.max))
-            _peak_widget.xi_refine.setChecked(_xi_param.vary)
+            # Set xi (skewness) only if in use
+            if _peak_widget.skew_toggle.isChecked():
+                _xi_param = _params['xi'+_peak_idx_str]
+                _peak_widget.xi_input.setText('{0:.2f}'.format(_xi_param.value))
+                _peak_widget.xi_lb.setText('{0:.1f}'.format(_xi_param.min))
+                _peak_widget.xi_ub.setText('{0:.1f}'.format(_xi_param.max))
+                _peak_widget.xi_refine.setChecked(_xi_param.vary)
 
         # Clear the peak fit dict
         self.peak_fit_dict = {}
@@ -499,9 +509,14 @@ class StructureUI(QWidget):
     def make_peak_plots(self):
         # Make peak_fit_dict
         self.make_peak_params()
+        print(self.peak_fit_dict)
+        print(self.peak_dict)
         # Do not plot if no peaks present
         if not self.peak_fit_dict['peak_idx_list']:
+            print('no peaks!!!')
             self.structure_plot_widget.clear_gauss_curves()
+            self.data['gauss_model'] = np.asarray([])
+            self.data['gauss_peaks'] = []
             self.plot_data()
             return
         # Evaluate objective function over whole r range
@@ -1140,3 +1155,4 @@ class GaussianPeakGroupBox(QFrame):
             self.xi_lb.setEnabled(False)
             self.xi_ub.setEnabled(False)
             self.xi_refine.setEnabled(False)
+        self.emit_param_change()
