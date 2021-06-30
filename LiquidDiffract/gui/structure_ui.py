@@ -339,7 +339,7 @@ class StructureUI(QWidget):
                 _xi_refine = False
 
             # Make peak name
-            _name = _alpha + '-' + _beta
+            _name = '#' + _peak_idx_str + ' ' + _alpha + '-' + _beta
 
             try:
                 # Make kwarg dict
@@ -467,7 +467,7 @@ class StructureUI(QWidget):
             _peak_widget = self.peak_dict[_peak_idx]
             # Reset alpha and beta
             _name = self.peak_fit_dict['name'+_peak_idx_str]
-            _alpha, _beta = _name.split('-')
+            _alpha, _beta = _name.split(' ')[-1].split('-')
             _peak_widget.alpha_input.setCurrentText(_alpha)
             _peak_widget.beta_input.setCurrentText(_beta)
             # Set N
@@ -532,12 +532,14 @@ class StructureUI(QWidget):
         # Evaluate each individual peak over r range
         # List to store each individual peak
         self.data['gauss_peaks'] = []
+        self.data['gauss_peaks_names'] = []
         for _peak_idx in self.peak_fit_dict['peak_idx_list']:
             _peak_idx_str = str(_peak_idx)
             _peak_model = peak_fit.gauss_obj_func(self.peak_fit_dict['params'+_peak_idx_str],
                                                   self.data['rdf_x'], data=None,
                                                   **self.peak_fit_dict['kwargs'+_peak_idx_str])
             self.data['gauss_peaks'].append(_peak_model)
+            self.data['gauss_peaks_names'].append(self.peak_fit_dict['name'+_peak_idx_str])
 
         # Call update_plots
         self.structure_plot_widget.update_plots(self.data)

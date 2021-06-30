@@ -619,7 +619,11 @@ class StructurePlotWidget(QWidget):
         self.fit_plot.hline.setZValue(6)
         self.fit_plot.getAxis('bottom').setZValue(7)
 
-    # TODO PLOT VIEW
+        # Colors for gaussian curves
+        self.gauss_colors = [(26,121,199), (22,171,69), (246,174,45),
+                             (242,100,25), (99,18,153), (5,117,59),
+                             (196,35,72), (90,73,57)]
+
     def toggle_fit_limits(self, toggle_bool, obj_x=None, sq_x=None):
         self.fit_limits.setVisible(toggle_bool)
         self.deselect_lower.setVisible(toggle_bool)
@@ -808,14 +812,26 @@ class StructurePlotWidget(QWidget):
             self.rdf_plot.addItem(self.rmin_line_rdf)
             self.tr_plot.addItem(self.rmin_line_tr)        
 
-        # TODO - Plot residuals always?
         if _data['gauss_model'].size:
             # Plot individual gaussian peaks
             self.p_peaks = []
-            for _peak_model in _data['gauss_peaks']:
-                _p_peak = self.fit_plot.plot(x=_data['rdf_x'], y=_peak_model, pen={'color': (26,121,199), 'width': 1.2})
+            for i, _peak_model in enumerate(_data['gauss_peaks']):
+                # Get color - use i%8 to cycle list of colors
+                _color = self.gauss_colors[i%len(self.gauss_colors)]
+                _p_peak = self.fit_plot.plot(x=_data['rdf_x'], y=_peak_model, pen={'color': _color, 'width': 1.2})
                 _p_peak.setZValue(4)
                 self.p_peaks.append(_p_peak)
+                # Label peak at location of curve maximum
+                _max_idx = np.argmax(_peak_model)
+                _peak_loc = (_data['rdf_x'][_max_idx], _peak_model[_max_idx])
+                _peak_arrow = pg.ArrowItem(pos=_peak_loc, angle=260, pen=_color, brush=_color, tailLen=30, tailWidth=2, headLen=10, headWidth=4, pxMode=True)
+                _peak_label = pg.TextItem(text=_data['gauss_peaks_names'][i], color=_color, anchor=(1.0,2.47))
+                _peak_label.setPos(*_peak_loc)
+                self.fit_plot.addItem(_peak_label)
+                self.fit_plot.addItem(_peak_arrow)
+                _peak_label.setParentItem(_p_peak)
+                _peak_arrow.setParentItem(_p_peak)
+
             # Plot gaussian model (sum of individual peaks)
             # change color of this
             self.p_gauss_model = self.fit_plot.plot(x=_data['rdf_x'], y=_data['gauss_model'], pen={'color': (199,26,74), 'width': 1.8, 'style':Qt.DashLine})
@@ -824,8 +840,6 @@ class StructurePlotWidget(QWidget):
             self.p_res_full = self.res_plot.plot(x=_data['rdf_x'], y=_data['gauss_residuals_full'], pen={'color': 0.75, 'width': 1.2})
             # Plot residuals over fit range in colour
             self.p_res = self.res_plot.plot(x=_data['fit_r'], y=_data['gauss_residuals'], pen={'color': (26,121,199), 'width': 1.5})
-
-        # TODO - label peaks?
 
         # Force repaint
         self.rdf_int_layout.update()
