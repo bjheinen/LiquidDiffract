@@ -292,7 +292,6 @@ class StructureUI(QWidget):
         _peak_dict = self.structure_config_widget.polyatomic_gb.peak_dict
         self.peak_dict = _peak_dict
         _peak_idx_list = list(_peak_dict.keys())
-        print(_peak_idx_list)
         _peak_idx_remove = []
         for _peak_idx in _peak_idx_list:
             _peak_idx_str = str(_peak_idx)
@@ -367,7 +366,6 @@ class StructureUI(QWidget):
 
         # Remove peaks with alpha-beta not set
         for _peak_to_remove in _peak_idx_remove:
-            print('removing peak no. ', _peak_to_remove)
             _peak_idx_list.remove(_peak_to_remove)
         # Store peak_idx_list in peak_fit_dict
         self.peak_fit_dict['peak_idx_list'] = _peak_idx_list
@@ -475,30 +473,30 @@ class StructureUI(QWidget):
             # Set N
             _N_param = _params['N'+_peak_idx_str]
             _peak_widget.N_input.setText('{0:.2f}'.format(_N_param.value))
-            _peak_widget.N_lb.setText('{0:.1f}'.format(_N_param.min))
-            _peak_widget.N_ub.setText('{0:.1f}'.format(_N_param.max))
+            _peak_widget.N_lb.setText('{0:.2f}'.format(_N_param.min))
+            _peak_widget.N_ub.setText('{0:.2f}'.format(_N_param.max))
             _peak_widget.N_refine.setChecked(_N_param.vary)
 
             # Set r
             _r_param = _params['r'+_peak_idx_str]
             _peak_widget.r_input.setText('{0:.2f}'.format(_r_param.value))
-            _peak_widget.r_lb.setText('{0:.1f}'.format(_r_param.min))
-            _peak_widget.r_ub.setText('{0:.1f}'.format(_r_param.max))
+            _peak_widget.r_lb.setText('{0:.2f}'.format(_r_param.min))
+            _peak_widget.r_ub.setText('{0:.2f}'.format(_r_param.max))
             _peak_widget.r_refine.setChecked(_r_param.vary)
 
             # Set sigma
             _s_param = _params['s'+_peak_idx_str]
             _peak_widget.s_input.setText('{0:.2f}'.format(_s_param.value))
-            _peak_widget.s_lb.setText('{0:.1f}'.format(_s_param.min))
-            _peak_widget.s_ub.setText('{0:.1f}'.format(_s_param.max))
+            _peak_widget.s_lb.setText('{0:.2f}'.format(_s_param.min))
+            _peak_widget.s_ub.setText('{0:.2f}'.format(_s_param.max))
             _peak_widget.s_refine.setChecked(_s_param.vary)
 
             # Set xi (skewness) only if in use
             if _peak_widget.skew_toggle.isChecked():
                 _xi_param = _params['xi'+_peak_idx_str]
                 _peak_widget.xi_input.setText('{0:.2f}'.format(_xi_param.value))
-                _peak_widget.xi_lb.setText('{0:.1f}'.format(_xi_param.min))
-                _peak_widget.xi_ub.setText('{0:.1f}'.format(_xi_param.max))
+                _peak_widget.xi_lb.setText('{0:.2f}'.format(_xi_param.min))
+                _peak_widget.xi_ub.setText('{0:.2f}'.format(_xi_param.max))
                 _peak_widget.xi_refine.setChecked(_xi_param.vary)
 
         # Clear the peak fit dict
@@ -509,11 +507,8 @@ class StructureUI(QWidget):
     def make_peak_plots(self):
         # Make peak_fit_dict
         self.make_peak_params()
-        print(self.peak_fit_dict)
-        print(self.peak_dict)
         # Do not plot if no peaks present
         if not self.peak_fit_dict['peak_idx_list']:
-            print('no peaks!!!')
             self.structure_plot_widget.clear_gauss_curves()
             self.data['gauss_model'] = np.asarray([])
             self.data['gauss_peaks'] = []
@@ -989,9 +984,9 @@ class GaussianPeakGroupBox(QFrame):
 
         self.skew_toggle = QCheckBox('Skew?: ')
         self.xi_label = QLabel('ξ: ')
-        self.xi_input = QLineEdit('0.0')
+        self.xi_input = QLineEdit('0.01')
         self.xi_lb = QLineEdit('0')
-        self.xi_ub = QLineEdit('1.0')
+        self.xi_ub = QLineEdit('2.0')
         self.xi_refine = QCheckBox()
 
     def style_widgets(self):
