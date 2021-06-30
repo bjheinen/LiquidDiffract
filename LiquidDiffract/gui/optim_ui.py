@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QComboBox, QTableWidget, QTableWidgetItem, \
                             QLabel, QCheckBox, QButtonGroup, QRadioButton, \
                             QScrollArea, QSplitter, QSizePolicy,  \
-                            QAbstractScrollArea, QHeaderView
+                            QAbstractScrollArea, QHeaderView, QStyle
 from LiquidDiffract.gui import plot_widgets
 from LiquidDiffract.gui import utility
 from LiquidDiffract.core import data_utils
@@ -429,6 +429,7 @@ class OptimConfigWidget(QWidget):
     def create_signals(self):
         self.optim_options_gb.toggled.connect(self._toggle_results_gb)
         self.optim_options_gb.opt_check.stateChanged.connect(self._toggle_density_refine)
+        self.optim_results_gb.density_copy_btn.clicked.connect(self._copy_density_output)
 
     def _toggle_results_gb(self, on):
         self.optim_results_gb.setEnabled(on)
@@ -438,6 +439,10 @@ class OptimConfigWidget(QWidget):
         self.optim_results_gb.density_output_label.setEnabled(state)
         self.optim_results_gb.mass_density.setEnabled(state)
         self.optim_results_gb.mass_density_label.setEnabled(state)
+        self.optim_results_gb.density_copy_btn.setEnabled(state)
+    
+    def _copy_density_output(self):
+        self.composition_gb.density_input.setText(self.optim_results_gb.density_output.text())
 
 
 class CompositionGroupBox(QGroupBox):
@@ -886,10 +891,9 @@ class OptimResultsGroupBox(QGroupBox):
 
         self.chi_sq_label = QLabel('Final Chi-squared: ')
         self.chi_sq_output = QLineEdit()
-
         self.density_output_label = QLabel('Refined density (at/A<sup>3</sup>): ')
-        self.density_output = QLineEdit()
-
+        self.density_output = QLineEdit()        
+        self.density_copy_btn = QPushButton()
         self.mass_density_label = QLabel('(g/cm<sup>3</sup>): ')
         self.mass_density = QLineEdit()
 
@@ -898,6 +902,7 @@ class OptimResultsGroupBox(QGroupBox):
         self.chi_sq_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.density_output_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.mass_density_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.density_copy_btn.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_BrowserReload')))
 
         self.chi_sq_output.isReadOnly()
         self.density_output.isReadOnly()
@@ -905,11 +910,13 @@ class OptimResultsGroupBox(QGroupBox):
         self.chi_sq_output.setMaximumWidth(82)
         self.density_output.setMaximumWidth(82)
         self.mass_density.setMaximumWidth(82)
+        self.density_copy_btn.setMaximumWidth(30)
 
         self.density_output.setEnabled(False)
         self.density_output_label.setEnabled(False)
         self.mass_density.setEnabled(False)
         self.mass_density_label.setEnabled(False)
+        self.density_copy_btn.setEnabled(False)
 
         self.density_output.setReadOnly(True)
         self.chi_sq_output.setReadOnly(True)
@@ -924,12 +931,13 @@ class OptimResultsGroupBox(QGroupBox):
         self.grid_layout = QGridLayout()
         self.grid_layout.setSpacing(15)
 
-        self.grid_layout.addWidget(self.chi_sq_label, 0, 0)
-        self.grid_layout.addWidget(self.chi_sq_output, 0, 1)
-        self.grid_layout.addWidget(self.density_output_label, 1, 0)
-        self.grid_layout.addWidget(self.density_output, 1, 1)
-        self.grid_layout.addWidget(self.mass_density_label, 2, 0)
-        self.grid_layout.addWidget(self.mass_density, 2, 1)
+        self.grid_layout.addWidget(self.chi_sq_label, 0, 1)
+        self.grid_layout.addWidget(self.chi_sq_output, 0, 2)
+        self.grid_layout.addWidget(self.density_copy_btn, 1, 0)
+        self.grid_layout.addWidget(self.density_output_label, 1, 1)
+        self.grid_layout.addWidget(self.density_output, 1, 2)
+        self.grid_layout.addWidget(self.mass_density_label, 2, 1)
+        self.grid_layout.addWidget(self.mass_density, 2, 2)
 
         self.main_layout.addLayout(self.grid_layout)
 
