@@ -321,6 +321,7 @@ class ResultsPlotWidget(QWidget):
         self.sq_plot.plot(x=[], y=[])
         self.gr_plot.plot(x=[], y=[])
         self.rdf_plot.plot(x=[], y=[])
+        self.rdf_plot.setXLink(self.gr_plot)
 
         self.pg_layout.addItem(self.sq_plot, row=1, col=0)
         self.pg_layout.addItem(self.gr_plot, row=2, col=0)
@@ -350,6 +351,10 @@ class ResultsPlotWidget(QWidget):
             self.p3.clear()
         except AttributeError:
             pass
+        try:
+            self.p1_mod.clear()
+        except AttributeError:
+            pass
 
         # Some versions of pyqtgraph cannot produce plot if nan values present
         # Fix nan values by interpolation
@@ -359,6 +364,8 @@ class ResultsPlotWidget(QWidget):
              _data['gr_y'] = data_utils.interp_nan(_data['gr_y'])
         if np.isnan(_data['rdf_y']).any():
              _data['rdf_y'] = data_utils.interp_nan(_data['rdf_y'])
+        if np.isnan(_data['sq_y_mod']).any():
+            _data['sq_y_mod'] = data_utils.interp_nan(_data['sq_y_mod'])
         _window = 0
         # Determine data window for Q-space resolution, dq
         try:
@@ -371,6 +378,8 @@ class ResultsPlotWidget(QWidget):
             pass
 
         self.p1 = self.sq_plot.plot(x=_data['sq_x'], y=_data['sq_y'], pen={'color': 0.1, 'width': 1.2})
+        if _data['mod_func'] != None:
+            self.p1_mod = self.sq_plot.plot(x=_data['sq_x'], y=_data['sq_y_mod'], pen={'color': '#342256', 'width': 0.8, 'style': Qt.DashLine})
         self.p2 = self.gr_plot.plot(x=_data['gr_x'][:_window], y=_data['gr_y'][:_window], pen={'color': 0.1, 'width': 1.2})
         self.p3 = self.rdf_plot.plot(x=_data['rdf_x'][:_window], y=_data['rdf_y'][:_window], pen={'color': 0.1, 'width': 1.2})
 

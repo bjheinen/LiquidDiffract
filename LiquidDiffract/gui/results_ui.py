@@ -55,6 +55,7 @@ class ResultsUI(QWidget):
 
         self.data = {'sq_x': np.asarray([]), 'sq_y': np.asarray([]),
                      'int_func': np.asarray([]),
+                     'mod_func': None, 'sq_y_mod': np.asarray([]),
                      'gr_x': np.asarray([]), 'gr_y': np.asarray([]),
                      'rdf_x': np.asarray([]), 'rdf_y': np.asarray([]),
                      'rho': None, 'composition': None}
@@ -64,6 +65,7 @@ class ResultsUI(QWidget):
         # Re-calculate S(Q) from interference func
         self.data['S_inf'] = core.calc_S_inf(self.data['composition'], self.data['sq_x'], method=self.data['sq_method'])
         self.data['sq_y'] = self.data['int_func'] + self.data['S_inf']
+        self.data['sq_y_mod'] = self.data['mod_int_func'] + self.data['S_inf']
         # Calculate g(r) & rdf(r) from s(q)
         # Calculate g(r) - pair-distribution function
         self.data['gr_x'], self.data['gr_y'] = core.calc_F_r(self.data['sq_x'], self.data['int_func'], self.data['rho'], N=self.fft_N,
