@@ -143,6 +143,9 @@ class BkgUI(QWidget):
             return
         try:
             self.data['data_raw_x'], self.data['data_raw_y'] = np.loadtxt(self.data_file, unpack=True)
+            # Convert to angstroms if data_units == 1 (nm)
+            if self.data_units:
+                self.data['data_raw_x'] /= 10.0
         except ValueError:
             self.data_file = None
             self.load_file_error()
@@ -165,6 +168,8 @@ class BkgUI(QWidget):
             return
         try:
             self.data['bkg_raw_x'], self.data['bkg_raw_y'] = np.loadtxt(self.bkg_file, unpack=True)
+            if self.data_units:
+                self.data['bkg_raw_x'] /= 10.0
         except ValueError:
             self.bkg_file = None
             self.load_file_error()
@@ -235,7 +240,7 @@ class BkgUI(QWidget):
         self.warning_message(message)
 
     def oversize_file_error(self):
-        message = ['Error loading file!', 'Re-binned array size\nis too large! Increase the Q-step or length of Fourier transform array (N)']
+        message = ['Error loading file!', 'Re-binned array size\nis too large! Check the data-units preferences setting, increase the Q-step or increase length of Fourier transform array (N)']
         self.warning_message(message)
 
     def missing_bkg_file_error(self):

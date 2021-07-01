@@ -14,7 +14,8 @@ from PyQt5.QtGui import QIntValidator, QDoubleValidator, QDialog, QPixmap
 from PyQt5.QtWidgets import QFileDialog, QStyledItemDelegate, \
                             QMessageBox, QFrame, QGroupBox, QSpinBox, \
                             QVBoxLayout, QGridLayout, QDialogButtonBox, \
-                            QLabel, QLineEdit, QCheckBox, QComboBox, QTextBrowser
+                            QLabel, QLineEdit, QCheckBox, QComboBox, \
+                            QScrollArea, QTextBrowser, QWidget
 from LiquidDiffract.version import __appname__, __version__
 
 
@@ -82,6 +83,11 @@ class PreferencesDialog(QDialog):
         self.setWindowTitle(self.title)
         self.resize(300, 500)
 
+        self.outer_layout = QVBoxLayout()
+        self.outer_layout.setContentsMargins(5, 3, 5, 7)
+        self.outer_layout.setSpacing(10)
+
+        self.pref_widget = QWidget()
         self.vlayout = QVBoxLayout()
         self.vlayout.setContentsMargins(5, 3, 5, 7)
         self.vlayout.setSpacing(10)
@@ -92,17 +98,32 @@ class PreferencesDialog(QDialog):
         self.refine_settings_gb = SolverSettingsGroupBox(preferences)
         self.global_min_settings_gb = GlobalMinSettingsGroupBox(preferences)
 
-        self.button_box = QDialogButtonBox()
-        self.button_box.addButton('&Cancel', QDialogButtonBox.RejectRole)
-        self.button_box.addButton('&Apply', QDialogButtonBox.AcceptRole)
-
         self.vlayout.addWidget(self.app_settings_gb)
         self.vlayout.addWidget(self.data_settings_gb)
         self.vlayout.addWidget(self.ref_proc_settings_gb)
         self.vlayout.addWidget(self.refine_settings_gb)
         self.vlayout.addWidget(self.global_min_settings_gb)
-        self.vlayout.addWidget(self.button_box)
-        self.setLayout(self.vlayout)
+        self.pref_widget.setLayout(self.vlayout)
+
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setFrameShape(QFrame.NoFrame)
+        self.scroll_area.setWidget(self.pref_widget)
+        self.scroll_area.setWidgetResizable(True)
+
+        self.button_box = QDialogButtonBox()
+        self.button_box.addButton('&Cancel', QDialogButtonBox.RejectRole)
+        self.button_box.addButton('&Apply', QDialogButtonBox.AcceptRole)
+
+        self.hline = QFrame()
+        self.hline.setFrameShape(QFrame.HLine)
+        self.hline.setFrameShadow(QFrame.Sunken)
+        self.hline.setObjectName('hline')
+
+        self.outer_layout.addWidget(self.scroll_area)
+        self.outer_layout.addWidget(self.hline)
+        self.outer_layout.addWidget(self.button_box)
+
+        self.setLayout(self.outer_layout)
 
         self.button_box.accepted.connect(self.accept_preferences)
         self.button_box.rejected.connect(self.rejected)
@@ -118,6 +139,7 @@ class PreferencesDialog(QDialog):
             _append_log_mode = 0
 
         try:
+            _data_units = np.int(self.data_settings_gb.data_units_input.currentIndex())
             _window_length = np.int(self.data_settings_gb.window_length_input.text())
             _poly_order = np.int(self.data_settings_gb.poly_order_input.text())
             _fft_N = np.int(self.data_settings_gb.fft_N_input.value())
@@ -186,6 +208,7 @@ class PreferencesDialog(QDialog):
 
         # Set preferences dictionary to return
         self._preferences = {'append_log_mode': _append_log_mode,
+                             'data_units': _data_units,
                              'window_length': _window_length,
                              'poly_order': _poly_order,
                              'fft_N': _fft_N,
@@ -257,6 +280,10 @@ class DataSettingsGroupBox(QGroupBox):
         self.create_layout()
 
     def create_widgets(self):
+        self.data_units_label = QLabel('Data file Q units: ')
+        self.data_units_input = QComboBox()
+        self.data_units_input.insertItem(0, '1/Angstroms')
+        self.data_units_input.insertItem(1, '1/nano-metres')
         self.smoothing_label = QLabel('Savitsky-golay filter parameters (Data smoothing): ')
         self.window_length_label = QLabel('Window size')
         self.window_length_input = QLineEdit()
@@ -266,17 +293,16 @@ class DataSettingsGroupBox(QGroupBox):
         self.fft_N_label = QLabel('<b><i>N</i></b> | Size of padded array for FFT = 2^N: ')
         self.fft_N_input = QSpinBox()
 
-        self.hline = QFrame()
-        self.hline.setFrameShape(QFrame.HLine)
-        self.hline.setFrameShadow(QFrame.Sunken)
-        self.hline.setObjectName("hline")
-
     def set_data(self, preferences):
+        self.data_units_input.setCurrentIndex(preferences['data_units'])
         self.window_length_input.setText(np.str(preferences['window_length']))
         self.poly_order_input.setText(np.str(preferences['poly_order']))
         self.fft_N_input.setValue(preferences['fft_N'])
 
     def style_widgets(self):
+        self.data_units_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.data_units_input.setMaximumWidth(100)
+
         self.smoothing_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
 
         self.window_length_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
@@ -304,14 +330,16 @@ class DataSettingsGroupBox(QGroupBox):
         self.grid_layout = QGridLayout()
         self.grid_layout.setSpacing(15)
 
-        self.grid_layout.addWidget(self.smoothing_label, 0, 0)
-        self.grid_layout.addWidget(self.window_length_label, 1, 0)
-        self.grid_layout.addWidget(self.window_length_input, 1, 1)
-        self.grid_layout.addWidget(self.poly_order_label, 2, 0)
-        self.grid_layout.addWidget(self.poly_order_input, 2, 1)
-        self.grid_layout.addWidget(self.fft_label, 3, 0)
-        self.grid_layout.addWidget(self.fft_N_label, 4, 0)
-        self.grid_layout.addWidget(self.fft_N_input, 4, 1)
+        self.grid_layout.addWidget(self.data_units_label, 0, 0)
+        self.grid_layout.addWidget(self.data_units_input, 0, 1)
+        self.grid_layout.addWidget(self.smoothing_label, 1, 0)
+        self.grid_layout.addWidget(self.window_length_label, 2, 0)
+        self.grid_layout.addWidget(self.window_length_input, 2, 1)
+        self.grid_layout.addWidget(self.poly_order_label, 3, 0)
+        self.grid_layout.addWidget(self.poly_order_input, 3, 1)
+        self.grid_layout.addWidget(self.fft_label, 4, 0)
+        self.grid_layout.addWidget(self.fft_N_label, 5, 0)
+        self.grid_layout.addWidget(self.fft_N_input, 5, 1)
 
         self.main_layout.addLayout(self.grid_layout)
         self.setLayout(self.main_layout)
@@ -404,7 +432,7 @@ class SolverSettingsGroupBox(QGroupBox):
         self.hline = QFrame()
         self.hline.setFrameShape(QFrame.HLine)
         self.hline.setFrameShadow(QFrame.Sunken)
-        self.hline.setObjectName("hline")
+        self.hline.setObjectName('hline')
 
     def set_data(self, preferences):
         self.op_method_input.setCurrentText(preferences['op_method'])
@@ -567,11 +595,6 @@ class GlobalMinSettingsGroupBox(QGroupBox):
 
         self.interval_basin_label = QLabel('Update interval: ')
         self.interval_basin_input = QLineEdit()
-
-        self.hline = QFrame()
-        self.hline.setFrameShape(QFrame.HLine)
-        self.hline.setFrameShadow(QFrame.Sunken)
-        self.hline.setObjectName("hline")
 
     def set_data(self, preferences):
 

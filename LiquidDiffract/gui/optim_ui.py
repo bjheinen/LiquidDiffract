@@ -12,14 +12,15 @@ except ImportError:
     import importlib_resources
 import numpy as np
 from scipy.optimize import minimize, basinhopping
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QEventLoop
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QHBoxLayout, QGroupBox, QPushButton, QLineEdit, \
                             QComboBox, QTableWidget, QTableWidgetItem, \
                             QLabel, QCheckBox, QButtonGroup, QRadioButton, \
                             QScrollArea, QSplitter, QSizePolicy,  \
-                            QAbstractScrollArea, QHeaderView, QStyle
+                            QAbstractScrollArea, QHeaderView, QStyle, \
+                            QApplication
 from LiquidDiffract.gui import plot_widgets
 from LiquidDiffract.gui import utility
 from LiquidDiffract.core import data_utils
@@ -285,12 +286,16 @@ class OptimUI(QWidget):
             print('Finding optimal density...')
 
             if self.global_minimisation == 1:
+                # Grey out config panel while refining
+                self.enable_config_panel(False)
                 print('\nRunning basin-hopping algorithm to find global minimum')
                 _global_min_kwargs = dict(self.global_min_options)
                 _global_min_kwargs['minimizer_kwargs'] = _solver_kwargs
                 _opt_result = basinhopping(core.calc_impr_interference_func,
                                            _rho_0,
                                            **_global_min_kwargs)
+                # Re-enable config panel
+                self.enable_config_panel(True)
             else:
                 _opt_result = minimize(core.calc_impr_interference_func,
                                        _rho_0,
@@ -395,6 +400,7 @@ class OptimUI(QWidget):
             _log_file = self.base_filename + '_refinement.log'
             np.savetxt(_log_file, [log_string], fmt='%s')
 
+        # Emit results changed signal to main_widget
         self.results_changed.emit()
 
     def smooth_data(self):
@@ -404,6 +410,9 @@ class OptimUI(QWidget):
                                                         poly_order=self.poly_order)
         self.optim_plot_widget.update_plots(self.data)
 
+    def enable_config_panel(self, state):
+        self.optim_config_widget.setEnabled(state)
+        QApplication.processEvents(QEventLoop.ExcludeUserInputEvents)
 
 class OptimConfigWidget(QWidget):
 

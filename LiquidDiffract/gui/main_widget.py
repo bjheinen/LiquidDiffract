@@ -74,6 +74,7 @@ class App(QMainWindow):
 
     def set_default_preferences(self):
         self.preferences = {'append_log_mode': 1,
+                            'data_units': 0,
                             'window_length': 5,
                             'poly_order': 3,
                             'fft_N': 12,
@@ -110,6 +111,7 @@ class App(QMainWindow):
             self.table_widget.optim_ui.plot_data()
 
     def set_preferences(self):
+        # Set data and minimisation preferences
         self.table_widget.optim_ui.mod_func_mode = self.preferences['mod_func_mode']
         self.table_widget.optim_ui.op_method = self.preferences['op_method']
         self.table_widget.optim_ui.minimisation_options = self.preferences['minimisation_options']
@@ -123,6 +125,8 @@ class App(QMainWindow):
         self.table_widget.bkg_ui.fft_N = self.preferences['fft_N']
         self.table_widget.optim_ui.fft_N = self.preferences['fft_N']
         self.table_widget.results_ui.fft_N = self.preferences['fft_N']
+        # Set data units for file loading
+        self.table_widget.bkg_ui.data_units = self.preferences['data_units']
 
     def call_about_dialog(self):
         self.about_dialog = utility.AboutDialog()
