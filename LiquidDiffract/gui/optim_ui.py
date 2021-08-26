@@ -70,9 +70,9 @@ class OptimUI(QWidget):
         self.data = {'cor_x': np.asarray([]), 'cor_y': np.asarray([]),
                      'cor_x_cut': np.asarray([]), 'cor_y_cut': np.asarray([]),
                      'sq_x': np.asarray([]), 'sq_y': np.asarray([]),
-                     'fr_x': np.asarray([]), 'fr_y': np.asarray([]),
+                     'dr_x': np.asarray([]), 'dr_y': np.asarray([]),
                      'int_func': np.asarray([]), 'impr_int_func': np.asarray([]),
-                     'impr_fr_x': np.asarray([]), 'impr_fr_y': np.asarray([]),
+                     'impr_dr_x': np.asarray([]), 'impr_dr_y': np.asarray([]),
                      'impr_iq_x': np.asarray([]), 'mod_func': 'None'}
 
         self.create_signals()
@@ -93,17 +93,17 @@ class OptimUI(QWidget):
         # Clear the results tab as well
         self.results_cleared.emit()
         # Plots the data, no through update when this is changed
-        # so the other data (S(Q) & F(r)) are cleared first
+        # so the other data (S(Q) & D(r)) are cleared first
         _ea = np.asarray([])
         self.data['iq_x'] = _ea
         self.data['impr_iq_x'] = _ea
         self.data['sq_y'] = _ea
-        self.data['fr_x'] = _ea
-        self.data['fr_y'] = _ea
+        self.data['dr_x'] = _ea
+        self.data['dr_y'] = _ea
         self.data['int_func'] = _ea
         self.data['impr_int_func'] = _ea
-        self.data['impr_fr_x'] = _ea
-        self.data['impr_fr_y'] = _ea
+        self.data['impr_dr_x'] = _ea
+        self.data['impr_dr_y'] = _ea
         self.data['cor_x_cut'] = _ea
         self.data['cor_y_cut'] = _ea
 
@@ -161,10 +161,11 @@ class OptimUI(QWidget):
         _composition = self.optim_config_widget.composition_gb.get_composition_dict()
         if not _composition:
             return
+
         # Delete previous refined data
         self.data['impr_iq_x'] = np.asarray([])
-        self.data['impr_fr_x'] = np.asarray([])
-        self.data['impr_fr_y'] = np.asarray([])
+        self.data['impr_dr_x'] = np.asarray([])
+        self.data['impr_dr_y'] = np.asarray([])
         self.data['impr_int_func'] = np.asarray([])
         # Get modification function to use
         self.data['mod_func'] = self.optim_config_widget.data_options_gb.mod_func_input.currentText()
@@ -194,7 +195,7 @@ class OptimUI(QWidget):
                                                        method=_method)
         _S_inf = core.calc_S_inf(_composition, self.data['cor_x_cut'], method=_method)
         self.data['int_func'] = self.data['sq_y'] - _S_inf
-        self.data['fr_x'], self.data['fr_y'] = core.calc_F_r(self.data['iq_x'], self.data['int_func'], _rho_0,
+        self.data['dr_x'], self.data['dr_y'] = core.calc_correlation_func(self.data['iq_x'], self.data['int_func'], _rho_0,
                                                              N=self.fft_N, mod_func=self.data['mod_func'], window_start=self.data['window_start'])
         self.data['modification'] = core.get_mod_func(self.data['iq_x'], self.data['mod_func'], self.data['window_start'])
         self.optim_plot_widget.update_plots(self.data)
@@ -327,7 +328,7 @@ class OptimUI(QWidget):
         self.data['impr_int_func'], self.data['chi_sq'] = core.calc_impr_interference_func(_rho_temp, *_args)
         self.optim_config_widget.optim_results_gb.chi_sq_output.setText('{:.4e}'.format(self.data['chi_sq']))
         # Calculated improved F_r
-        self.data['impr_fr_x'], self.data['impr_fr_y'] = core.calc_F_r(self.data['iq_x'], self.data['impr_int_func'], _rho_temp, N=self.fft_N,
+        self.data['impr_dr_x'], self.data['impr_dr_y'] = core.calc_correlation_func(self.data['iq_x'], self.data['impr_int_func'], _rho_temp, N=self.fft_N,
                                                                        mod_func=self.data['mod_func'], window_start=self.data['window_start'])
         self.data['impr_iq_x'] = self.data['iq_x']
         # Set modification function to None so it is not plotted this time

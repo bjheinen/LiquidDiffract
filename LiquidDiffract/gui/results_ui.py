@@ -68,11 +68,11 @@ class ResultsUI(QWidget):
         self.data['sq_y_mod'] = self.data['mod_int_func'] + self.data['S_inf']
         # Calculate g(r) & rdf(r) from s(q)
         # Calculate g(r) - pair-distribution function
-        self.data['gr_x'], self.data['gr_y'] = core.calc_F_r(self.data['sq_x'], self.data['int_func'], self.data['rho'], N=self.fft_N,
+        self.data['gr_x'], self.data['gr_y'] = core.calc_correlation_func(self.data['sq_x'], self.data['int_func'], self.data['rho'], N=self.fft_N,
                                                              mod_func=self.data['mod_func'], window_start=self.data['window_start'],
                                                              function='pair_dist_func')
         # Calculate RDF - radial distribution function
-        self.data['rdf_x'], self.data['rdf_y'] = core.calc_F_r(self.data['sq_x'], self.data['int_func'], self.data['rho'], N=self.fft_N,
+        self.data['rdf_x'], self.data['rdf_y'] = core.calc_correlation_func(self.data['sq_x'], self.data['int_func'], self.data['rho'], N=self.fft_N,
                                                                mod_func=self.data['mod_func'], window_start=self.data['window_start'],
                                                                function='radial_dist_func')
         # Create data required for structure_ui
@@ -80,7 +80,7 @@ class ResultsUI(QWidget):
         with np.errstate(divide='ignore', invalid='ignore'):
             self.data['tr_y'] = self.data['rdf_y'] / self.data['tr_x']
 
-        self.data['fr_x'], self.data['fr_y'] = core.calc_F_r(self.data['sq_x'], self.data['int_func'], self.data['rho'], N=self.fft_N,
+        self.data['dr_x'], self.data['dr_y'] = core.calc_correlation_func(self.data['sq_x'], self.data['int_func'], self.data['rho'], N=self.fft_N,
                                                              mod_func=self.data['mod_func'], window_start=self.data['window_start'],
                                                              function='density_func')     
         

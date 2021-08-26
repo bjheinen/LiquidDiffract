@@ -398,7 +398,6 @@ def calc_S_inf(composition, Q, method='ashcroft-langreth'):
 
     else:
         raise ValueError('Please select a valid method for structure factor')
-
     return S_inf
 
 
@@ -620,13 +619,14 @@ def get_mod_func(q, mod_func, window_start):
     return modification
 
 
-def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
+def calc_correlation_func(x, y, rho, dx='check', N=12, mod_func=None,
              window_start=None, function='density_func'):
     '''
     Calculates the fourier transform of the interference function
-    i(Q) = S(Q) - S_inf to obtain the pair-distribution function [g(r)], the
-    density function [F(r)] or the radial distribution function [RDF(r)]. This
-    conversion to real-space is useful for PDF-analysis.
+    i(Q) = S(Q) - S_inf to obtain the real-space correlations functions:
+    1) pair-distribution function [g(r)], 2) the differential correlation
+    function (density function) [D(r)] or, 3) the radial distribution function
+    [RDF(r)]. The conversion to real-space is useful for structural (PDF) analysis.
 
     Example:
 
@@ -658,10 +658,10 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
 
         g(r) - 1 = 1/(2 * pi^2 * r * rho_0) * INT[ q[i(q)] sin(qr) dq]
 
-    Density function, D(r) = F(r):
+    Differential correlation function (density function) D(r) = F(r):
 
-        F(r) = 4 * pi * r * rho_0 * [g(r) - 1]
-        F(r) = 2/pi * INT[ q[i(q)] sin(qr) dq]
+        D(r) = 4 * pi * r * rho_0 * [g(r) - 1]
+        D(r) = 2/pi * INT[ q[i(q)] sin(qr) dq]
 
     Radial distribution function, RDF(r):
 
@@ -681,7 +681,7 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
 
     Returns:
         r   - Array of r values
-        F_r/g_r/RDF_r - Corresponding array of values for calculated function
+        D_r/g_r/RDF_r - Corresponding array of values for calculated function
     '''
     # Define dx (qstep) if not passed to function
     if dx == 'check':
@@ -729,8 +729,8 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
     r = np.arange(len(fft_z))*dr
     if function == 'density_func':
         # Scale by factor 2/pi
-        F_r = fft_z * 2/np.pi
-        return r, F_r
+        D_r = fft_z * 2/np.pi
+        return r, D_r
     elif function == 'pair_dist_func':
         with np.errstate(divide='ignore', invalid='ignore'):
             sf = 1 / (2 * r * rho * np.pi**2)
@@ -744,33 +744,33 @@ def calc_F_r(x, y, rho, dx='check', N=12, mod_func=None,
         raise ValueError('arg \'function\' must be valid option')
 
 
-def calc_F_r_iteration_term(delta_F_r, N=12, dq=0.02):
+def calc_D_r_iteration_term(delta_D_r, N=12, dq=0.02):
     '''
     Calculates the term responsible for oscillations at small r values.
     Equation 45 in Eggert et al., 2002
 
-    i.e. Delta_alpha * Q * S_inf = INT 0>r_min [Delta_F(r) sin(Qr) dr]
+    i.e. Delta_alpha * Q * S_inf = INT 0>r_min [Delta_D(r) sin(Qr) dr]
 
-    Delta_F(r) is the difference between F(r) and its expected behaviour
+    Delta_D(r) is the difference between D(r) and its expected behaviour
 
     N defines the size of the array to be fourier transormed (2**N)
-    This should be the same as used to calculate F(r) from i(Q) to
+    This should be the same as used to calculate D(r) from i(Q) to
     preserve correct scaling factors
     '''
     # Make sure array size is not too large for padding value N
-    if len(delta_F_r) > (2**N/2):
+    if len(delta_D_r) > (2**N/2):
         raise ValueError('Length of array > [(2**N)/2]')
     else:
         pass
-    padding_zeros = np.int(2**N - (len(delta_F_r)*2 - 1))
-    z = np.concatenate((delta_F_r,
+    padding_zeros = np.int(2**N - (len(delta_D_r)*2 - 1))
+    z = np.concatenate((delta_D_r,
                         np.zeros(padding_zeros),
-                        -np.flip(delta_F_r[1::], 0)))
+                        -np.flip(delta_D_r[1::], 0)))
     # For the forward fourier transform we need the negative of the imaginary components
     # in the first half of the array
     fft_z = -np.imag(scipy.fftpack.fft(z))
     # The fourier transform of Qi(Q) was scaled by the artificial Q_max to obtain the corrected
-    # magnitudes - i.e. fft_scaling = len(F(r) * dQ = 2**N / 2 * q_step
+    # magnitudes - i.e. fft_scaling = len(D(r) * dQ = 2**N / 2 * q_step
     # This scaling has to be reversed here. For N=12 and q_step = 0.02 the scaling is 40.96
     fft_scaling = 2**N / 2 * dq
     fft_z = fft_z / fft_scaling
@@ -779,17 +779,17 @@ def calc_F_r_iteration_term(delta_F_r, N=12, dq=0.02):
 
 
 @data_cache(maxsize=128)
-def calc_model_F_intra_r(rho, r):
+def calc_model_D_intra_r(rho, r):
     '''
-    Returns the model behaviour of F(r) at r < r_min, where r_min is the
+    Returns the model behaviour of D(r) at r < r_min, where r_min is the
     largest distance (0 -- r-min) where no atom can be found.
     In a liquid, this should be the distance of the 1st coordination shell.
 
     The model behaviour is:
 
-         F_(r<r_min) = F_intra(r) − 4πrρ
+         D_(r<r_min) = D_intra(r) − 4πrρ
 
-         F_intra(r) is the expected contribution of *intra*molecular forces
+         D_intra(r) is the expected contribution of *intra*molecular forces
          i.e. interaction of atoms within the same molecule
 
          This can be calculated using a fixed model approach
@@ -799,35 +799,35 @@ def calc_model_F_intra_r(rho, r):
          if the sample has intermolecular coordination between compositional
          units (e.g. polymeric liquids or framework glasses)
 
-     LiquidDiffract assumes F_intra(r) is negligible. This is only true for
+     LiquidDiffract assumes D_intra(r) is negligible. This is only true for
      some compositions (e.g. monatomic metallic liquids). This functionality
      may be added in future releases however.
     '''
-    model_F_intra_r = -4 * np.pi * r * rho
-    return model_F_intra_r
+    model_D_intra_r = -4 * np.pi * r * rho
+    return model_D_intra_r
 
 
-def calc_chi_squared(r_intra, delta_F_r, method='simps'):
+def calc_chi_squared(r_intra, delta_D_r, method='simps'):
     '''
     Calculates a chi squared figure of merit as in equation 50 of Eggert. This
-    is a measure of how small Delta_F_i(r) is, to be used as a tolerance factor
+    is a measure of how small Delta_D_i(r) is, to be used as a tolerance factor
     to check convergence of i_i+1(q) and in the optimisation routine of rho/s.
 
-    Chi^2 = INT 0-r_min [Delta_F(r)]^2 dr
+    Chi^2 = INT 0-r_min [Delta_D(r)]^2 dr
 
-    The value chi^2 is defined as the area under the curve Delta_F(r) limited
+    The value chi^2 is defined as the area under the curve Delta_D(r) limited
     to r_min (squared to remove negatives).
 
     The Chi^2 value used in LiquidDiffract is scaled by 1e6 to enable easier minimisation.
 
     Args:
-        delta_F_r - numpy array of delta_F_r from r=0 to r=r_min
+        delta_D_r - numpy array of delta_D_r from r=0 to r=r_min
 
     Returns:
         chi_squared - Value of chi^2
     '''
     # Square to remove negatives
-    f = delta_F_r ** 2
+    f = delta_D_r ** 2
     if method == 'simps':
         # Integrate using simpson's rule
         chi_squared = simps(f, x=r_intra)
@@ -914,23 +914,23 @@ def calc_impr_interference_func(rho, *args):
         raise ValueError('Arg - opt_flag - must be boolean')
 
     dq = q_data[1] - q_data[0]
-    # Calculate initial F(r)
-    r, F_r = calc_F_r(q_data, interference_func, rho,
+    # Calculate initial D(r)
+    r, D_r = calc_correlation_func(q_data, interference_func, rho,
                       mod_func=mod_func, window_start=window_start,
                       dx=dq, N=fft_N)
-    # Calculate expected behaviour of F(r) for intramolecular distances (r<r_min)
-    model_F_intra_r = np.copy(calc_model_F_intra_r(rho, r))
-    # Specific scaling of modelled F(r) for AL-S(Q)
+    # Calculate expected behaviour of D(r) for intramolecular distances (r<r_min)
+    model_D_intra_r = np.copy(calc_model_D_intra_r(rho, r))
+    # Specific scaling of modelled D(r) for AL-S(Q)
     if method == 'ashcroft-langreth':
         # For the ashcroft-langreth i(Q) the range is between -1*S_inf -- 0 and not
         # -1 -- 0 as for FZ. This means the modelled behaviour at low r should also
         # be scaled.
-        model_F_intra_r *= calc_S_inf(composition, q_data, method=method)
+        model_D_intra_r *= calc_S_inf(composition, q_data, method=method)
         # F_AL(r) = 4πrρ * [Σci*f_p(Q) (Q=0)]^2 / Σci*f_p(Q)**2 (Q=0)
         # This is simply <f>2 / <f2>, where <f>2 and <f2> are the average
         # scattering function used in the faber-ziman S(Q) formalism.
         avg_scattering_f = calc_average_scattering(composition, np.array([0]))
-        model_F_intra_r *= (avg_scattering_f[1] / avg_scattering_f[0])
+        model_D_intra_r *= (avg_scattering_f[1] / avg_scattering_f[0])
     # Calculate static terms of iterative proceduce
     with np.errstate(divide='ignore', invalid='ignore'):
         t1 = 1 / q_data
@@ -944,23 +944,23 @@ def calc_impr_interference_func(rho, *args):
         try:
             done_looping = stop_iteration(stop_condition='count', count=count, iter_limit=iter_limit)
             interference_func = interference_func_impr
-            r, F_r = calc_F_r(q_data, interference_func, rho,
+            r, D_r = calc_correlation_func(q_data, interference_func, rho,
                               mod_func=mod_func, window_start=window_start,
                               dx=dq, N=fft_N)
         except NameError:
             pass
 
-        delta_F_r = (F_r - model_F_intra_r)[np.where(r < r_min)]
+        delta_D_r = (D_r - model_D_intra_r)[np.where(r < r_min)]
         r_intra = r[np.where(r<r_min)]
-        chi_squared = calc_chi_squared(r_intra, delta_F_r)
+        chi_squared = calc_chi_squared(r_intra, delta_D_r)
 
         if method == 'ashcroft-langreth':
             t2 = (interference_func/t2_divisor) + 1
-            t3 = calc_F_r_iteration_term(delta_F_r, N=fft_N, dq=dq)[:len(interference_func)]
+            t3 = calc_D_r_iteration_term(delta_D_r, N=fft_N, dq=dq)[:len(interference_func)]
             with np.errstate(invalid='ignore'):
                 interference_func_impr = interference_func - (t1 * t2 * t3)
         elif method == 'faber-ziman':
-            t2 = calc_F_r_iteration_term(delta_F_r, N=fft_N, dq=dq)[:len(interference_func)]
+            t2 = calc_D_r_iteration_term(delta_D_r, N=fft_N, dq=dq)[:len(interference_func)]
             with np.errstate(invalid='ignore'):
                 interference_func_impr = ((interference_func+1) * (1 - t1*t2)) - 1
 

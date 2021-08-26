@@ -184,7 +184,7 @@ class MainContainer(QWidget):
         self.optim_ui.data = {'cor_x': np.asarray([]), 'cor_y': np.asarray([]),
                               'cor_x_cut': np.asarray([]), 'cor_y_cut': np.asarray([]),
                               'sq_x': np.asarray([]), 'sq_y': np.asarray([]),
-                              'fr_x': np.asarray([]), 'fr_y': np.asarray([]),
+                              'dr_x': np.asarray([]), 'dr_y': np.asarray([]),
                               'mod_func': 'None'
                               }
         # Pass data to Optim UI

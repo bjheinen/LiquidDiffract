@@ -143,15 +143,15 @@ class OptimPlotWidget(QWidget):
 
         self.data_plot = CustomPlotItem()
         self.iq_plot = CustomPlotItem()
-        self.fr_plot = CustomPlotItem()
+        self.dr_plot = CustomPlotItem()
 
         self.data_plot.plot(x=[], y=[])
         self.iq_plot.plot(x=[], y=[])
-        self.fr_plot.plot(x=[], y=[], pen={})
+        self.dr_plot.plot(x=[], y=[], pen={})
 
         self.pg_layout.addItem(self.data_plot, row=1, col=0)
         self.pg_layout.addItem(self.iq_plot, row=2, col=0)
-        self.pg_layout.addItem(self.fr_plot, row=3, col=0)
+        self.pg_layout.addItem(self.dr_plot, row=3, col=0)
 
         self.pg_layout_widget.addItem(self.pg_layout)
 
@@ -164,8 +164,8 @@ class OptimPlotWidget(QWidget):
         self.iq_plot.setLabel('bottom', text='Q (1/A)')
         self.iq_plot.setLabel('left', text='i(Q)')
 
-        self.fr_plot.setLabel('bottom', text='r (A)')
-        self.fr_plot.setLabel('left', text='F(r)')
+        self.dr_plot.setLabel('bottom', text='r (A)')
+        self.dr_plot.setLabel('left', text='D(r)')
 
         self.pos_label = pg.LabelItem(justify='right')
         self.pg_layout.addItem(self.pos_label, col=0, row=0)
@@ -195,24 +195,24 @@ class OptimPlotWidget(QWidget):
              _data['int_func'] = data_utils.interp_nan(_data['int_func'])
         if np.isnan(_data['impr_int_func']).any():
              _data['impr_int_func'] = data_utils.interp_nan(_data['impr_int_func'])
-        if np.isnan(_data['fr_x']).any():
-             _data['fr_x'] = data_utils.interp_nan(_data['fr_x'])
-        if np.isnan(_data['impr_fr_x']).any():
-             _data['impr_fr_x'] = data_utils.interp_nan(_data['impr_fr_x'])
+        if np.isnan(_data['dr_x']).any():
+             _data['dr_x'] = data_utils.interp_nan(_data['dr_x'])
+        if np.isnan(_data['impr_dr_x']).any():
+             _data['impr_dr_x'] = data_utils.interp_nan(_data['impr_dr_x'])
 
-        # For the F(r) the r step = pi/q_max. Because the data is padded this
+        # For the D(r) the r step = pi/q_max. Because the data is padded this
         # q_max is larger than the original q_max. i.e. q_max = dq * 2**N/2
         # Then: r_max = 2**N/2 * dr = pi/(dq * 2**N/2) * 2**N/2 = pi/dq
         # Displaying the full length data is not necessary as most of the 
         # useful information is contained at fairly low r, and the length of r
         # is controlled only by sampling frequency in Q-space. At high r-values
-        # the F(r) is dominated by ripples from the truncated integral (0-qmax)
+        # the D(r) is dominated by ripples from the truncated integral (0-qmax)
         # The max value of r with 'real' q resolution is 1/dq.
         _window = 0
         try:
             _dq = _data['iq_x'][1] - _data['iq_x'][0]
             try:
-                _window = np.argmax(_data['fr_x'] >= (1/_dq))
+                _window = np.argmax(_data['dr_x'] >= (1/_dq))
             except ValueError:
                  pass
         except IndexError:
@@ -221,8 +221,8 @@ class OptimPlotWidget(QWidget):
         self.p1 = self.data_plot.plot(x=_data['cor_x_cut'], y=_data['cor_y_cut'], pen={'color': 0.1, 'width': 1.2})
         self.p2_a = self.iq_plot.plot(x=_data['iq_x'], y=_data['int_func'], pen={'color': 0.1, 'width': 1.2})
         self.p2_b = self.iq_plot.plot(x=_data['impr_iq_x'], y=_data['impr_int_func'], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
-        self.p3_a = self.fr_plot.plot(x=_data['fr_x'][:_window], y=_data['fr_y'][:_window], pen={'color': 0.1, 'width': 1.2})
-        self.p3_b = self.fr_plot.plot(x=_data['impr_fr_x'][:_window], y=_data['impr_fr_y'][:_window], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
+        self.p3_a = self.dr_plot.plot(x=_data['dr_x'][:_window], y=_data['dr_y'][:_window], pen={'color': 0.1, 'width': 1.2})
+        self.p3_b = self.dr_plot.plot(x=_data['impr_dr_x'][:_window], y=_data['impr_dr_y'][:_window], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
 
         if _data['mod_func'] != 'None':
             # Apply modification function and handle any nans that arise 
@@ -233,7 +233,7 @@ class OptimPlotWidget(QWidget):
 
         self.data_plot.vb.autoRange()
         self.iq_plot.vb.autoRange()
-        self.fr_plot.vb.autoRange()
+        self.dr_plot.vb.autoRange()
 
     def create_signals(self):
         self.mouse_proxy = pg.SignalProxy(self.pg_layout.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved)
@@ -253,8 +253,8 @@ class OptimPlotWidget(QWidget):
 
             self.iq_plot.vline.setPen(None)
             self.iq_plot.hline.setPen(None)
-            self.fr_plot.vline.setPen(None)
-            self.fr_plot.hline.setPen(None)
+            self.dr_plot.vline.setPen(None)
+            self.dr_plot.hline.setPen(None)
 
         elif self.iq_plot.sceneBoundingRect().contains(__pos):
             __mousePoint = self.iq_plot.vb.mapSceneToView(__pos)
@@ -268,18 +268,18 @@ class OptimPlotWidget(QWidget):
 
             self.data_plot.vline.setPen(None)
             self.data_plot.hline.setPen(None)
-            self.fr_plot.vline.setPen(None)
-            self.fr_plot.hline.setPen(None)
+            self.dr_plot.vline.setPen(None)
+            self.dr_plot.hline.setPen(None)
 
-        elif self.fr_plot.sceneBoundingRect().contains(__pos):
-            __mousePoint = self.fr_plot.vb.mapSceneToView(__pos)
+        elif self.dr_plot.sceneBoundingRect().contains(__pos):
+            __mousePoint = self.dr_plot.vb.mapSceneToView(__pos)
             self.set_mouse_pos_label(__mousePoint)
 
-            self.fr_plot.vline.setPos(__mousePoint.x())
-            self.fr_plot.hline.setPos(__mousePoint.y())
+            self.dr_plot.vline.setPos(__mousePoint.x())
+            self.dr_plot.hline.setPos(__mousePoint.y())
 
-            self.fr_plot.vline.setPen((0, 135, 153), width=0.75)
-            self.fr_plot.hline.setPen((0, 135, 153), width=0.75)
+            self.dr_plot.vline.setPen((0, 135, 153), width=0.75)
+            self.dr_plot.hline.setPen((0, 135, 153), width=0.75)
 
             self.data_plot.vline.setPen(None)
             self.data_plot.hline.setPen(None)
