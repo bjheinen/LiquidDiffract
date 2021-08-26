@@ -10,7 +10,6 @@ from math import sqrt, pi
 from functools import lru_cache
 import numpy as np
 from scipy.special import erf
-# import lmfit
 
 @lru_cache(maxsize=2)
 def cached_sqrt(root):
