@@ -77,6 +77,7 @@ class App(QMainWindow):
                             'data_units': 0,
                             'window_length': 5,
                             'poly_order': 3,
+                            'rescale_AL': 1,
                             'fft_N': 12,
                             'mod_func_mode': 0,
                             'op_method': 'L-BFGS-B',
@@ -127,6 +128,8 @@ class App(QMainWindow):
         self.table_widget.results_ui.fft_N = self.preferences['fft_N']
         # Set data units for file loading
         self.table_widget.bkg_ui.data_units = self.preferences['data_units']
+        # Set preferences for rescaling Ashcroft-Langreth S(Q)/g(r) plots
+        self.table_widget.results_ui.rescale_AL = self.preferences['rescale_AL']
 
     def call_about_dialog(self):
         self.about_dialog = utility.AboutDialog()

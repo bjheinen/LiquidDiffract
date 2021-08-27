@@ -743,6 +743,62 @@ def calc_correlation_func(x, y, rho, dx='check', N=12, mod_func=None,
     else:
         raise ValueError('arg \'function\' must be valid option')
 
+def normalise_achroft_langreth_func(S_inf, sq=None, gr=None, rdf=None,
+                                    rho_0=None, r=None):
+    '''
+    Helper function to normalise functions in the Aschroft-Langreth formalism
+    for polyatomic samples. For polyatomic samples 0 < S_inf < 1 and so
+    S(Q) --> S_inf at infinite Q and g(r) --> (1-S_inf) at r=0. RDF(r) and T(r)
+    are similarly scaled. Renormalising these functions by S_inf makes
+    comparisons to functions in the Faber-Ziman formalism easier and allows the
+    same curve-fitting routines to be used on both.
+
+    S(Q) normalisation:
+
+        S_s(Q) = S_AL(Q) / S_inf
+
+    g(r) normalisation:
+
+        g_s(r) = (g(r) - 1)/S_inf + 1
+
+    RDF(r) normalisation:
+
+        RDF_s(r) = (RDF(r) - 4πr^2ρ_0)/S_inf + 4πr^2ρ_0
+
+    Args:
+        S_inf   - S_inf value for normalisation (see core.calc_S_inf)
+        sq*     - Values of S(Q) to normalise (numpy array)
+        gr*     - Values of g(r) to normalise (numpy array)
+        rdf**   - Values of RDF(r) to normalise
+        rho_0*  - atomic number density (float)
+        r*      - Values of r that correspond to the RDF(r)
+
+        *  - Optional kwargs
+        ** - The RDF(r) normalisation requires the additional kwargs rho_0 & r
+
+    Returns 1 of:
+
+        sq_norm  - Renormalised S(Q) (numpy array)
+        gr_norm  - Renormalised g(r) (numpy array)
+        rdf_norm - Renormalised RDF(r) (numpy array)
+    '''
+    # S(Q) normalisation
+    if sq is not None:
+        sq_norm = sq / S_inf
+        return sq_norm
+    elif gr is not None:
+        gr_norm = (gr - 1)/S_inf + 1
+        return gr_norm
+    elif rdf is not None:
+        try:
+            constant = 4*np.pi*rho_0*r**2
+            rdf_norm = (rdf - constant)/S_inf + constant
+            return rdf_norm
+        except TypeError:
+            raise NameError('RDF(r) normalisation requires keyword arguments rho_0 and r')
+    else:
+        raise NameError('Must provide function to normalise')
+
 
 def calc_D_r_iteration_term(delta_D_r, N=12, dq=0.02):
     '''
@@ -919,22 +975,19 @@ def calc_impr_interference_func(rho, *args):
                       mod_func=mod_func, window_start=window_start,
                       dx=dq, N=fft_N)
     # Calculate expected behaviour of D(r) for intramolecular distances (r<r_min)
-    model_D_intra_r = np.copy(calc_model_D_intra_r(rho, r))
-    # Specific scaling of modelled D(r) for AL-S(Q)
-    if method == 'ashcroft-langreth':
-        # For the ashcroft-langreth i(Q) the range is between -1*S_inf -- 0 and not
-        # -1 -- 0 as for FZ. This means the modelled behaviour at low r should also
-        # be scaled.
-        model_D_intra_r *= calc_S_inf(composition, q_data, method=method)
-        # F_AL(r) = 4πrρ * [Σci*f_p(Q) (Q=0)]^2 / Σci*f_p(Q)**2 (Q=0)
-        # This is simply <f>2 / <f2>, where <f>2 and <f2> are the average
-        # scattering function used in the faber-ziman S(Q) formalism.
-        avg_scattering_f = calc_average_scattering(composition, np.array([0]))
-        model_D_intra_r *= (avg_scattering_f[1] / avg_scattering_f[0])
+    # and scale by S_inf (1 for FZ/monatomic - only necessary for AL-S(Q))
+    model_D_intra_r = (np.copy(calc_model_D_intra_r(rho, r)) *
+                       calc_S_inf(composition, q_data, method=method))
+
     # Calculate static terms of iterative proceduce
     with np.errstate(divide='ignore', invalid='ignore'):
         t1 = 1 / q_data
-    t2_divisor = calc_S_inf(composition, q_data, method=method) + calc_J(composition, q_data)
+
+    if method == 'ashcroft-langreth':
+        t2_divisor = calc_S_inf(composition, q_data, method=method) + calc_J(composition, q_data)
+    elif method == 'faber-ziman':
+        t2_divisor = 1.0
+
     # Count no. iterations for verbosity or control
     # Function set up to call stop_looping func in case want to modify
     # to use chi-squared value as tolerance value instead
@@ -950,19 +1003,17 @@ def calc_impr_interference_func(rho, *args):
         except NameError:
             pass
 
+        # Calculate the difference between observed and model D(r) along
+        # with the chi^2 figure of merit
         delta_D_r = (D_r - model_D_intra_r)[np.where(r < r_min)]
         r_intra = r[np.where(r<r_min)]
         chi_squared = calc_chi_squared(r_intra, delta_D_r)
 
-        if method == 'ashcroft-langreth':
-            t2 = (interference_func/t2_divisor) + 1
-            t3 = calc_D_r_iteration_term(delta_D_r, N=fft_N, dq=dq)[:len(interference_func)]
-            with np.errstate(invalid='ignore'):
-                interference_func_impr = interference_func - (t1 * t2 * t3)
-        elif method == 'faber-ziman':
-            t2 = calc_D_r_iteration_term(delta_D_r, N=fft_N, dq=dq)[:len(interference_func)]
-            with np.errstate(invalid='ignore'):
-                interference_func_impr = ((interference_func+1) * (1 - t1*t2)) - 1
+        # Calculate next iteration of i(Q)
+        t3 = calc_D_r_iteration_term(delta_D_r, N=fft_N, dq=dq)[:len(interference_func)]
+        t2 = (interference_func/t2_divisor) + 1
+        with np.errstate(invalid='ignore'):
+            interference_func_impr = interference_func - (t1 * t2 * t3)
 
         count += 1
 

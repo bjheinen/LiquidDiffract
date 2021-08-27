@@ -75,15 +75,22 @@ class ResultsUI(QWidget):
         self.data['rdf_x'], self.data['rdf_y'] = core.calc_correlation_func(self.data['sq_x'], self.data['int_func'], self.data['rho'], N=self.fft_N,
                                                                mod_func=self.data['mod_func'], window_start=self.data['window_start'],
                                                                function='radial_dist_func')
+        # Optional rescale of Ashcroft-Langreth S(Q)/g(r)
+        if self.rescale_AL == 1:
+            # Renormalise Ashcroft-Langreth S(Q) to 1 at high Q
+            self.data['sq_y'] = core.normalise_achroft_langreth_func(self.data['S_inf'], sq=self.data['sq_y'])
+            self.data['sq_y_mod'] = core.normalise_achroft_langreth_func(self.data['S_inf'], sq=self.data['sq_y_mod'])
+            # Remormalise Ashcroft-Langreth g(r) to between 0 and 1
+            self.data['gr_y'] = core.normalise_achroft_langreth_func(self.data['S_inf'], gr=self.data['gr_y'])
+        # Renormalise Ashcroft-Langreth RDF(r) to standard (Faber-Ziman) scaling
+        self.data['rdf_y'] = core.normalise_achroft_langreth_func(self.data['S_inf'],
+                                                                  rdf=self.data['rdf_y'],
+                                                                  r=self.data['rdf_x'], rho_0=self.data['rho'])
         # Create data required for structure_ui
         self.data['tr_x'] = self.data['rdf_x']
         with np.errstate(divide='ignore', invalid='ignore'):
             self.data['tr_y'] = self.data['rdf_y'] / self.data['tr_x']
 
-        self.data['dr_x'], self.data['dr_y'] = core.calc_correlation_func(self.data['sq_x'], self.data['int_func'], self.data['rho'], N=self.fft_N,
-                                                             mod_func=self.data['mod_func'], window_start=self.data['window_start'],
-                                                             function='density_func')     
-        
         self.results_plot_widget.update_plots(self.data)
 
     def save_sq(self):

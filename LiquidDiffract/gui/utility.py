@@ -142,6 +142,7 @@ class PreferencesDialog(QDialog):
             _data_units = np.int(self.data_settings_gb.data_units_input.currentIndex())
             _window_length = np.int(self.data_settings_gb.window_length_input.text())
             _poly_order = np.int(self.data_settings_gb.poly_order_input.text())
+            _rescale_AL = np.int(self.data_settings_gb.rescale_AL_input.isChecked())
             _fft_N = np.int(self.data_settings_gb.fft_N_input.value())
             self.fft_check = _fft_N
             self.fft_check_signal.emit()
@@ -211,6 +212,7 @@ class PreferencesDialog(QDialog):
                              'data_units': _data_units,
                              'window_length': _window_length,
                              'poly_order': _poly_order,
+                             'rescale_AL': _rescale_AL,
                              'fft_N': _fft_N,
                              'mod_func_mode': _mod_func_mode,
                              'op_method': _op_method,
@@ -289,6 +291,8 @@ class DataSettingsGroupBox(QGroupBox):
         self.window_length_input = QLineEdit()
         self.poly_order_label = QLabel('Poly order')
         self.poly_order_input = QLineEdit()
+        self.rescale_AL_label = QLabel('Plot rescaled Ashcroft-Langreth S(Q) & g(r)')
+        self.rescale_AL_input = QCheckBox()
         self.fft_label = QLabel('FFT Options:')
         self.fft_N_label = QLabel('<b><i>N</i></b> | Size of padded array for FFT = 2^N: ')
         self.fft_N_input = QSpinBox()
@@ -297,6 +301,7 @@ class DataSettingsGroupBox(QGroupBox):
         self.data_units_input.setCurrentIndex(preferences['data_units'])
         self.window_length_input.setText(np.str(preferences['window_length']))
         self.poly_order_input.setText(np.str(preferences['poly_order']))
+        self.rescale_AL_input.setChecked(preferences['rescale_AL'])
         self.fft_N_input.setValue(preferences['fft_N'])
 
     def style_widgets(self):
@@ -314,7 +319,9 @@ class DataSettingsGroupBox(QGroupBox):
         self.poly_order_input.setAlignment(Qt.AlignRight)
         self.poly_order_input.setValidator(QIntValidator())
         self.poly_order_input.setMaximumWidth(70)
-        
+
+        self.rescale_AL_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+
         self.fft_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         
         self.fft_N_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
@@ -337,9 +344,11 @@ class DataSettingsGroupBox(QGroupBox):
         self.grid_layout.addWidget(self.window_length_input, 2, 1)
         self.grid_layout.addWidget(self.poly_order_label, 3, 0)
         self.grid_layout.addWidget(self.poly_order_input, 3, 1)
-        self.grid_layout.addWidget(self.fft_label, 4, 0)
-        self.grid_layout.addWidget(self.fft_N_label, 5, 0)
-        self.grid_layout.addWidget(self.fft_N_input, 5, 1)
+        self.grid_layout.addWidget(self.rescale_AL_label, 4, 0)
+        self.grid_layout.addWidget(self.rescale_AL_input, 4, 1)
+        self.grid_layout.addWidget(self.fft_label, 5, 0)
+        self.grid_layout.addWidget(self.fft_N_label, 6, 0)
+        self.grid_layout.addWidget(self.fft_N_input, 6, 1)
 
         self.main_layout.addLayout(self.grid_layout)
         self.setLayout(self.main_layout)
