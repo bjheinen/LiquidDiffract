@@ -1,10 +1,11 @@
+
 [![DOI](https://zenodo.org/badge/147495370.svg)](https://zenodo.org/badge/latestdoi/147495370)
 
 <p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/icons/logo.png"></p>
 
 <p align="center">
-A GUI program to process experimental X-ray diffraction data of liquids and amorphous solids. <br />
-LiquidDiffract can calculate normalised total molecular structure factors, pair-distribution functions, and retrieve estimates of atomic number density through the normalisation procedure.
+A graphical application for total X-ray scattering analysis of liquids and amorphous solids. <br />
+LiquidDiffract can calculate and refine the normalised structure factor and real-space correlation functions, and extract structural information such as average bond lengths, coordination number, and density.
 </p>
 
 
@@ -18,19 +19,22 @@ Benedict J. Heinen (benedict.heinen@gmail.com)
 * [Requirements](#requirements)
 * [Installation](#installation)
 * [Usage](#usage)
-  * [Loading the GUI](#loading-the-gui)
-  * [Basic Usage](#basic-usage)
-  * [Background Subtraction Tab](#background-subtraction-tab)
-  * [Refinement Tab](#refinement-tab)
-    * [Composition Toolbox](#composition-toolbox)
-    * [Data Options](#data-options)
-    * [Iterative Structure Factor Refinement](#iterative-structure-factor-refinement)
-    * [Density (&rho;) Refinement](#density-%CF%81-refinement)
-      * [Global optimisation capability](#global-optimisation-capability)
-    * [Note on Number of Iterations in the Eggert Procedure & *&Chi;<sup>2</sup>* Minimisation](#note-on-number-of-iterations-in-the-eggert-procedure--χ2-minimisation)
-    * [Terminal & Log-file Output](#terminal--log-file-output)
-  * [PDF Calculation (Output) Tab](#pdf-calculation-output-tab)
-  * [Using LiquidDiffract Core Library](#using-liquiddiffract-core-library)
+	* [Loading the GUI](#loading-the-gui)
+	* [Basic Usage](#basic-usage)
+	* [Background Subtraction Tab](#background-subtraction-tab)
+	* [Refinement Tab](#refinement-tab)
+		* [Composition Toolbox](#composition-toolbox)
+		* [Data Options](#data-options)
+		* [Iterative Structure Factor Refinement](#iterative-structure-factor-refinement)
+		* [Density (&rho;) Refinement](#density-%CF%81-refinement)
+			* [Global optimisation capability](#global-optimisation-capability)
+		* [Note on Number of Iterations in the Eggert Procedure & *&Chi;<sup>2</sup>* Minimisation](#note-on-number-of-iterations-in-the-eggert-procedure--χ2-minimisation)
+		* [Terminal & Log-file Output](#terminal--log-file-output)
+	* [PDF Calculation (Output) Tab](#pdf-calculation-output-tab)
+	* [Structural Information Tab](#structural-information-tab)
+		* [Integration Toolbox (monatomic compositions)](#integration-toolbox)
+		* [Curve-fitting Toolbox (polyatomic compositions)](#curve-fitting-toolbox)
+	* [Using LiquidDiffract Core Library](#using-liquiddiffract-core-library)
 * [References](#references)
 * [License](#license)
 
@@ -47,21 +51,18 @@ Benedict J. Heinen (benedict.heinen@gmail.com)
 
 LiquidDiffract should run with earlier versions of these python packages but is untested. If you do not have a python installation, we recommend [Anaconda](https://www.anaconda.com/distribution/).
 LiquidDiffract is system-independent and has been tested on Linux, Mac, and Windows.
+Dependencies are handled automatically when installing with *pip*.
 
 ## Installation
 
-The simplest way to install LiquidDiffract is with pip and git:
+The simplest way to install LiquidDiffract is directly from PyPI with pip:
 
-```$ pip install git+https://github.com/bjheinen/LiquidDiffract.git```
+```$ pip install LiquidDiffract```
 
-which should also deal with dependencies automatically.
+The source code is directly available [here](https://github.com/bjheinen/LiquidDiffract/archive/master.zip)
 
-If you have issues clone this repository or download the source directly and install it with pip locally (see 'Development installation' below).
-
-The source is directly available [here](https://github.com/bjheinen/LiquidDiffract/archive/master.zip)
-
- We still reccomend pip for installing from a local directory.
-***Invoke setup.py directly at your own risk!***
+We still recommend pip for installing from a local directory.
+*(Invoke setup.py directly at your own risk!)*
 
 <details><summary><b>Development installation</b></summary>
 
@@ -79,9 +80,9 @@ $ mv LiquidDiffract-*/ LiquidDiffract/
 $ pip install -e /path/to/local/directory/LiquidDiffract/
 ```
 
-This will not actually install anything, but create a special .egg-link file in the deployment directory that links to LiquidDiffract's source code.
+This will not actually install anything, but create an .egg-link file in the deployment directory that links to LiquidDiffract's source code.
 
-It is useful if you want to mess around with, or make changes to the source code without having to re-install. It is also good for testing the software, as it makes uninstalling simpler. Use Python's site-packages directory as the deployment directory if you want your editable install of LiquidDiffract available on your sys.path for other programs using your Python installation. To do this from the github page use the *-t* flag ```-t /path/to/directory```
+It is useful if you want to make changes to the source code without having to re-install. Use Python's site-packages directory as the deployment directory if you want your editable install of LiquidDiffract available on your sys.path for other programs using your Python installation. To do this from the github page use the *-t* flag ```-t /path/to/directory```
 
 </details>
 
@@ -97,23 +98,23 @@ or run *'LiquidDiffract.py'* from the installation directory ```$ python LiquidD
 
 ### Basic Usage
 
-There are three main tabs which provide a selection of toolboxes for data operations at different stages of the workflow.
+There are four main tabs which provide a selection of toolboxes for data operations at different stages of the workflow.
 
-* Background scaling and subtraction
-* Data operations, structure factor calculation, interference function optimisation, and density refinement
+* Background scaling/subtraction
+* Data operations: structure factor calculation, interference function optimisation, and density refinement
 * PDF calculation and data output
+* Estimation of coordination numbers and bond lengths (integration and curve-fitting)
 
 Data are automatically plotted and tabs updated as operations are made. The graphical plots display coordinates in the upper-right corner. Click and drag or use the scroll-wheel to zoom in on a region. Double right-click to reset the view.
 
-<p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/docs/LiquidDiffract v0.1_refinement_tab.png"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/docs/LiquidDiffract v1.1.6-dev_refinement_tab.png"></p>
 
 
 ### Background Subtraction Tab
 
 This tab allows data and (optionally) background files to be loaded in. The auto-scale feature speeds up workflow but is not recommended for a close fit. 
 
-All data must be in Q-space. A toolbox is provided to convert raw experimental data of 2&theta; values to Q-space.
-
+All data must be in Q-space. A toolbox is provided to convert raw experimental data of 2&theta; values to Q-space. By default LiquidDiffract expects data in inverse Angstroms, but an option to change this to inverse nano-metres is available in the *Additional Preferences* dialog, which is accessible from the *Tools* menu.
 
 
 ### Refinement Tab
@@ -126,30 +127,30 @@ The sample composition can be set here, along with data processing options. Afte
 
 depending on the formalism used. 
 
-This function can then be normalised by minimising errors in the related 'density function', *F(r)*:
+This function can then be normalised by minimising errors in the real-space 'differential correlation function', *D(r)*:
 
-><img src='http://latex.codecogs.com/svg.latex?F(r)=\frac{2}{\pi}\int_{0}^{Q_{Max}}Qi(Q)\sin(qr)dq'/>
+><img src='http://latex.codecogs.com/svg.latex?D(r)=\frac{2}{\pi}\int_{0}^{Q_\mathrm{{Max}}}Qi(Q)\sin(Qr)dq'/>
 
-In *LiquidDiffract* the integral in the function *F(r)* is calculated by taking the imaginary parts of the inverse fourier transform of *Qi(Q)* using a standard FFT algorithm.
+In *LiquidDiffract* the integral in the function *D(r)* is calculated by taking the imaginary portion of the inverse Fourier transform of *Qi(Q)* using a standard FFT algorithm.
 
 
 #### Composition Toolbox
 
-The sample composition must be set before the structure factor, S(Q), can be calculated. The sample density (in atoms per cubic angstroms) should also be set here. If the density is to be refined, this is used as the initial value passed to the solver.
+The sample composition must be set before the structure factor, *S(Q)*, can be calculated. The sample density (in atoms per cubic angstroms) should also be set here. If the density is to be refined, this is used as the initial value passed to the solver.
 
 #### Data Options
 
-At high Q-values experimental data often becomes increasingly noisy because the relative contribution of coherent scattering to the experimental signal decreases. This increasingly noisy signal can lead to dramatic and anomalous oscillations near the first peak in F(r). It can therefore be beneficial to truncate the data at high-Q. However truncation can cause spurious peaks in F(r) as a result of the fourier transform. The positions of these peaks are a function of Q-max, so the use of different values should be investigated. Discussion on the effect of Q-max can be found in ref. [1] and [5].
+Spurious peaks or oscillations (e.g. from a slightly mislocated beam stop) in the low-*Q* region can be removed by setting a *Q*-min cut-off.
 
-Spurious peaks or oscillations (e.g. from a slightly mislocated beam stop) in the low-Q region can be removed by setting a Q-min cut-off.
+At high Q-values experimental data often becomes increasingly noisy because the relative contribution of coherent scattering to the experimental signal decreases. This increasingly noisy signal can lead to anomalous oscillations near the first peak in *D(r)*. It can therefore be beneficial to truncate the data at high-*Q*. However truncation can cause spurious peaks in *D(r)* as a result of the Fourier transform. The positions of these peaks are a function of Q-max, so the use of different values should be investigated. Discussion on the effect of Q-max can be found in ref. [1] and [5].
 
 The option to smooth the data will apply a Savitzky-Golay filter to the data. Options to change the length of the filter window and the order of the polynomial used to fit samples can be found in the *Additional Preferences* dialog, accessible from the *Tools* menu.
 
 LiquidDiffract provides the option to use either Ashcroft-Langreth [6] or Faber-Ziman [7] formalisms of the structure factor. See Keen et al., 2001 [8] for discussions of differences in structure factor formalisms, or the LiquidDiffract source code for specific implementations. 
 
-The total molecular structure factor, S(Q), is converted to normalised units using the method of Krogh-Moe [9] and Norman [10].
+In both formalisms the total molecular structure factor, *S(Q)*, is converted to normalised units using the method of Krogh-Moe [9] and Norman [10].
 
-Applying a modification function to S(Q) before FFT can help suppress truncation ripples and can correct a gradient in the high-Q region. Two functions are currently implemented:
+Applying a modification function to *S(Q)* before FFT can help suppress truncation ripples and can correct a gradient in the high-Q region. Two functions are currently implemented:
 
 **Lorch [13]:**
 
@@ -163,24 +164,24 @@ Applying a modification function to S(Q) before FFT can help suppress truncation
 >where N is width of the window function
 >and x is an integer with values from 0 : (N-1) across the window
 
-After calculating the structure factor the final tab can be used to output S(Q), the pair distribution function g(r), and the radial distribution function RDF(r), as is.
+After calculating the structure factor the final tab can be used to output *S(Q)*, the pair distribution function, *g(r)*, and the radial distribution function, *RDF(r)*, as is.
 
 
 #### Iterative Structure Factor Refinement
 
-The numerical iterative procedure used by LiquidDiffract to minimize the error in the determination of g(r) follows the one proposed by Eggert et al., 2002 [1-4]. This procedure is based on the assumption that a minimum distance, r-min, can be defined, which represents the largest distance (0 -- r-min) where no atom can be found. In a liquid, this should be the distance of the 1st coordination shell. Because no atom can be present in this region, no oscillation should be observed in the g(r) function. As a result, the function *F(r < r-min)* = -4&pi;r&rho; However oscillations are commonly observed in this region, due to systematic errors such as the effect of an experimentally limited Q range (Q-max < &inf;) on the determination of the normalisation factor, &alpha;. The iterative procedure calculates the difference between real and model data in the low-r region and scales S(Q) accordingly to reduce this.
+The numerical iterative procedure used by LiquidDiffract to minimize the error in the determination of *g(r)* follows the one proposed by Eggert et al., 2002 [1-4]. This procedure is based on the assumption that a minimum distance, r-min, can be defined, which represents the largest distance (0 -- r-min) where no atom can be found. In a liquid, this should be the region within the 1st coordination shell. Because no atom can be present in this region, no oscillations should be observed in the *g(r)* function. As a result, the function *D(r < r-min)* = -4&pi;r&rho; However oscillations are commonly observed in this region, due to the effect of an experimentally limited *Q*-range (*Q*-max < &inf;), and systematic errors in the scattering factors and normalisation factor, &alpha;. The iterative procedure calculates the difference between real and model data in the low-*r* region and scales *S(Q)* accordingly to reduce this.
 
-To refine S(Q) the value of r-min should be set carefully, as it has a strong influence. The position of r-min should correspond to the base of the first coordinence sphere in the g(r).
+To refine *S(Q)* the value of *r*-min should be set carefully, as it has a strong influence. The position of *r*-min should correspond to the base of the first coordinence sphere in the *g(r)*.
 
 The number of iterations in the procedure can also be set; a minimum of 3 is normally required for convergence.
 
-A *&Chi;<sup>2</sup>* figure of merit, defined as the area under the curve *&Delta;F(r) for r<r-min*, is used to rate the refinement.
+A *&Chi;<sup>2</sup>* figure of merit, defined as the area under the curve *&Delta;D(r) for r<r-min*, is used to rate the refinement.
 
-><img src='http://latex.codecogs.com/svg.latex?\chi^{2}_{\left(n\right)}(\rho)=\int_{0}^{r_{min}}\left[\Delta{F}_{n}(r)^2\right]dr'/>
+><img src='http://latex.codecogs.com/svg.latex?\chi^{2}_{\left(n\right)}(\rho)=\int_{0}^{r_{min}}\left[\Delta{D}_{(n)}(r)\right]^2dr'/>
 
 Where,
 
-><img src='http://latex.codecogs.com/svg.latex?\Delta{F}_{n}(r)= F_{n}(r)-\left(-4\pi\rho{r}\right),\;for\;r<r_{min}'/>
+><img src='http://latex.codecogs.com/svg.latex?\Delta{D}_{(n)}(r)= D_{(n)}(r)-\left(-4\pi\rho{r}\right),\;for\;r<r_{min}'/>
 
 #### Density (&rho;) Refinement
 
@@ -217,7 +218,7 @@ It is important to note that a well defined minimum in *&Chi;<sup>2</sup><sub>n<
 
 <details><summary><b>More info...</b></summary>
 
-The Eggert method works by forcing the region below r<sub>min</sub> to fit a line defined as -4&pi;&rho;r. *&Chi;<sup>2</sup><sub>n</sub>* is the square of the area between this modelled line and *F(r) (r < r<sub>min</sub>)* after *n* iterations. *&Chi;<sup>2</sup>(&rho;)* should display a minimum when the slope (controlled by density) best fits the data. However, after a large number of iterations the data can always be forced to fit the model slope through unreasonable manipulation (e.g. by massively inflating low-Q values), and so *&Chi;<sup>2</sup><sub>n</sub>* will be drastically reduced at large values of *n*. Furthermore, at large values of *n*, *&Chi;<sup>2</sup><sub>n</sub>* will decrease as *&rho;* --> 0, because the absolute values used to calculate *&Chi;<sup>2</sup>* are smaller as the magnitude of the slope decreases.
+The Eggert method works by forcing the region below r<sub>min</sub> to fit a line defined as -4&pi;&rho;r. *&Chi;<sup>2</sup><sub>n</sub>* is the square of the area between this modelled line and *D(r) (r < r<sub>min</sub>)* after *n* iterations. *&Chi;<sup>2</sup>(&rho;)* should display a minimum when the slope (controlled by density) best fits the data. However, after a large number of iterations the data can always be forced to fit the model slope through unreasonable manipulation (e.g. by massively inflating low-Q values), and so *&Chi;<sup>2</sup><sub>n</sub>* will be drastically reduced at large values of *n*. Furthermore, at large values of *n*, *&Chi;<sup>2</sup><sub>n</sub>* will decrease as *&rho;* --> 0, because the absolute values used to calculate *&Chi;<sup>2</sup>* are smaller as the magnitude of the slope decreases.
 
 We can investigate this by computing the function *&Chi;<sup>2</sup><sub>n</sub>(&rho;, n)* - in this case for an example composition with a density ~0.048 atoms per cubic Angstrom. Plotting *&Chi;<sup>2</sup><sub>n</sub>(&rho;)* for *n = 4* and *n = 25* shows that with only 25 iterations there is no longer a well defined minimum.
 
@@ -240,7 +241,7 @@ At high enough resolution the number of iterations can be optimised. For this pa
 
 #### Terminal & Log-file Output
 
-An log is automatically generated for any refinement made. This log includes information on the data file, sample composition, data and refinement options used, solver output/convergence info (if refining density), and the final *&Chi;<sup>2</sup>* and *&rho;*.
+A log is automatically generated for any refinement made. This log includes information on the data file, sample composition, data and refinement options used, solver output/convergence info (if refining density), and the final *&Chi;<sup>2</sup>* and *&rho;*.
 
 The log for each refinement is automatically written to file. The default behaviour is to store each log in a file named 'refinement.log' within the current data directory. Each log is preceded by a time-stamp. The log-mode can be changed to *Overwrite* in the *Additional Preferences* dialog. This creates a new log file for each data file loaded, which will be overwritten if already present. The file-names generated are of the form 'DATAFILENAME_refinement.log' and are similarly created in the source directory of the loaded data file.
 
@@ -248,11 +249,11 @@ LiquidDiffract outputs some density refinement information to the terminal. Ther
 
 ### PDF Calculation (Output) Tab
 
-The final tab displays the optimised S(Q), g(r), and RDF(r). The buttons at the bottom of the window allow each one to be saved to a text file. If a modification function has been used in the data treatment then information on this will also be saved, along with the raw S(Q).
+The third tab displays the optimised S(Q), g(r), and RDF(r). The buttons at the bottom of the window allow each one to be saved to a text file. If a modification function has been used in the data treatment then information on this will also be saved, along with the raw S(Q).
 
 *g(r)* is the *pair-distribution function*. It is defined as:
 
-><img src='http://latex.codecogs.com/svg.latex?g(r)-1=\frac{1}{2\pi^{2}r\rho_{0}}\int_{0}^{Q_{Max}}Qi(Q)\sin(qr)dq'/>
+><img src='http://latex.codecogs.com/svg.latex?g(r)-1=\frac{1}{2\pi^{2}r\rho_{0}}\int_{0}^{Q_{Max}}Qi(Q)\sin(Qr)dq'/>
 
 Where the interference function, i(Q) is:
 
@@ -261,20 +262,47 @@ Where the interference function, i(Q) is:
 
 RDF(r) is the radial distribution function:
 
-><img src='http://latex.codecogs.com/svg.latex?RDF(r)=4\pi{r}^2\rho_{0}g(r)=\left({\frac{2r}{\pi}\int_{0}^{Q_{Max}}Qi(Q)\sin(qr)dq}\right)+4\pi{r}^2\rho_{0}'/>
+><img src='http://latex.codecogs.com/svg.latex?RDF(r)=4\pi{r}^2\rho_{0}g(r)=\left({\frac{2r}{\pi}\int_{0}^{Q_{Max}}Qi(Q)\sin(Qr)dq}\right)+4\pi{r}^2\rho_{0}'/>
 
 its integration across peaks yields atomic coordination numbers.
 
-<details><summary><b><i>F(r)</i></b></summary>
+<details><summary><b><i>D(r)</i></b></summary>
 
-The density function, *F(r)*, that is used in the data analysis and defined [above](#refinement-tab), should not be confused with *g(r)* or *RDF(r)*. In the literature it is sometimes referred to by other names, including *D(r)*, *G(r)*, and *PDF(r)*. It is defined as:
+The density function, *D(r)*, that is used in the data analysis and defined [above](#refinement-tab), should not be confused with *g(r)* or *RDF(r)*. In the literature it is sometimes referred to by other names, including *F(r)*, *G(r)*, and *PDF(r)*. It is defined as:
 
-><img src='http://latex.codecogs.com/svg.latex?F(r)=G(r)=D(r)=PDF(r)=4\pi{r}\rho_{0}\left[g(r)-1\right]'/>
+><img src='http://latex.codecogs.com/svg.latex?D(r)=G(r)=F(r)=PDF(r)=4\pi{r}\left[\rho(r)-\rho_0\right]=4\pi{r}\rho_{0}\left[g(r)-1\right]'/>
 
-><img src='http://latex.codecogs.com/svg.latex?F(r)=\frac{2}{\pi}\int_{0}^{Q_{Max}}Qi(Q)\sin(qr)dq'/>
+><img src='http://latex.codecogs.com/svg.latex?D(r)=\frac{2}{\pi}\int_{0}^{Q_{Max}}Qi(Q)\sin(Qr)dq'/>
 
 </details>
 
+### Structural Information Tab
+
+This tab provides tools to extract coordination numbers and average bond lengths from the *RDF(r)*. Two toolboxes are provided, an integration toolbox which does simple integration across peaks in the *RDF(r)* for monatomic samples, and a curve-fitting toolbox which allows the user to fit the *RDF(r)* with an arbitrary number of weighted gaussian-type peaks. 
+
+#### Integration Toolbox
+
+Integrating across the peaks in *RDF(r)* gives the average coordination number. Three methods for doing this are provided based on those commonly used in the literature [24]. The first method is based on the assumption that the quantity *rg(r)* is symmetrical for a coordination shell about its average position. The second method is based on the assumption that the coordination shell is instead symmetrical about a radius which defines the maximum in the *r<sup>2</sup>g(r)* curve. Since the first peak is not truly symmetrical *N<sub>A</sub>* and *N<sub>B</sub>* can be considered estimates of the lower bound on the coordination number. Typically it also the case that *N<sub>A</sub> < N<sub>B</sub>*. This consideration of asymmetry leads to the third method, which involves integrating *RDF(r)* from the leading edge of the first peak *r<sub>0</sub>* to first minimum following it, *r<sub>min</sub>*.
+
+><img src='http://latex.codecogs.com/svg.latex?\bar{N}_{A}=2\int^{r%27_{\rm{max}}}_{r%27_{0}}4\pi\rho_{0}r\left[rg(r)\right]_{\rm{sym}}dr'/>
+
+><img src='http://latex.codecogs.com/svg.latex?\bar{N}_{B}=2\int^{r_{\rm{max}}}_{r_{0}}4\pi\rho_{0}\left[r^2g(r)\right]_{\rm{sym}}dr'/>
+
+><img src='http://latex.codecogs.com/svg.latex?\bar{N}_{C}=\int^{r_{\rm{min}}}_{r_{0}}4\pi\rho_{0}r^2g(r)dr'/>
+
+An auto-refine button is provided to quickly find the positions of *r<sub>0</sub>*, *r'<sub>max</sub>*, *r<sub>max</sub>* and *r<sub>min</sub>* using a root-finding and minimisation procedure. The user can also set the limits manually via a spinbox or by dragging the limits on the data plot. In particular, careful setting of *r<sub>min</sub>* may be required as its apparent value can fluctuate due to errors in *RDF(r)* [25].
+
+#### Curve Fitting Toolbox
+
+For polyatomic samples it is more useful to fit the *RDF(r)* with a number of peaks so that the individual contribution from different *&alpha;-&beta;* pairs can be investigated [26-27]. LiquidDiffract provides a curve fitting toolbox to do this. Either the *RDF(r)* or the *T(r)* can be fitted, with *T(r)* defined as:
+
+><img src='http://latex.codecogs.com/svg.latex?T(r)=\frac{RDF(r)}{r}'/>
+
+LiquidDiffract fits the data with an arbitrary number of gaussian type peaks (with an optional skewness parameter) based on the function:
+
+><img src='http://latex.codecogs.com/svg.latex?T(r)=\sum_{\alpha\beta}\left[\frac{\bar{N}_{\alpha\beta}W^{%27\rm{x-ray}}_{\alpha\beta}}{c_{\beta}\sigma_{\alpha\beta}r\sqrt{2\pi}}\exp\left[\frac{-\left(r-r_{\alpha\beta}\right)^2}{2\sigma_{\alpha\beta}^2}\right]\times\left[1+\text{erf}\left(\xi\frac{r-r_{\alpha\beta}}{\sigma_{\alpha\beta}\sqrt{2}}\right)\right]\right]'/>
+
+The x-ray weighting factors are computed automatically and the fitting parameters are the coordination number, *N<sub>&alpha;&beta;</sub>*, the bond length, *r<sub>&alpha;&beta;</sub>*, and a measure of the bond length distribution, *&sigma;<sub>&alpha;&beta;</sub>*. The skewness parameter, *&xi;*, is optional in the fit. All of the parameters can be set manually and individually toggled between remaining fixed or allowed to vary in the fit.
 
 
 ### Using LiquidDiffract Core Library
@@ -293,15 +321,16 @@ A brief example of using LiquidDiffract in a custom data processing script is gi
 import numpy as np
 # Import optional python modules used in this example
 import matplotlib.pyplot as plt
-from scipy.interpolate import interp1d
-from scipy.signal import savgol_filter
+
 from scipy.optimize import minimize
 # import the LiquidDiffract core module
 import LiquidDiffract.core.core as liquid
+import LiquidDiffract.core.data_utils as data_utils
 
 # First set composition
 # The composition should be a dictionary dictionary with short element names as keys,
 # and values as tuples of the form (Z, charge, number_of_atoms)
+# The file 'example_data.dat' contains background corrected total scattering data of Gallium at high pressure
 composition = {'Ga': (31,0,1)}
 # Set initial density - in atoms per cubic Angstrom
 rho = 0.055
@@ -312,27 +341,20 @@ rho = 0.055
 q_raw, I_raw = np.loadtxt('example_data.dat', unpack=True, skiprows=0)
 
 # Next rebin data and trim if necessary
-# The below example can also be done using LiquidDiffract.core.data_utils
-# Re-bin via interpolation so dq (steps of q) is consistent
-# Suggested dq = 0.02
-dq = 0.02
-# Cut-off below Q_cutoff
-q_cutoff = 11.8
-q_data = np.arange(0, q_raw[-1], dq)
-q_data = q_data[q_data<q_cutoff]
-finterp = interp1d(q_raw, I_raw, kind='cubic', fill_value='extrapolate')
-I_data = finterp(q_data)
+# Re-bin via interpolation so dq (steps of q) is consistent to allow FT
+# This can be done using the rebin_data function from core.data_utils
+dq=0.02
+q_data, I_data = data_utils.rebin_data(q_raw, I_raw, dx=dq, x_lim=[q_raw[0], 11.8])
 
 # Apply any other data treatment
 # e.g. a savitsky-golay filter to smooth the data
-window_length = 31
-polyorder = 3
-I_data = savgol_filter(I_data, window_length, polyorder)
+I_data = data_utils.smooth_data(I_data, method='savitzky-golay', 
+                                window_length=31, poly_order=3)
 
 # First calculate the interference function i(Q)
 # i(Q) = S(Q) - S_inf (S_inf = 1 for monatomic samples, or in the Faber-Ziman formalism)
-structure_factor = liquid.calc_structure_factor(q_data, I_data, composition, rho)
-interference_func = structure_factor - liquid.calc_S_inf(composition, q_data)
+structure_factor = liquid.calc_structure_factor(q_data, I_data, composition, rho, method='faber-ziman')
+interference_func = structure_factor - liquid.calc_S_inf(composition, q_data, method='faber-ziman')
 
 # store original interference function
 interference_func_0 = interference_func
@@ -375,14 +397,14 @@ interference_func_1, chi_sq_1 = liquid.calc_impr_interference_func(rho_0, *args)
 
 # Next we use opt_flag = 1 and pass the function calc_impr_interference_func to
 # a solver to estimate the density
-# For use with a solver iter_limit <= 10 is recommended
-iter_limit_refine = 5
+# When refinind the density an iter_limit <= 10 is recommended
+iter_limit_refine = 7
 args = (q_data, I_data, composition, r_min,
         iter_limit_refine, method, mod_func, window_start, fft_N, 1)
 # Set-up bounds and other options according to the documentation of solver/minimisation routine
 bounds = ((0.045, 0.065),)
 op_method = 'L-BFGS-B'
-optimisation_options = {'disp': 1,
+optimisation_options = {'disp': 0,
                         'maxiter': 15000,
                         'maxfun': 15000,
                         'ftol': 2.22e-12,
@@ -405,20 +427,21 @@ args = (q_data, interference_func, composition, r_min,
 interference_func_2, chi_sq_2 = liquid.calc_impr_interference_func(rho_refined, *args)
 
 # Calculate the corresponding pair distribution functions g(r)
-r, g_r_0 = liquid.calc_F_r(q_data, interference_func_0, rho_0, dx=dq,
-                           mod_func=mod_func, window_start=window_start,
-                           function='pair_dist_func')
+r, g_r_0 = liquid.calc_correlation_func(q_data, interference_func_0, rho_0, dx=dq,
+                                        mod_func=mod_func, window_start=window_start,
+                                        function='pair_dist_func')
 # r values will be the same
-_, g_r_1 = liquid.calc_F_r(q_data, interference_func_1, rho_0, dx=dq,
-                           mod_func=mod_func, window_start=window_start,
-                           function='pair_dist_func')
-_, g_r_2 = liquid.calc_F_r(q_data, interference_func_2, rho_refined, dx=dq,
-                           mod_func=mod_func, window_start=window_start,
-                           function='pair_dist_func')
+_, g_r_1 = liquid.calc_correlation_func(q_data, interference_func_1, rho_0, dx=dq,
+                                        mod_func=mod_func, window_start=window_start,
+                                        function='pair_dist_func')
+_, g_r_2 = liquid.calc_correlation_func(q_data, interference_func_2, rho_refined, dx=dq,
+                                        mod_func=mod_func, window_start=window_start,
+                                        function='pair_dist_func')
 
 # Plot the data
 fig1 = plt.figure()
-plt.xlabel(r'i(Q), $\AA^{-1}$')
+plt.xlabel(r'Q ($\AA^{-1}$)')
+plt.ylabel(r'i(Q)')
 # Initial interference function calculation
 plt.plot(q_data, interference_func_0, color='g', label=r'Initial i(Q) | $ρ = {rho:.2f}$'.format(rho=rho_0))
 # Optimised at rho_0
@@ -431,7 +454,8 @@ plt.legend(loc='best')
 plt.show()
 
 fig2 = plt.figure()
-plt.xlabel(r'g(r), $\AA$')
+plt.xlabel(r'r ($\AA$)')
+plt.ylabel(r'g(r)')
 plt.ylim((np.nanmin(g_r_2), np.nanmax(g_r_2)))
 window = len(q_data)
 # Initial g(r)
@@ -500,6 +524,14 @@ plt.show()
 
 [23] Li, Z. and Scheraga, H. A., Monte Carlo-minimization approach to the multiple-minima problem in protein folding, Proc. Natl. Acad. Sci. USA, 1987, 84, 6611.
 
+[24] Waseda, Y. The Structure of Non Crystalline Materials: Liquids and Amorphous Solids. 1980. McGraw-Hill, New York
+
+[25] Yagafarov O F, Katayama Y, Brazhkin V V, Lyapin A G, and Saitoh H. Energy dispersive x-ray diffraction and reverse monte carlo structural study of liquid gallium under pressure. 2012. Physical Review B, 40286(17):174103
+
+[26] Petkov, V. Pair Distribution Functions Analysis. 2012. American Cancer Society, doi.org/10.3861002/0471266965.com159
+
+[27] Sukhomlinov S V, and Muser, M H. Determination of accurate, mean bond lengths from radial distribution functions. 2017. The Journal of chemical physics, 146(2):024506
+
 
 
 ## License
@@ -510,6 +542,4 @@ See the [license file](../master/LICENSE) for more information.
 
 This program comes with absolutely no warranty or guarantee.
 
-Copyright © 2018-2019 – Benedict J Heinen
-
-
+Copyright © 2018-2021 – Benedict J Heinen
