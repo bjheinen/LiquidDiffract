@@ -81,7 +81,7 @@ class PreferencesDialog(QDialog):
         self.setWindowTitle
         self.title = 'Additional Preferences | ' + __appname__ + 'v' + __version__
         self.setWindowTitle(self.title)
-        self.resize(300, 500)
+        self.resize(500, 500)
 
         self.outer_layout = QVBoxLayout()
         self.outer_layout.setContentsMargins(5, 3, 5, 7)
@@ -705,17 +705,18 @@ class AboutDialog(QDialog):
         _app_url = 'https://github.com/bjheinen/LiquidDiffract'
         _gpl_url = 'https://www.gnu.org/licenses/gpl.html'
         _pstr = '<p class="western" align="center">'
-        _description = ('LiquidDiffract is a graphical data analysis '
-                        'application for processing X-ray diffraction '
-                        'total-scattering data of liquids and disordered solids.\n'
+        _description = ('LiquidDiffract is a graphical application for '
+                        'X-ray total-scattering analysis of liquids and '
+                        'disordered solids.\n'
                         'It implements procedures to obtain information on '
-                        'macroscopic bulk properties and local atomic '
-                        'arrangement from total scattering data.\n'
-                        'LiquidDiffract can perform background subtraction, '
-                        'fourier transformation, numerical '
-                        'optimisation/normalisation of the quantitative '
-                        'structure factor, extraction of sample density, '
-                        'and estimation of average coordination numbers.'
+                        'macroscopic bulk properties and local atomic-scale '
+                        'structure from total scattering data.\n'
+                        'LiquidDiffract provides tools for  background '
+                        'subtraction; calculation, normalisation, and '
+                        'refinement of the reciprocal-space structure factor '
+                        'and real-space correlation functions; '
+                        'and extraction of structural information such as '
+                        'bond lengths, coordination number and bulk density.'
                         )
 
         _app_url_str = (f'{_pstr}<a class="western" href="{_app_url}">'
