@@ -24,7 +24,7 @@ based on the iterative method developed by Eggert et al., 2002, Phy Rev B, 65(17
 See <https://github.com/bjheinen/LiquidDiffract> for more details.
 """
 __author__ = 'Benedict J. Heinen'
-__copyright__ = 'Copyright 2018-2019, Benedict J. Heinen'
+__copyright__ = 'Copyright 2018-2021, Benedict J. Heinen'
 __email__ = 'benedict.heinen@gmail.com'
 __license__='GPLv3'
 
@@ -32,11 +32,11 @@ __license__='GPLv3'
 import numpy as np
 # Import optional python modules used in this example
 import matplotlib.pyplot as plt
-from scipy.interpolate import interp1d
-from scipy.signal import savgol_filter
+
 from scipy.optimize import minimize
 # import the LiquidDiffract core module
 import LiquidDiffract.core.core as liquid
+import LiquidDiffract.core.data_utils as data_utils
 
 # First set composition
 # The composition should be a dictionary dictionary with short element names as keys,
@@ -51,27 +51,20 @@ rho = 0.055
 q_raw, I_raw = np.loadtxt('example_data.dat', unpack=True, skiprows=0)
 
 # Next rebin data and trim if necessary
-# The below example can also be done using LiquidDiffract.core.data_utils
-# Re-bin via interpolation so dq (steps of q) is consistent
-# Suggested dq = 0.02
-dq = 0.02
-# Cut-off below Q_cutoff
-q_cutoff = 11.8
-q_data = np.arange(0, q_raw[-1], dq)
-q_data = q_data[q_data<q_cutoff]
-finterp = interp1d(q_raw, I_raw, kind='cubic', fill_value='extrapolate')
-I_data = finterp(q_data)
+# Re-bin via interpolation so dq (steps of q) is consistent to allow FT
+# This can be done using the rebin_data function from core.data_utils
+dq=0.02
+q_data, I_data = data_utils.rebin_data(q_raw, I_raw, dx=dq, x_lim=[q_raw[0], 11.8])
 
 # Apply any other data treatment
 # e.g. a savitsky-golay filter to smooth the data
-window_length = 31
-polyorder = 3
-I_data = savgol_filter(I_data, window_length, polyorder)
+I_data = data_utils.smooth_data(I_data, method='savitzky-golay', 
+                                window_length=31, poly_order=3)
 
 # First calculate the interference function i(Q)
 # i(Q) = S(Q) - S_inf (S_inf = 1 for monatomic samples, or in the Faber-Ziman formalism)
-structure_factor = liquid.calc_structure_factor(q_data, I_data, composition, rho)
-interference_func = structure_factor - liquid.calc_S_inf(composition, q_data)
+structure_factor = liquid.calc_structure_factor(q_data, I_data, composition, rho, method='faber-ziman')
+interference_func = structure_factor - liquid.calc_S_inf(composition, q_data, method='faber-ziman')
 
 # store original interference function
 interference_func_0 = interference_func
@@ -114,14 +107,14 @@ interference_func_1, chi_sq_1 = liquid.calc_impr_interference_func(rho_0, *args)
 
 # Next we use opt_flag = 1 and pass the function calc_impr_interference_func to
 # a solver to estimate the density
-# For use with a solver iter_limit <= 10 is recommended
+# When refinind the density an iter_limit <= 10 is recommended
 iter_limit_refine = 5
 args = (q_data, I_data, composition, r_min,
         iter_limit_refine, method, mod_func, window_start, fft_N, 1)
 # Set-up bounds and other options according to the documentation of solver/minimisation routine
 bounds = ((0.045, 0.065),)
 op_method = 'L-BFGS-B'
-optimisation_options = {'disp': 1,
+optimisation_options = {'disp': 0,
                         'maxiter': 15000,
                         'maxfun': 15000,
                         'ftol': 2.22e-12,
@@ -144,20 +137,21 @@ args = (q_data, interference_func, composition, r_min,
 interference_func_2, chi_sq_2 = liquid.calc_impr_interference_func(rho_refined, *args)
 
 # Calculate the corresponding pair distribution functions g(r)
-r, g_r_0 = liquid.calc_F_r(q_data, interference_func_0, rho_0, dx=dq,
-                           mod_func=mod_func, window_start=window_start,
-                           function='pair_dist_func')
+r, g_r_0 = liquid.calc_correlation_func(q_data, interference_func_0, rho_0, dx=dq,
+                                        mod_func=mod_func, window_start=window_start,
+                                        function='pair_dist_func')
 # r values will be the same
-_, g_r_1 = liquid.calc_F_r(q_data, interference_func_1, rho_0, dx=dq,
-                           mod_func=mod_func, window_start=window_start,
-                           function='pair_dist_func')
-_, g_r_2 = liquid.calc_F_r(q_data, interference_func_2, rho_refined, dx=dq,
-                           mod_func=mod_func, window_start=window_start,
-                           function='pair_dist_func')
+_, g_r_1 = liquid.calc_correlation_func(q_data, interference_func_1, rho_0, dx=dq,
+                                        mod_func=mod_func, window_start=window_start,
+                                        function='pair_dist_func')
+_, g_r_2 = liquid.calc_correlation_func(q_data, interference_func_2, rho_refined, dx=dq,
+                                        mod_func=mod_func, window_start=window_start,
+                                        function='pair_dist_func')
 
 # Plot the data
 fig1 = plt.figure()
-plt.xlabel(r'i(Q), $\AA^{-1}$')
+plt.xlabel(r'Q ($\AA^{-1}$)')
+plt.ylabel(r'i(Q)')
 # Initial interference function calculation
 plt.plot(q_data, interference_func_0, color='g', label=r'Initial i(Q) | $ρ = {rho:.2f}$'.format(rho=rho_0))
 # Optimised at rho_0
@@ -170,7 +164,8 @@ plt.legend(loc='best')
 plt.show()
 
 fig2 = plt.figure()
-plt.xlabel(r'g(r), $\AA$')
+plt.xlabel(r'r ($\AA$)')
+plt.ylabel(r'g(r)')
 plt.ylim((np.nanmin(g_r_2), np.nanmax(g_r_2)))
 window = len(q_data)
 # Initial g(r)
