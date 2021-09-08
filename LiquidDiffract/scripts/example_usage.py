@@ -108,7 +108,7 @@ interference_func_1, chi_sq_1 = liquid.calc_impr_interference_func(rho_0, *args)
 # Next we use opt_flag = 1 and pass the function calc_impr_interference_func to
 # a solver to estimate the density
 # When refinind the density an iter_limit <= 10 is recommended
-iter_limit_refine = 5
+iter_limit_refine = 7
 args = (q_data, I_data, composition, r_min,
         iter_limit_refine, method, mod_func, window_start, fft_N, 1)
 # Set-up bounds and other options according to the documentation of solver/minimisation routine
