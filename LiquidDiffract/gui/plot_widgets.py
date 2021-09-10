@@ -576,7 +576,6 @@ class StructurePlotWidget(QWidget):
         self.fit_plot.getAxis('left').setWidth(55)
         self.res_plot.getAxis('left').setWidth(55)
 
-        # TODO - check if can just use the same object
         self.rdf_xaxis = pg.InfiniteLine(pos=0, angle=0, movable=False, pen={'color': 'k', 'width': 0.75})
         self.rdf_plot.addItem(self.rdf_xaxis)
         self.tr_xaxis = pg.InfiniteLine(pos=0, angle=0, movable=False, pen={'color': 'k', 'width': 0.75})
@@ -640,10 +639,22 @@ class StructurePlotWidget(QWidget):
             self.p_gauss_model.clear()
             self.p_res.clear()
             self.p_res_full.clear()
+            # Clear peak curves
             for _p_peak in self.p_peaks:
                 _p_peak.clear()
-                _p_peak.deleteLater()
+                del _p_peak
             self.p_peaks = []
+            # Delete peak labels
+            for _peak_label in self.p_peaks_labels:
+                _peak_label.deleteLater()
+                del _peak_label
+            self.p_peaks_labels = []
+            # Delete arrows (pg.ArrowItem has no deleteLater method)
+            for _peak_arrow in self.p_peaks_arrows:
+                self.fit_plot.removeItem(_peak_arrow)
+                del _peak_arrow
+            self.p_peaks_arrows = []
+
         except AttributeError:
             pass
 
@@ -755,7 +766,6 @@ class StructurePlotWidget(QWidget):
         self.p_tr = self.tr_plot.plot(x=_data['tr_x'], y=_data['tr_y'], pen={'color': 0.1, 'width': 1.2})
         self.p_fit = self.fit_plot.plot(x=_data['rdf_x'], y=_data['obj_fun'], pen={'color': 0.1, 'width': 1.2})
 
-        # TODO FIX INIT VIEWS!
         # Limit the inital view to important information
         try:
             self.x_max = _data['sq_x'][-1]
@@ -815,6 +825,8 @@ class StructurePlotWidget(QWidget):
         if _data['gauss_model'].size:
             # Plot individual gaussian peaks
             self.p_peaks = []
+            self.p_peaks_labels = []
+            self.p_peaks_arrows = []
             for i, _peak_model in enumerate(_data['gauss_peaks']):
                 # Get color - use i%8 to cycle list of colors
                 _color = self.gauss_colors[i%len(self.gauss_colors)]
@@ -829,8 +841,8 @@ class StructurePlotWidget(QWidget):
                 _peak_label.setPos(*_peak_loc)
                 self.fit_plot.addItem(_peak_label)
                 self.fit_plot.addItem(_peak_arrow)
-                _peak_label.setParentItem(_p_peak)
-                _peak_arrow.setParentItem(_p_peak)
+                self.p_peaks_labels.append(_peak_label)
+                self.p_peaks_arrows.append(_peak_arrow)
 
             # Plot gaussian model (sum of individual peaks)
             # change color of this
