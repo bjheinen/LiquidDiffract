@@ -10,8 +10,8 @@ except ImportError:
     import importlib_resources
 import numpy as np
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QIntValidator, QDoubleValidator, QDialog, QPixmap
-from PyQt5.QtWidgets import QFileDialog, QStyledItemDelegate, \
+from PyQt5.QtGui import QIntValidator, QDoubleValidator, QPixmap
+from PyQt5.QtWidgets import QFileDialog, QDialog, QStyledItemDelegate, \
                             QMessageBox, QFrame, QGroupBox, QSpinBox, \
                             QVBoxLayout, QGridLayout, QDialogButtonBox, \
                             QLabel, QLineEdit, QCheckBox, QComboBox, \
