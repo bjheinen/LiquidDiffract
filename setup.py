@@ -16,7 +16,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 setup(
     name='LiquidDiffract',
     version=version['__version__'],
-    description='Liquid structure/total X-ray diffraction data analysis',
+    description='Liquid structure/total X-ray scattering analysis',
     long_description=long_description,
     long_description_content_type='text/markdown',
     license='GPL',

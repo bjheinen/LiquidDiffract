@@ -49,7 +49,7 @@ Benedict J. Heinen (benedict.heinen@gmail.com)
 * [pyqtgraph >= 0.10.0](http://www.pyqtgraph.org)
 * [importlib_resources](https://pypi.org/project/importlib_resources/) is required if using Python<3.7
 
-LiquidDiffract should run with earlier versions of these python packages but is untested. If you do not have a python installation, we recommend [Anaconda](https://www.anaconda.com/distribution/).
+LiquidDiffract should run with earlier versions of these python packages but is untested.
 LiquidDiffract is system-independent and has been tested on Linux, Mac, and Windows.
 Dependencies are handled automatically when installing with *pip*.
 
