@@ -173,7 +173,7 @@ class OptimUI(QWidget):
             try:
                 self.data['window_start'] = np.float(self.optim_config_widget.data_options_gb.window_start_input.text())
             except ValueError:
-                print('Please set limit for Cosine-window function')
+                self.window_func_error()
                 return
         else:
             self.data['window_start'] = None
@@ -229,7 +229,7 @@ class OptimUI(QWidget):
             try:
                 self.data['window_start'] = np.float(self.optim_config_widget.data_options_gb.window_start_input.text())
             except ValueError:
-                print('Please set limit for Cosine-window function')
+                self.window_func_error()
                 return
         _composition = self.optim_config_widget.composition_gb.get_composition_dict()
         # Don't run if no composition set
@@ -254,7 +254,7 @@ class OptimUI(QWidget):
                 _lb = np.float(self.optim_config_widget.optim_options_gb.lb_input.text())
                 _ub = np.float(self.optim_config_widget.optim_options_gb.ub_input.text())
             except ValueError:
-                print('Warning: Must set bounds to refine density!')
+                self.limits_error()
                 return
             if _n_iter > 10:
                  print('Warning: n_iter <= 10 is recommended for convergence!')
@@ -414,6 +414,18 @@ class OptimUI(QWidget):
     def enable_config_panel(self, state):
         self.optim_config_widget.setEnabled(state)
         QApplication.processEvents(QEventLoop.ExcludeUserInputEvents)
+
+    def window_func_error(self):
+        print('Please set limit for Cosine-window function')
+        _message = ['Error computing S(Q)!', 'Please set limit for Cosine-window function']
+        _error_msg = utility.ErrorMessageBox(_message)
+        _error_msg.exec_()
+
+    def limits_error(self):
+        print('Warning: Must set bounds to refine density!')
+        _message = ['Refinement error!', 'Must set bounds to refine density!']
+        _error_msg = utility.ErrorMessageBox(_message)
+        _error_msg.exec_()
 
 class OptimConfigWidget(QWidget):
 
