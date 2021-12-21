@@ -93,7 +93,8 @@ class App(QMainWindow):
                                  'niter': 100,
                                  'T': 1.0,
                                  'stepsize': 0.01,
-                                 'interval': 50}
+                                 'interval': 50},
+                            'xray_weight_mode': 0
                             }
         self.set_preferences()
 
@@ -130,6 +131,8 @@ class App(QMainWindow):
         self.table_widget.bkg_ui.data_units = self.preferences['data_units']
         # Set preferences for rescaling Ashcroft-Langreth S(Q)/g(r) plots
         self.table_widget.results_ui.rescale_AL = self.preferences['rescale_AL']
+        # Set preferences for x-ray weight mode (0: calc Kp at Q=0, 1: calc Q-dependent Kp)
+        self.table_widget.structure_ui.xray_weight_mode = self.preferences['xray_weight_mode']
 
     def call_about_dialog(self):
         self.about_dialog = utility.AboutDialog()

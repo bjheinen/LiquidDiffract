@@ -138,6 +138,7 @@ class StructureUI(QWidget):
 
         self.data = {'rdf_x': np.asarray([]), 'rdf_y': np.asarray([]),
                      'tr_x': np.asarray([]), 'tr_y': np.asarray([]),
+                     'r0': 0.0, 'rmax': 0.0, 'rpmax': 0.0, 'rmin': 0.0,
                      'fit_r': np.asarray([]),
                      'obj_fun': np.asarray([]),
                      'gauss_peaks': [],
@@ -159,9 +160,9 @@ class StructureUI(QWidget):
             for _peak in self.structure_config_widget.polyatomic_gb.peak_dict.values():
                 _peak.populate_atom_list(_atom_list)
 
-    def plot_data(self):
+    def plot_data(self, _reset_view=1):
         self.update_plot_data()
-        self.structure_plot_widget.update_plot_windows(self.data)
+        self.structure_plot_widget.update_plot_windows(self.data, _reset_view)
 
     def update_plot_data(self):
         self.data['r0'] = self.structure_config_widget.monatomic_gb.r0_input.value()
@@ -258,7 +259,12 @@ class StructureUI(QWidget):
         self.data['N_c'] = _Nc
 
     def set_weights(self):
-        self.weights, self.c_dict = core.calculate_weights(self.data['composition'], self.data['sq_x'])
+        if self.xray_weight_mode == 1:
+            self.weights, self.c_dict = core.calculate_weights(self.data['composition'], self.data['sq_x'])
+        elif self.xray_weight_mode == 0:
+            self.weights, self.c_dict = core.calculate_weights(self.data['composition'], [0])
+        else:
+            raise ValueError
 
     # TODO - Proper guess peak implement plain gauss!
     def guess_peak_params(self, _idx):
@@ -512,7 +518,7 @@ class StructureUI(QWidget):
             self.structure_plot_widget.clear_gauss_curves()
             self.data['gauss_model'] = np.asarray([])
             self.data['gauss_peaks'] = []
-            self.plot_data()
+            self.plot_data(_reset_view=0)
             return
         # Evaluate objective function over whole r range
         self.data['gauss_model'] = peak_fit.gauss_obj_func(self.peak_fit_dict['obj_params'],

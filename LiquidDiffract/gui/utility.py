@@ -97,12 +97,14 @@ class PreferencesDialog(QDialog):
         self.ref_proc_settings_gb = IterativeProcedureSettingsGroupBox(preferences)
         self.refine_settings_gb = SolverSettingsGroupBox(preferences)
         self.global_min_settings_gb = GlobalMinSettingsGroupBox(preferences)
+        self.gaussian_fit_settings_gb = GaussianFittingSettingsGroupBox(preferences)
 
         self.vlayout.addWidget(self.app_settings_gb)
         self.vlayout.addWidget(self.data_settings_gb)
         self.vlayout.addWidget(self.ref_proc_settings_gb)
         self.vlayout.addWidget(self.refine_settings_gb)
         self.vlayout.addWidget(self.global_min_settings_gb)
+        self.vlayout.addWidget(self.gaussian_fit_settings_gb)
         self.pref_widget.setLayout(self.vlayout)
 
         self.scroll_area = QScrollArea()
@@ -163,6 +165,8 @@ class PreferencesDialog(QDialog):
             _bh_temp = np.float(self.global_min_settings_gb.temp_basin_input.text())
             _bh_step_size = np.float(self.global_min_settings_gb.stepsize_basin_input.text())
             _bh_interval = np.int(self.global_min_settings_gb.interval_basin_input.text())
+            # Get Gaussiant fitting options
+            _xray_weight_mode = np.int(self.gaussian_fit_settings_gb.xray_weight_mode_input.isChecked())
 
         # Handle for missing values
         except ValueError:
@@ -218,7 +222,8 @@ class PreferencesDialog(QDialog):
                              'op_method': _op_method,
                              'minimisation_options': _minimisation_options,
                              'global_minimisation': _global_minimisation,
-                             'global_min_options': _global_min_options
+                             'global_min_options': _global_min_options,
+                             'xray_weight_mode': _xray_weight_mode
                              }
 
         # handle for ValueError if nothing entered
@@ -661,6 +666,48 @@ class GlobalMinSettingsGroupBox(QGroupBox):
 
         self.main_layout.addLayout(self.grid_layout)
 
+        self.setLayout(self.main_layout)
+
+
+class GaussianFittingSettingsGroupBox(QGroupBox):
+
+    def __init__(self, preferences):
+        super(GaussianFittingSettingsGroupBox, self).__init__()
+        self.setTitle('Gaussian Fitting Options')
+        self.setAlignment(Qt.AlignLeft)
+        self.setStyleSheet('GroupBox::title{subcontrol-origin: margin; subcontrol-position: top left;}')
+
+        self.create_widgets()
+        self.set_data(preferences)
+        self.style_widgets()
+        self.create_layout()
+
+    def create_widgets(self):
+        self.xray_weight_mode_label = QLabel('Use Q-dependent x-ray weighting factors?: ')
+        self.xray_weight_mode_input = QCheckBox()
+
+    def set_data(self, preferences):
+        self.xray_weight_mode_input.setChecked(preferences['xray_weight_mode'])
+
+    def style_widgets(self):
+        self.xray_weight_mode_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        _tooltip = ('Default behaviour is to use the effective atomic number, Kp, \n'
+                    'of each species given by the Warren-Krutter-Morningstar approximation at Q=0.\n'
+                    'Check this box to calculate Kp as an average of the entire Q-range used.'
+                    )
+        self.xray_weight_mode_label.setToolTip(_tooltip)
+
+    def create_layout(self):
+        self.main_layout = QVBoxLayout()
+        self.main_layout.setContentsMargins(20, 10, 20, 7)
+        self.main_layout.setSpacing(25)
+
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setSpacing(15)
+        self.grid_layout.addWidget(self.xray_weight_mode_label, 0, 0)
+        self.grid_layout.addWidget(self.xray_weight_mode_input, 0, 1)
+
+        self.main_layout.addLayout(self.grid_layout)
         self.setLayout(self.main_layout)
 
 
