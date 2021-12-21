@@ -858,7 +858,7 @@ class StructurePlotWidget(QWidget):
         self.tr_int_layout.update()
         self.fit_layout.update()
 
-    def update_plot_windows(self, _data):
+    def update_plot_windows(self, _data, _reset_view):
         _rdf_cut = np.nan_to_num(_data['rdf_y'][np.where(_data['rdf_x'] < self.x_max)])
         self.y_min_rdf = np.min(_rdf_cut)
         self.y_max_rdf = np.max(_rdf_cut)
@@ -871,10 +871,11 @@ class StructurePlotWidget(QWidget):
         self.y_min_fit = np.min(_obj_fun_cut)
         self.y_max_fit = np.max(_obj_fun_cut)
 
-        self.set_rdf_window()
-        self.set_tr_window()
-        self.set_fit_window()
-        self.set_res_window(_data)
+        if _reset_view:
+            self.set_rdf_window()
+            self.set_tr_window()
+            self.set_fit_window()
+            self.set_res_window(_data)
 
     def set_rdf_window(self):
         try:
