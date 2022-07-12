@@ -38,6 +38,7 @@ except ImportError:
 # Get version number from version.py
 from LiquidDiffract.version import __appname__, __version__
 from LiquidDiffract.core.data_utils import data_cache
+from LiquidDiffract.core.data_utils import smooth_data
 
 
 def calc_mol_mass(composition):
@@ -887,6 +888,8 @@ def calc_chi_squared(r_intra, delta_D_r, method='simps'):
     if method == 'simps':
         # Integrate using simpson's rule
         chi_squared = simps(f, x=r_intra)
+    else:
+        raise NotImplementedError()
     return chi_squared * 1e6
 
 
@@ -903,35 +906,28 @@ def stop_iteration(stop_condition='count', count=None,
             return False
         else:
             return True
+    else:
+        raise NotImplementedError()
 
 
-def calc_impr_interference_func(rho, *args):
+def calc_impr_interference_func(q_data, interference_func,
+                                composition, rho,
+                                r_min, iter_limit,
+                                method, mod_func, window_start, fft_N):
     '''
     Calculates an improved estimate of the interference function via the
     iterative procedure described in Eggert et al., 2002. This is done by
     scaling the data and forcing its behaviour in the low r region to some
     modelled behaviour.
 
-    The form of this function also enables it to be passed to an optimisation
-    routine to estimate rho by minimising chi^2.
+    The function also returns a chi^2 figure of merit which can be passed
+    to a minimisation routine to estimate rho/b.
 
     Args:
-        rho - density
-
-        args - tuple of static parameters and arguments
-
-            If opt_flag == False, expected form is:
-            (q_data, interference_func, composition, r_min, iter_limit,
-             method, mod_func, window_start, opt_flag)
-
-            If opt_flag == True, expected form is:
-            (q_data, I_data, composition, r_min, iter_limit,
-             method, mod_func, window_start, opt_flag)
-
         q_data - Numpy array of Q space data
-        I_data - Background corrected/scaled intensity data for the sample
-        interference_func - Initial interference function (if using fixed rho)
+        interference_func - Initial interference function
         composition - Dict of elements, values as tuples of form (Z,charge,n)
+        rho - Density (average number density in atoms/angstrom^3)
         r_min - Intramolecular distance cut-off
         iter_limit - Iteration limit for S(Q) refinement. iter_limit >= 3 is
                      recommended for convergence. If optimising for minimum
@@ -944,30 +940,13 @@ def calc_impr_interference_func(rho, *args):
         window_start - Start of Cosine-window function needed if
                        mod_func == 'Cosine-window'
         fft_N - Sets size of array for fft where array_size = 2^N
-        opt_flag - Function returns chi_squared to minimisation routine if true
-                   Returns improved interference_func and chi squared if false
 
     Returns:
-        interference_func_impr, chi_sq (when opt_flag == 0)
-        chi_sq (when opt_flag == 1)
+        interference_func_impr - Interference function after iter_limit iterations
+        chi_sq - Figure of merit (see calc_chi_squared)
     '''
     # Unpack rho - solver passes rho as a single element array
     rho = np.float64(rho)
-    # Unpack static parameters & arguments
-    *_, opt_flag = args
-    if opt_flag == False:
-        (q_data, interference_func, composition, r_min, iter_limit,
-         method, mod_func, window_start, fft_N, opt_flag) = args
-    elif opt_flag == True:
-        (q_data, I_data, composition, r_min, iter_limit,
-         method, mod_func, window_start, fft_N, opt_flag) = args
-        # Calculate initial interference func for rho value
-        structure_factor = calc_structure_factor(q_data, I_data,
-                                                 composition, rho,
-                                                 method=method)
-        interference_func = structure_factor - calc_S_inf(composition, q_data, method=method)
-    else:
-        raise ValueError('Arg - opt_flag - must be boolean')
 
     dq = q_data[1] - q_data[0]
     # Calculate initial D(r)
@@ -1017,17 +996,145 @@ def calc_impr_interference_func(rho, *args):
 
         count += 1
 
-    # Check if opt_flag == 1 (True) or 0 (False)
-    # Checking against number value is preferred because of *args usage
-    # This meanse it would be easy to pass another value to the function by
-    # mistake. In this case bool() could return a false positive.
-    # i.e. bool(4) == True
-    if opt_flag == 1:
-        return chi_squared
-    elif opt_flag == 0:
-        return interference_func_impr, chi_squared
+    return interference_func_impr, chi_squared
+
+
+def refinement_objfun(minvar, *args):
+    '''
+    Wrapper objective function to pass to a solver to refine density (rho)
+    and/or background scaling factor (b) by minimising a chi^2 figure of merit.
+
+    This function provides set-up and logic for dealing with refinement of
+    different variables, including recalculating the background subtraction
+    when refining b. The actual calculations for the optimisation objective
+    function are in core.calc_impr_interference_func
+
+    Args:
+
+        minvar - independent variable(s) in the optimisation (numpy array with shape (n,))
+                 Can be one or both of:
+                    rho - average (bulk) number density (atoms/angstrom^3)
+                    bkg_scale - background scaling factor
+
+        *args - The expected arguments depend on if the background scaling factor
+                is being refined. The last two arguments should be opt_rho and
+                opt_bkg, i.e.:
+
+                    *_, opt_rho, opt_bkg = args
+
+                These should be boolean flags indicating if the density and
+                background scale factor are being refined respectively.
+
+                If opt_bkg == True (1), the expected args are:
+
+                    (*_, q_data, I_data_uncorrected, I_bkg,
+                     qmin, qmax,
+                     smooth_flag, smooth_window_length, smooth_poly_order,
+                     composition, r_min, iter_limit,
+                     method, mod_func, window_start, fft_N,
+                     opt_rho, opt_bkg) = args
+
+                If opt_rho == False (0), the density should precede q_data
+
+                If opt_bkg == False (0), the expected args are:
+
+                    (q_data, I_data_corrected,
+                     composition, r_min, iter_limit,
+                     method, mod_func, window_start, fft_N,
+                     opt_rho, opt_bkg) = args
+
+            The individual arguments are:
+
+                q_data - Numpy array of Q space data
+
+                I_data_uncorrected - Numpy array of intensity (I(Q)) values
+                                     prior to background subtraction
+                I_data_corrected - Numpy array of background subtracted I(Q) values
+                I_bkg - Numpy array of background intensities
+                qmin - Minimum Q value of useable data (float or None)
+                qmax - Maximum Q value to truncate data (float or None)
+                smooth_flag - Boolean flag to apply savitzky golay filter
+                smooth_window_length - Window length for optional smoothing filter
+                smooth_poly_order - Polynomial order for optional smoothing filter
+                composition - Dict of elements, values as tuples of form (Z,charge,n)
+                r_min - Intramolecular distance cut-off
+                iter_limit - Iteration limit for S(Q) refinement. iter_limit >= 3 is
+                             recommended for convergence. If optimising for minimum
+                             chi^2 then 3 <= iter_limit <= 10 is recommended. Please
+                             see the LiquidDiffract README for more information
+                method - Formalisation of total scattering structure factor to use
+                         ('ashcroft-langreth' or 'faber-ziman')
+                mod_func - Modification function to scale data before fft
+                           None, 'Cosine-window' or 'Lorch'
+                window_start - Start of Cosine-window function needed if
+                               mod_func == 'Cosine-window'
+                fft_N - Sets size of array for fft where array_size = 2^N
+
+    Returns:
+        chi_sq - Figure of merit (see calc_chi_squared)
+                 This is the value to be minimised by optimising
+                 the independent variable(s) minvar
+    '''
+    *_, opt_rho, opt_bkg = args
+    # Unpack optimisation variables (rho and/or bkg_scale)
+    if opt_rho == True and opt_bkg == True:
+        rho = np.float64(minvar[0])
+        bkg_scale = np.float64(minvar[1])
+    # Unpack rho - solver passes rho as a single element array
+    elif opt_rho == True and opt_bkg == False:
+        rho = np.float64(minvar)
+    # Unpack bkg_scale as abovs
+    elif opt_rho == False and opt_bkg == True:
+        bkg_scale = np.float64(minvar)
     else:
-        raise ValueError('Argument - opt_flag - must be boolean')
+        raise NotImplementedError()
+
+    if opt_rho == False:
+        rho, *_ = args
+        rho = np.float64(rho)
+
+    if opt_bkg == True:
+        # Unpack args - additional args needed when refining bkg_scale
+        (*_,
+         q_data, I_data_uncorrected, I_bkg,
+         qmin, qmax, smooth_flag, smooth_window_length, smooth_poly_order,
+         composition, r_min, iter_limit,
+         method, mod_func, window_start, fft_N, _, _) = args
+        I_data_corrected = I_data_uncorrected - (I_bkg * bkg_scale)
+        # Cut at qmax if qmax is != None
+        if qmax:
+            # Cut data at qmax
+            cut_max = np.where(q_data < qmax)
+            q_data = q_data[cut_max]
+            I_data_corrected = I_data_corrected[cut_max]
+        # Similarly cut at qmin if present
+        if qmin:
+            # Cut data to qmin - setting I(q<qmin)=I(qmin)
+            fill_val = I_data_corrected[np.argmax(q_data > qmin)]
+            cut_min = I_data_corrected[np.where(q_data > qmin)]
+            padding = np.asarray([fill_val] * (len(q_data) - len(cut_min)))
+            I_data_corrected = np.concatenate((padding, cut_min))
+        # smooth data if smooth_flag == 1
+        if smooth_flag == True:
+            I_data_corrected = smooth_data(I_data_corrected,
+                                      window_length=smooth_window_length,
+                                      poly_order=smooth_poly_order)
+    else:
+        # Unpack args here for opt_bkg == False
+        # (if opt_bkg is 0, opt_rho is always 1)
+        (q_data, I_data_corrected, composition, r_min, iter_limit,
+         method, mod_func, window_start, fft_N, _, _) = args
+
+    structure_factor = calc_structure_factor(q_data, I_data_corrected,
+                                             composition, rho,
+                                             method=method)
+    interference_func = structure_factor - calc_S_inf(composition, q_data, method=method)
+
+    _, chi_squared = calc_impr_interference_func(q_data, interference_func,
+                                                 composition, rho, r_min, iter_limit,
+                                                 method, mod_func, window_start, fft_N)
+
+    return chi_squared
 
 
 def integrate_coordination_sphere(r, rdf,
