@@ -73,7 +73,9 @@ class OptimUI(QWidget):
                      'dr_x': np.asarray([]), 'dr_y': np.asarray([]),
                      'int_func': np.asarray([]), 'impr_int_func': np.asarray([]),
                      'impr_dr_x': np.asarray([]), 'impr_dr_y': np.asarray([]),
-                     'impr_iq_x': np.asarray([]), 'mod_func': 'None'}
+                     'impr_iq_x': np.asarray([]), 'mod_func': 'None',
+                     'rescaled_cor_y_cut': np.asarray([]),
+                     'qmin': None, 'qmax': None}
 
         self.create_signals()
 
@@ -106,6 +108,9 @@ class OptimUI(QWidget):
         self.data['impr_dr_y'] = _ea
         self.data['cor_x_cut'] = _ea
         self.data['cor_y_cut'] = _ea
+        self.data['rescaled_cor_y_cut'] = _ea
+        self.data['qmin'] = None
+        self.data['qmax'] = None
 
         qmax_cut = (
             self.optim_config_widget.data_options_gb.qmax_check.isChecked()
@@ -118,12 +123,12 @@ class OptimUI(QWidget):
             and self.optim_config_widget.data_options_gb.qmin_input.hasAcceptableInput()
         )
 
-        # Cut q at qman first (if selected) and define cor_x_cut
+        # Cut q at qmax first (if selected) and define cor_x_cut
         if qmax_cut:
             # Get q_max to cut at
-            _qmax = np.float(self.optim_config_widget.data_options_gb.qmax_input.text())
+            self.data['qmax'] = np.float(self.optim_config_widget.data_options_gb.qmax_input.text())
             # cut q data at qmax
-            _cut = np.where(self.data['cor_x'] < _qmax)
+            _cut = np.where(self.data['cor_x'] < self.data['qmax'])
             self.data['cor_x_cut'] = self.data['cor_x'][_cut]
             self.data['cor_y_cut'] = self.data['cor_y'][_cut]
 
@@ -134,12 +139,12 @@ class OptimUI(QWidget):
 
         # Cut at qmin if selected
         if qmin_cut:
-            _qmin = np.float(self.optim_config_widget.data_options_gb.qmin_input.text())
+            self.data['qmin'] = np.float(self.optim_config_widget.data_options_gb.qmin_input.text())
             # Take first intensity value after q_min
             # Catch empty array error caused by no data:
             try:
-                _fill_val = self.data['cor_y'][np.argmax(self.data['cor_x_cut'] > _qmin)]
-                _cut = self.data['cor_y'][np.where(self.data['cor_x_cut'] > _qmin)]
+                _fill_val = self.data['cor_y'][np.argmax(self.data['cor_x_cut'] > self.data['qmin'])]
+                _cut = self.data['cor_y'][np.where(self.data['cor_x_cut'] > self.data['qmin'])]
                 _padding = np.asarray([_fill_val] * (len(self.data['cor_x_cut']) - len(_cut)))
                 self.data['cor_y_cut'] = np.concatenate((_padding, _cut))
             except ValueError:
@@ -212,6 +217,9 @@ class OptimUI(QWidget):
             del self.data['refined_rho']
         except KeyError:
             pass
+        # Don't run if sq/int_func not calculated yet
+        if not self.data['int_func'].size:
+            return
         # Check validity of input fields before continuing
         if not (
             self.optim_config_widget.composition_gb.density_input.hasAcceptableInput()
@@ -219,9 +227,6 @@ class OptimUI(QWidget):
             and self.optim_config_widget.optim_options_gb.niter_input.hasAcceptableInput()
         ):
             print('Error: Please ensure values are set for density, r_min, and n_iterations')
-            return
-        # Don't run if sq/int_func not calculated yet
-        if not self.data['int_func'].size:
             return
         # Get modification function to use again
         self.data['mod_func'] = self.optim_config_widget.data_options_gb.mod_func_input.currentText()
@@ -248,11 +253,30 @@ class OptimUI(QWidget):
         _n_iter = np.int(self.optim_config_widget.optim_options_gb.niter_input.text())
         if _n_iter < 2:
             print('Warning: n_iter >= 2 is recommended for convergence!')
-        if self.optim_config_widget.optim_options_gb.opt_check.isChecked():
+        if (
+            self.optim_config_widget.optim_options_gb.opt_check.isChecked() or
+            self.optim_config_widget.optim_options_gb.opt_check_bkg.isChecked()
+            ):
             # Get bounds but don't continue if none set
             try:
-                _lb = np.float(self.optim_config_widget.optim_options_gb.lb_input.text())
-                _ub = np.float(self.optim_config_widget.optim_options_gb.ub_input.text())
+                if self.optim_config_widget.optim_options_gb.opt_check_bkg.isChecked():
+                    # Check bkg scaling factor, uncorrected data, and bkg are present
+                    if not self.data['uncorrected_y'].size or not self.data['bkg_y'].size or not self.data['bkg_scale']:
+                        self.bkg_error()
+                        return
+                    # Get bounds on background scaling factor - return if none set
+                    _lb_bkg = np.float(self.optim_config_widget.optim_options_gb.lb_input_bkg.text())
+                    _ub_bkg = np.float(self.optim_config_widget.optim_options_gb.ub_input_bkg.text())
+                    _bkg_scale_0 = self.data['bkg_scale']
+                    opt_bkg = 1
+                else:
+                    opt_bkg = 0
+                if self.optim_config_widget.optim_options_gb.opt_check.isChecked():
+                    _lb_rho = np.float(self.optim_config_widget.optim_options_gb.lb_input.text())
+                    _ub_rho = np.float(self.optim_config_widget.optim_options_gb.ub_input.text())
+                    opt_rho = 1
+                else:
+                    opt_rho = 0
             except ValueError:
                 self.limits_error()
                 return
@@ -263,28 +287,61 @@ class OptimUI(QWidget):
                 _mod_func = self.data['mod_func']
             else:
                 _mod_func = None
-            _args = (self.data['cor_x_cut'], self.data['cor_y_cut'],
-                     _composition, _r_min, _n_iter, _method,
-                     _mod_func, self.data['window_start'],
-                     self.fft_N, 1)
+            # Set arguments for objective function
+            # Additional arguments required if refining the background
+            if opt_bkg == True:
+                _smooth_flag = self.optim_config_widget.data_options_gb.smooth_data_check.isChecked()
+                _args = (self.data['cor_x'], self.data['uncorrected_y'], self.data['bkg_y'],
+                         self.data['qmin'], self.data['qmax'],
+                         _smooth_flag, self.window_length, self.poly_order,
+                         _composition, _r_min, _n_iter,
+                         _method, _mod_func, self.data['window_start'], self.fft_N, opt_rho, opt_bkg)
+                # Setup independent variable to pass to minimisation routine
+                if opt_rho == True:
+                    _minvar = np.array([_rho_0, _bkg_scale_0])
+                else:
+                    _minvar = _bkg_scale_0
+                    # rho must be passed as argument if *only* refining the background
+                    _args = (_rho_0, *_args)
+            else:
+                _args = (self.data['cor_x_cut'], self.data['cor_y_cut'], _composition, _r_min, _n_iter,
+                         _method, _mod_func, self.data['window_start'], self.fft_N, opt_rho, opt_bkg)
+                _minvar = _rho_0
+            # Set up kw arguments for solver
             _solver_kwargs = {'args': _args,
                               'options': dict(self.minimisation_options),
                               'method': self.op_method}
+            # Set up bounds for minimisation
             if self.op_method == 'COBYLA':
                 # Construct constraints for COBYLA method. The COBYLA solver
                 # does not use the 'bounds' kwarg, and requires lb & ub passed
                 # as a constraint function
-                _cons = [{'type': 'ineq', 'fun': lambda x: x - _lb},
-                         {'type': 'ineq', 'fun': lambda x: _ub - x}
-                         ]
+                if opt_rho == True:
+                    _cons = [{'type': 'ineq', 'fun': lambda x: x - _lb_rho},
+                             {'type': 'ineq', 'fun': lambda x: _ub_rho - x}
+                             ]
+                    if opt_bkg == True:
+                        _cons.extend([
+                                    {'type': 'ineq', 'fun': lambda x: x - _lb_bkg},
+                                    {'type': 'ineq', 'fun': lambda x: _ub_bkg - x}
+                                    ])
+                else:
+                    _cons = [{'type': 'ineq', 'fun': lambda x: x - _lb_bkg},
+                             {'type': 'ineq', 'fun': lambda x: _ub_bkg - x}
+                             ]
                 _solver_kwargs['constraints'] = _cons
                 # Handle different name of solver option ftol (tol)
                 _solver_kwargs['options']['tol'] = _solver_kwargs['options'].pop('ftol')
             else:
-                _solver_kwargs['bounds'] = ((_lb, _ub),)
+                if opt_rho == True:
+                    _solver_kwargs['bounds'] = ((_lb_rho, _ub_rho),)
+                    if opt_bkg == True:
+                        _solver_kwargs['bounds'] = (*_solver_kwargs['bounds'], (_lb_bkg, _ub_bkg))
+                else:
+                    _solver_kwargs['bounds'] = ((_lb_bkg, _ub_bkg),)
 
             print('\n*************************\n')
-            print('Finding optimal density...')
+            print('Finding optimal density/background...')
 
             if self.global_minimisation == 1:
                 # Grey out config panel while refining
@@ -292,40 +349,92 @@ class OptimUI(QWidget):
                 print('\nRunning basin-hopping algorithm to find global minimum')
                 _global_min_kwargs = dict(self.global_min_options)
                 _global_min_kwargs['minimizer_kwargs'] = _solver_kwargs
-                _opt_result = basinhopping(core.calc_impr_interference_func,
-                                           _rho_0,
+                _opt_result = basinhopping(core.refinement_objfun,
+                                           _minvar,
                                            **_global_min_kwargs)
                 # Re-enable config panel
                 self.enable_config_panel(True)
             else:
-                _opt_result = minimize(core.calc_impr_interference_func,
-                                       _rho_0,
+                _opt_result = minimize(core.refinement_objfun,
+                                       _minvar,
                                        **_solver_kwargs)
-            # Handle for anomalous solver behaviour
-            # e.g. (COBYLA opt_result.x is scalar)
-            try:
-                self.data['refined_rho'] = _opt_result.x[0]
-            except IndexError:
-                self.data['refined_rho'] = _opt_result.x
-            _rho_temp = self.data['refined_rho']
-            print('Refined density = ', _rho_temp)
+            # Extract optimised variables from _opt_result
+            if opt_rho == True:
+                if opt_bkg == True:
+                    self.data['refined_rho'] = _opt_result.x[0]
+                    _refined_bkg_scale = _opt_result.x[1]
+                    print('Refined background scaling = ', _refined_bkg_scale)
+                else:
+                    # Handle for anomalous solver behaviour
+                    # e.g. (COBYLA opt_result.x is scalar)
+                    try:
+                        self.data['refined_rho'] = _opt_result.x[0]
+                    except IndexError:
+                        self.data['refined_rho'] = _opt_result.x
+                # Set optimised rho result
+                _rho_temp = self.data['refined_rho']
+                print('Refined density = ', _rho_temp)
+                self.optim_config_widget.optim_results_gb.density_output.setText('{:.4e}'.format(self.data['refined_rho']))
+                _mass_density = core.conv_density(_rho_temp, _composition)
+                self.optim_config_widget.optim_results_gb.mass_density.setText('{0:.3f}'.format(_mass_density))
+            else:
+                # Set _rho_temp to _rho_0 if not refining rho
+                _rho_temp = _rho_0
+                # Handle for anomalous solver behaviour
+                # e.g. (COBYLA opt_result.x is scalar)
+                try:
+                    _refined_bkg_scale = _opt_result.x[0]
+                except IndexError:
+                    _refined_bkg_scale = _opt_result.x
+                print('Refined background scaling = ', _refined_bkg_scale)
+            # Set optimised bkg scaling output
+            if opt_bkg == True:
+                self.optim_config_widget.optim_results_gb.bkg_scale_output.setText('{:.4e}'.format(_refined_bkg_scale))
+
+            # Print Chi^2 to screen
             print('Chi^2 = ', _opt_result.fun, '\n')
-            self.optim_config_widget.optim_results_gb.density_output.setText('{:.4e}'.format(self.data['refined_rho']))
-            _mass_density = core.conv_density(_rho_temp, _composition)
-            self.optim_config_widget.optim_results_gb.mass_density.setText('{0:.3f}'.format(_mass_density))
+
+            # Recalculate interference function with new background scaling and/or rho
+            if opt_bkg == True:
+                _I_data_corrected = self.data['uncorrected_y'] - (self.data['bkg_y'] * _refined_bkg_scale)
+                # Cut data at qmax/qmin
+                if self.data['qmax']:
+                    _cut_max = np.where(self.data['cor_x'] < self.data['qmax'])
+                    _cut_q_data = self.data['cor_x'][_cut_max]
+                    _I_data_corrected = _I_data_corrected[_cut_max]
+                else:
+                    _cut_q_data = self.data['cor_x']
+                if self.data['qmin']:
+                    # Cut data to qmin - setting I(q<qmin)=I(qmin)
+                    _fill_val = _I_data_corrected[np.argmax(_cut_q_data > self.data['qmin'])]
+                    _cut_min = _I_data_corrected[np.where(_cut_q_data > self.data['qmin'])]
+                    _padding = np.asarray([_fill_val] * (len(_cut_q_data) - len(_cut_min)))
+                    _I_data_corrected = np.concatenate((_padding, _cut_min))
+                # smooth data if smooth_flag == 1
+                if _smooth_flag == True:
+                    _I_data_corrected = data_utils.smooth_data(_I_data_corrected,
+                                            window_length=self.window_length,
+                                            poly_order=self.poly_order)
+                _structure_factor = core.calc_structure_factor(_cut_q_data, _I_data_corrected,
+                                                               _composition, _rho_temp, method=_method)
+                _int_func_temp = _structure_factor - core.calc_S_inf(_composition, _cut_q_data, method=_method)
+                self.data['rescaled_cor_y_cut'] = _I_data_corrected
+            else:
+                _structure_factor = core.calc_structure_factor(self.data['cor_x_cut'], self.data['cor_y_cut'],
+                                                               _composition, _rho_temp, method=_method)
+                _int_func_temp = _structure_factor - core.calc_S_inf(_composition, self.data['cor_x_cut'], method=_method)
         else:
             _rho_temp = _rho_0
-
+            _int_func_temp = self.data['int_func']
         # Only use mod_func in refinement if option is set (default is no)
         if self.mod_func_mode:
             _mod_func = self.data['mod_func']
         else:
             _mod_func = None
-        _args = (self.data['cor_x_cut'], self.data['int_func'],
-                 _composition, _r_min, _n_iter, _method,
-                 _mod_func, self.data['window_start'],
-                 self.fft_N, 0)
-        self.data['impr_int_func'], self.data['chi_sq'] = core.calc_impr_interference_func(_rho_temp, *_args)
+        _args = (self.data['cor_x_cut'], _int_func_temp,
+                 _composition, _rho_temp, _r_min, _n_iter, _method,
+                 _mod_func, self.data['window_start'], self.fft_N)
+        self.data['impr_int_func'], self.data['chi_sq'] = core.calc_impr_interference_func(*_args)
         self.optim_config_widget.optim_results_gb.chi_sq_output.setText('{:.4e}'.format(self.data['chi_sq']))
         # Calculated improved F_r
         self.data['impr_dr_x'], self.data['impr_dr_y'] = core.calc_correlation_func(self.data['iq_x'], self.data['impr_int_func'], _rho_temp, N=self.fft_N,
@@ -338,6 +447,8 @@ class OptimUI(QWidget):
         self.optim_plot_widget.update_plots(self.data)
         self.data['mod_func'] = _mod_func
         self.data['sq_method'] = _method
+        # Reset rescaled I(Q) data to prevent plot persistence
+        self.data['rescaled_cor_y_cut'] = np.asarray([])
 
         # Save refinement parameters to file
         if self.optim_config_widget.data_options_gb.smooth_data_check.isChecked():
@@ -350,20 +461,51 @@ class OptimUI(QWidget):
             _mod_func_mode_bool = 'N'
         if self.optim_config_widget.optim_options_gb.opt_check.isChecked():
             _refine_density_bool = 'Y'
-            _refine_density_log = (
-                f'Solver : {self.op_method}\n'
-                f'Lower bound : {_lb}\n'
-                f'Upper bound : {_ub}\n'
-                f'{"*"*25}\n'
-                f'{_opt_result}\n'
-                f'{"*"*25}\n\n'
+            _refine_density_bounds = (
+                f'Lower bound (rho) : {_lb_rho}\n'
+                f'Upper bound (rho) : {_ub_rho}\n'
+            )
+            _refine_density_res = (
                 f'Refined density : {self.data["refined_rho"]} (at/A^3)\n'
                 f'{" "*18}{_mass_density} (g/cm3)\n'
-                f'Chi^2 : {self.data["chi_sq"]}\n'
             )
         else:
             _refine_density_bool = 'N'
-            _refine_density_log = (f'Chi^2 : {self.data["chi_sq"]}\n')
+            _refine_density_bounds = ''
+            _refine_density_res = ''
+        if self.optim_config_widget.optim_options_gb.opt_check_bkg.isChecked():
+            _refine_bkg_bool = 'Y'
+            _refine_bkg_bounds = (
+                f'Lower bound (b) : {_lb_bkg}\n'
+                f'Upper bound (b) : {_ub_bkg}\n'
+            )
+            _refine_bkg_res = (
+                f'Refined background scaling : {_refined_bkg_scale}\n'
+            )
+        else:
+            _refine_bkg_bool = 'N'
+            _refine_bkg_bounds = ''
+            _refine_bkg_res = ''
+
+        if (
+            self.optim_config_widget.optim_options_gb.opt_check.isChecked() or
+            self.optim_config_widget.optim_options_gb.opt_check_bkg.isChecked()
+            ):
+            _refine_log = (
+                f'Solver : {self.op_method}\n' +
+                _refine_density_bounds +
+                _refine_bkg_bounds +
+                f'{"*"*25}\n'
+                f'{_opt_result}\n'
+                f'{"*"*25}\n\n' +
+                _refine_bkg_res +
+                _refine_density_res +
+                f'Chi^2 : {self.data["chi_sq"]}\n'
+            )
+        else:
+            _refine_log = (
+                f'Chi^2 : {self.data["chi_sq"]}\n'
+            )
 
         log_string = (
             f'refinement_log\n'
@@ -382,8 +524,9 @@ class OptimUI(QWidget):
             f'r_min : {_r_min}\n'
             f'Number iterations (Eggert) : {_n_iter}\n'
             f'{"*"*25}\n'
-            f'Density refined? : {_refine_density_bool}\n' +
-            _refine_density_log
+            f'Density refined? : {_refine_density_bool}\n'
+            f'Background refined? : {_refine_bkg_bool}\n' +
+            _refine_log
         )
 
         # Append to log file or overwrite?
@@ -427,6 +570,13 @@ class OptimUI(QWidget):
         _error_msg = utility.ErrorMessageBox(_message)
         _error_msg.exec_()
 
+    def bkg_error(self):
+        print('Warning: Must load background file to refine background scaling factor')
+        _message = ['Missing background!', 'Must load background to refine background scale factor']
+        _error_msg = utility.ErrorMessageBox(_message)
+        _error_msg.exec_()
+
+
 class OptimConfigWidget(QWidget):
 
     def __init__(self):
@@ -453,6 +603,8 @@ class OptimConfigWidget(QWidget):
     def create_signals(self):
         self.optim_options_gb.toggled.connect(self._toggle_results_gb)
         self.optim_options_gb.opt_check.stateChanged.connect(self._toggle_density_refine)
+        self.optim_options_gb.opt_check_bkg.stateChanged.connect(self._toggle_bkg_scale_refine)
+        self.optim_results_gb.bkg_scale_copy_btn.clicked.connect(self._copy_bkg_scale_output)
         self.optim_results_gb.density_copy_btn.clicked.connect(self._copy_density_output)
 
     def _toggle_results_gb(self, on):
@@ -464,7 +616,21 @@ class OptimConfigWidget(QWidget):
         self.optim_results_gb.mass_density.setEnabled(state)
         self.optim_results_gb.mass_density_label.setEnabled(state)
         self.optim_results_gb.density_copy_btn.setEnabled(state)
+
+    def _toggle_bkg_scale_refine(self, state):
+        self.optim_results_gb.bkg_scale_output.setEnabled(state)
+        self.optim_results_gb.bkg_scale_output_label.setEnabled(state)
+        self.optim_results_gb.bkg_scale_copy_btn.setEnabled(state)
     
+    def _copy_bkg_scale_output(self):
+        # Copying of data to bkg_ui is handled by
+        # gui.main_widget.table_widget.copy_bkg_scale_result
+        # This function notifies the user that the bkg_ui tab has been updated
+        print('Background subtraction tab updated with refined scaling factor!')
+        _message = ['Background subtraction tab updated!', 'The background subtration tab has been updated with the refined scaling factor']
+        _error_msg = utility.ErrorMessageBox(_message)
+        _error_msg.exec_()
+
     def _copy_density_output(self):
         self.composition_gb.density_input.setText(self.optim_results_gb.density_output.text())
 
@@ -816,6 +982,11 @@ class OptimOptionsGroupBox(QGroupBox):
         self.lb_input = QLineEdit()
         self.ub_label = QLabel('Upper bound: ')
         self.ub_input = QLineEdit()
+        self.opt_check_bkg = QCheckBox('Refine background scale factor?')
+        self.lb_label_bkg = QLabel('Lower bound: ')
+        self.lb_input_bkg = QLineEdit()
+        self.ub_label_bkg = QLabel('Upper bound: ')
+        self.ub_input_bkg = QLineEdit()
         self.opt_button = QPushButton('Refine S(Q)')
 
     def style_widgets(self):
@@ -824,6 +995,8 @@ class OptimOptionsGroupBox(QGroupBox):
         self.niter_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.lb_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.ub_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.lb_label_bkg.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.ub_label_bkg.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
 
         self.rmin_input.setAlignment(Qt.AlignRight)
         self.rmin_input.setValidator(QDoubleValidator())
@@ -843,12 +1016,25 @@ class OptimOptionsGroupBox(QGroupBox):
         self.ub_input.setValidator(QDoubleValidator())
         self.ub_input.setMaximumWidth(70)
 
+        self.lb_input_bkg.setAlignment(Qt.AlignRight)
+        self.lb_input_bkg.setValidator(QDoubleValidator())
+        self.lb_input_bkg.setMaximumWidth(70)
+
+        self.ub_input_bkg.setAlignment(Qt.AlignRight)
+        self.ub_input_bkg.setValidator(QDoubleValidator())
+        self.ub_input_bkg.setMaximumWidth(70)
+
         self.opt_check.setChecked(False)
+        self.opt_check_bkg.setChecked(False)
 
         self.lb_label.setEnabled(False)
         self.lb_input.setEnabled(False)
         self.ub_label.setEnabled(False)
         self.ub_input.setEnabled(False)
+        self.lb_label_bkg.setEnabled(False)
+        self.lb_input_bkg.setEnabled(False)
+        self.ub_label_bkg.setEnabled(False)
+        self.ub_input_bkg.setEnabled(False)
 
     def create_layout(self):
 
@@ -875,6 +1061,12 @@ class OptimOptionsGroupBox(QGroupBox):
         self.bottom_grid.addWidget(self.ub_label, 2, 0)
         self.bottom_grid.addWidget(self.ub_input, 2, 1)
 
+        self.bottom_grid.addWidget(self.opt_check_bkg, 3, 0)
+        self.bottom_grid.addWidget(self.lb_label_bkg, 4, 0)
+        self.bottom_grid.addWidget(self.lb_input_bkg, 4, 1)
+        self.bottom_grid.addWidget(self.ub_label_bkg, 5, 0)
+        self.bottom_grid.addWidget(self.ub_input_bkg, 5, 1)
+
         self.main_layout.addLayout(self.top_grid)
         self.main_layout.addLayout(self.bottom_grid)
         self.main_layout.addWidget(self.opt_button)
@@ -883,6 +1075,7 @@ class OptimOptionsGroupBox(QGroupBox):
 
     def create_signals(self):
         self.opt_check.stateChanged.connect(self.opt_state_changed)
+        self.opt_check_bkg.stateChanged.connect(self.opt_bkg_state_changed)
 
     def opt_state_changed(self):
         if self.opt_check.isChecked():
@@ -896,6 +1089,17 @@ class OptimOptionsGroupBox(QGroupBox):
             self.ub_input.setEnabled(False)
             self.ub_label.setEnabled(False)
 
+    def opt_bkg_state_changed(self):
+        if self.opt_check_bkg.isChecked():
+            self.lb_input_bkg.setEnabled(True)
+            self.lb_label_bkg.setEnabled(True)
+            self.ub_input_bkg.setEnabled(True)
+            self.ub_label_bkg.setEnabled(True)
+        else:
+            self.lb_input_bkg.setEnabled(False)
+            self.lb_label_bkg.setEnabled(False)
+            self.ub_input_bkg.setEnabled(False)
+            self.ub_label_bkg.setEnabled(False)
 
 class OptimResultsGroupBox(QGroupBox):
 
@@ -914,6 +1118,9 @@ class OptimResultsGroupBox(QGroupBox):
 
         self.chi_sq_label = QLabel('Final Chi-squared: ')
         self.chi_sq_output = QLineEdit()
+        self.bkg_scale_output_label = QLabel('Refined background scale factor: ')
+        self.bkg_scale_output = QLineEdit()
+        self.bkg_scale_copy_btn = QPushButton()
         self.density_output_label = QLabel('Refined density (at/A<sup>3</sup>): ')
         self.density_output = QLineEdit()        
         self.density_copy_btn = QPushButton()
@@ -923,24 +1130,33 @@ class OptimResultsGroupBox(QGroupBox):
     def style_widgets(self):
 
         self.chi_sq_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.bkg_scale_output_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.density_output_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.mass_density_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.bkg_scale_copy_btn.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_BrowserReload')))
         self.density_copy_btn.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_BrowserReload')))
 
         self.chi_sq_output.isReadOnly()
+        self.bkg_scale_output.isReadOnly()
         self.density_output.isReadOnly()
         self.mass_density.isReadOnly()
         self.chi_sq_output.setMaximumWidth(82)
+        self.bkg_scale_output.setMaximumWidth(82)
         self.density_output.setMaximumWidth(82)
         self.mass_density.setMaximumWidth(82)
+        self.bkg_scale_copy_btn.setMaximumWidth(30)
         self.density_copy_btn.setMaximumWidth(30)
 
+        self.bkg_scale_output.setEnabled(False)
+        self.bkg_scale_output_label.setEnabled(False)
         self.density_output.setEnabled(False)
         self.density_output_label.setEnabled(False)
         self.mass_density.setEnabled(False)
         self.mass_density_label.setEnabled(False)
+        self.bkg_scale_copy_btn.setEnabled(False)
         self.density_copy_btn.setEnabled(False)
 
+        self.bkg_scale_output.setReadOnly(True)
         self.density_output.setReadOnly(True)
         self.chi_sq_output.setReadOnly(True)
         self.mass_density.setReadOnly(True)
@@ -956,11 +1172,14 @@ class OptimResultsGroupBox(QGroupBox):
 
         self.grid_layout.addWidget(self.chi_sq_label, 0, 1)
         self.grid_layout.addWidget(self.chi_sq_output, 0, 2)
-        self.grid_layout.addWidget(self.density_copy_btn, 1, 0)
-        self.grid_layout.addWidget(self.density_output_label, 1, 1)
-        self.grid_layout.addWidget(self.density_output, 1, 2)
-        self.grid_layout.addWidget(self.mass_density_label, 2, 1)
-        self.grid_layout.addWidget(self.mass_density, 2, 2)
+        self.grid_layout.addWidget(self.bkg_scale_copy_btn, 1, 0)
+        self.grid_layout.addWidget(self.bkg_scale_output_label, 1, 1)
+        self.grid_layout.addWidget(self.bkg_scale_output, 1, 2)
+        self.grid_layout.addWidget(self.density_copy_btn, 2, 0)
+        self.grid_layout.addWidget(self.density_output_label, 2, 1)
+        self.grid_layout.addWidget(self.density_output, 2, 2)
+        self.grid_layout.addWidget(self.mass_density_label, 3, 1)
+        self.grid_layout.addWidget(self.mass_density, 3, 2)
 
         self.main_layout.addLayout(self.grid_layout)
 

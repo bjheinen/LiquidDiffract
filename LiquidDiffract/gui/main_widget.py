@@ -184,18 +184,25 @@ class MainContainer(QWidget):
         self.optim_ui.results_changed.connect(self.results_changed_slot)
         self.optim_ui.results_cleared.connect(self.results_cleared_slot)
         self.bkg_ui.file_name_changed.connect(self.update_filename)
+        self.optim_ui.optim_config_widget.optim_results_gb.bkg_scale_copy_btn.clicked.connect(self.copy_bkg_scale_result)
 
     def bkg_plots_changed_slot(self):
         # Clear data from Optim UI (as S(Q) etc. need to be recalculated)
-        self.optim_ui.data = {'cor_x': np.asarray([]), 'cor_y': np.asarray([]),
+        self.optim_ui.data = {'uncorrected_y': np.asarray([]), 'bkg_y': np.asarray([]), 'bkg_scale': None,
+                              'cor_x': np.asarray([]), 'cor_y': np.asarray([]),
                               'cor_x_cut': np.asarray([]), 'cor_y_cut': np.asarray([]),
                               'sq_x': np.asarray([]), 'sq_y': np.asarray([]),
                               'dr_x': np.asarray([]), 'dr_y': np.asarray([]),
-                              'mod_func': 'None'
+                              'rescaled_cor_y_cut': np.asarray([]),
+                              'mod_func': 'None', 'qmin': None, 'qmax': None
                               }
         # Pass data to Optim UI
         self.optim_ui.data['cor_x'] = self.bkg_ui.data['cor_x']
         self.optim_ui.data['cor_y'] = self.bkg_ui.data['cor_y']
+        if self.bkg_ui.bkg_config_widget.bkg_subtract_gb.isChecked() and self.bkg_ui.data['bkg_y'].size:
+            self.optim_ui.data['uncorrected_y'] = self.bkg_ui.data['data_y']
+            self.optim_ui.data['bkg_y'] = self.bkg_ui.data['bkg_y']
+            self.optim_ui.data['bkg_scale'] = self.bkg_ui.bkg_config_widget.bkg_subtract_gb.scale_sb.value()
         self.optim_ui.plot_data()
 
     def results_changed_slot(self):
@@ -251,3 +258,7 @@ class MainContainer(QWidget):
         self.structure_ui.base_filename = _base_name
         self.optim_ui.filename_ext = _ext
         self.structure_ui.filename_ext = _ext
+
+    def copy_bkg_scale_result(self):
+        _bkg_scale_result = self.optim_ui.optim_config_widget.optim_results_gb.bkg_scale_output.text()
+        self.bkg_ui.bkg_config_widget.bkg_subtract_gb.scale_sb.setValue(np.float64(_bkg_scale_result))
