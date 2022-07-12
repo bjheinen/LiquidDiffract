@@ -61,17 +61,6 @@ class BkgUI(QWidget):
         self.hsplitter.setStretchFactor(1, 5)
         self.layout.addWidget(self.hsplitter)
 
-        # Could add a separate scroll area > test on dif. screen sizes
-        # self.layout.addWidget(self.config_scroll_area)
-        # self.layout.addWidget(self.vline)
-        # self.layout.addWidget(QWidget())
-        # self.layout.addWidget(self.plot_scroll_area)
-
-        # Similarly could manually set stretch > test on dif. screens
-        # self.layout.setStretch(0,1)
-        # self.layout.setStretch(1,0)
-        # self.layout.setStretch(2,5)
-
         self.setLayout(self.layout)
 
         self.data_file = os.path.abspath(os.getcwd())
@@ -205,7 +194,7 @@ class BkgUI(QWidget):
         else:
             _plot_raw = 0
         self.bkg_plot_widget.update_plots(self.data, _plot_raw)
-        # emit signal that data has changed to be picked up by tab2
+        # emit signal that data has changed to be picked up by second tab (optim_ui)
         self.plots_changed.emit()
 
     def sub_bkg(self):
