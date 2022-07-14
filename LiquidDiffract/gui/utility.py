@@ -729,7 +729,7 @@ class AboutDialog(QDialog):
         self.setWindowTitle
         self.title = __appname__ + ' v' + __version__
         self.setWindowTitle(self.title)
-        self.resize(595, 630)
+        self.resize(595, 675)
 
         self.vlayout = QVBoxLayout()
         self.vlayout.setContentsMargins(5, 15, 5, 7)
@@ -750,6 +750,7 @@ class AboutDialog(QDialog):
         self.text_display.setOpenExternalLinks(True)
 
         _app_url = 'https://github.com/bjheinen/LiquidDiffract'
+        _paper_url = 'https://doi.org/10.1007/s00269-022-01186-6'
         _gpl_url = 'https://www.gnu.org/licenses/gpl.html'
         _pstr = '<p class="western" align="center">'
         _description = ('LiquidDiffract is a graphical application for '
@@ -765,11 +766,19 @@ class AboutDialog(QDialog):
                         'and extraction of structural information such as '
                         'bond lengths, coordination number and bulk density.'
                         )
+        _paper_str = (f'Heinen, B. J., & Drewitt, J. W. (2022). '
+                      f'LiquidDiffract: Software for liquid total scattering analysis. '
+                      f'<em>Physics and Chemistry of Minerals, 49:9</em>. doi:10.1007/s00269-022-01186-6')
 
         _app_url_str = (f'{_pstr}<a class="western" href="{_app_url}">'
                         f'<span style="color: #000080;"><span lang="zxx">'
                         f'<u>{_app_url}</u></span></span></a></p>'
                         )
+        _cite_str = (f'{_pstr}If you use LiquidDiffract in your work please cite it as:<br><br>'
+                     f'<a class="western" href="{_paper_url}">'
+                     f'<span style="color: #000080;"><span lang="zxx">'
+                     f'<u>{_paper_str}</u></span></span></a></p>')
+
         _copyright = 'Copyright &copy; 2018-2021 &ndash; Benedict J. Heinen'
         _warranty = ('This program comes with absolutely no '
                      'warranty or guarantee.')
@@ -788,6 +797,8 @@ class AboutDialog(QDialog):
                  f'{_pstr}<em>{_description}</em></p>'
                  f'{_pstr}&nbsp;</p>'
                  f'{_app_url_str}'
+                 f'{_pstr}&nbsp;</p>'
+                 f'{_cite_str}'
                  f'{_pstr}&nbsp;</p>'
                  f'{_pstr}<span style="font-size: small;">{_copyright}</span></p>'
                  f'{_pstr}<span style="font-size: small;">{_warranty}<br>'
