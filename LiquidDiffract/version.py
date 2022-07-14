@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
-__version__ = '1.1.9-dev'
+__version__ = '1.1.9'
 __appname__ = 'LiquidDiffract'
