@@ -17,7 +17,7 @@ Benedict J. Heinen (benedict.heinen@gmail.com)
 
 LiquidDiffract is described in an open access paper published in Physics and Chemistry of Minerals:
 
-        [Heinen, B. J., & Drewitt, J. W. (2022). LiquidDiffract: Software for liquid total scattering analysis. *Physics and Chemistry of Minerals, 49:9*. doi:10.1007/s00269-022-01186-6](https://link.springer.com/content/pdf/10.1007/s00269-022-01186-6.pdf)
+[Heinen, B. J., & Drewitt, J. W. (2022). LiquidDiffract: Software for liquid total scattering analysis. *Physics and Chemistry of Minerals, 49:9*. doi:10.1007/s00269-022-01186-6](https://link.springer.com/content/pdf/10.1007/s00269-022-01186-6.pdf)
 
 Please cite this article if you use LiquidDiffract in your work.
 
@@ -33,7 +33,7 @@ Please cite this article if you use LiquidDiffract in your work.
 		* [Composition Toolbox](#composition-toolbox)
 		* [Data Options](#data-options)
 		* [Iterative Structure Factor Refinement](#iterative-structure-factor-refinement)
-		* [Density (&rho;) and background scaling (b) Refinement](#density-%CF%81-refinement)
+		* [Density (&rho;) and background scaling (b) Refinement](#density-%CF%81-and-background-scaling-factor-b-refinement)
 			* [Global optimisation capability](#global-optimisation-capability)
 		* [Note on Number of Iterations in the Eggert Procedure & *&Chi;<sup>2</sup>* Minimisation](#note-on-number-of-iterations-in-the-eggert-procedure--χ2-minimisation)
 		* [Terminal & Log-file Output](#terminal--log-file-output)
