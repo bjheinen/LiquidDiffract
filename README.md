@@ -13,6 +13,13 @@ LiquidDiffract can calculate and refine the normalised structure factor and real
 
 Benedict J. Heinen (benedict.heinen@gmail.com)
 
+### Citing LiquidDiffract
+
+LiquidDiffract is described in an open access paper published in Physics and Chemistry of Minerals:
+
+        [Heinen, B. J., & Drewitt, J. W. (2022). LiquidDiffract: Software for liquid total scattering analysis. *Physics and Chemistry of Minerals, 49:9*. doi:10.1007/s00269-022-01186-6](https://link.springer.com/content/pdf/10.1007/s00269-022-01186-6.pdf)
+
+Please cite this article if you use LiquidDiffract in your work.
 
 ## Table of Contents
 
@@ -26,7 +33,7 @@ Benedict J. Heinen (benedict.heinen@gmail.com)
 		* [Composition Toolbox](#composition-toolbox)
 		* [Data Options](#data-options)
 		* [Iterative Structure Factor Refinement](#iterative-structure-factor-refinement)
-		* [Density (&rho;) Refinement](#density-%CF%81-refinement)
+		* [Density (&rho;) and background scaling (b) Refinement](#density-%CF%81-refinement)
 			* [Global optimisation capability](#global-optimisation-capability)
 		* [Note on Number of Iterations in the Eggert Procedure & *&Chi;<sup>2</sup>* Minimisation](#note-on-number-of-iterations-in-the-eggert-procedure--χ2-minimisation)
 		* [Terminal & Log-file Output](#terminal--log-file-output)
@@ -177,15 +184,15 @@ The number of iterations in the procedure can also be set; a minimum of 3 is nor
 
 A *&Chi;<sup>2</sup>* figure of merit, defined as the area under the curve *&Delta;D(r) for r<r-min*, is used to rate the refinement.
 
-><img src='http://latex.codecogs.com/svg.latex?\chi^{2}_{\left(n\right)}(\rho)=\int_{0}^{r_{min}}\left[\Delta{D}_{(n)}(r)\right]^2dr'/>
+><img src='http://latex.codecogs.com/svg.latex?\chi^{2}_{\left(n\right)}(\rho;b)=\int_{0}^{r_{min}}\left[\Delta{D}_{(n)}(r)\right]^2dr'/>
 
 Where,
 
 ><img src='http://latex.codecogs.com/svg.latex?\Delta{D}_{(n)}(r)= D_{(n)}(r)-\left(-4\pi\rho{r}\right),\;for\;r<r_{min}'/>
 
-#### Density (&rho;) Refinement
+#### Density (&rho;) and background scaling factor (*b*) Refinement
 
-The sample density can be determined by finding the value of &rho; that provides the best convergence of the iterative procedure described above. This is done by minimising the resultant value of *&Chi;<sup>2</sup>*. LiquidDiffract supports several different solvers to do this. The solver in use, along with specific options like convergence criteria and number of iterations, can be selected from the *Additional Preferences* dialog. The solvers currently supported are:
+The sample density and/or background scaling factor can be determined by finding the values of &rho; and or b that provides the best convergence of the iterative procedure described above. This is done by minimising the resultant value of *&Chi;<sup>2</sup>*. LiquidDiffract supports several different solvers to do this. The solver in use, along with specific options like convergence criteria and number of iterations, can be selected from the *Additional Preferences* dialog. The solvers currently supported are:
 
 * L-BFGS-B [16-17]
 
@@ -193,7 +200,9 @@ The sample density can be determined by finding the value of &rho; that provides
 
 * COBYLA [19-21]
 
-All solvers require upper and lower bounds on the density to be set.
+All solvers require upper and lower bounds on the density and or background scaling factor to be set.
+
+The density and background scaling factor can be refined independently or simultaneously.
 
 For more information on these optimisation algorithms please see the [SciPy documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html), or consult the references listed.
 
@@ -386,21 +395,29 @@ rho_0 = rho
 # e.g.
 # Return the improved i(Q) & chi^2 at density = rho_0
 iter_limit = 25
-method = 'ashcroft-langreth'
+method = 'faber-ziman'
 mod_func = 'Cosine-window'
 window_start = 7
 fft_N = 12
-args = (q_data, interference_func_0, composition, r_min,
-        iter_limit, method, mod_func, window_start, fft_N, 0)
+args = (q_data, interference_func_0, composition, rho_0,
+        r_min, iter_limit, method, mod_func, window_start, fft_N)
 # Store the refined interference function at rho_0
-interference_func_1, chi_sq_1 = liquid.calc_impr_interference_func(rho_0, *args)
+interference_func_1, chi_sq_1 = liquid.calc_impr_interference_func(*args)
 
-# Next we use opt_flag = 1 and pass the function calc_impr_interference_func to
-# a solver to estimate the density
+# Next we pass the function calc_impr_interference_func to
+# a solver to estimate the density. We use a separate objective function
+# core.redinement_objfun to make this simpler.
+# The argument opt_rho is set to 1 to indicate we are refining the density
+opt_rho = 1
+# The argument opt_bkg is set to 0 to indicate we are not refining
+# the background sclaing factor.
+opt_bkg = 0
 # When refinind the density an iter_limit <= 10 is recommended
 iter_limit_refine = 7
 args = (q_data, I_data, composition, r_min,
-        iter_limit_refine, method, mod_func, window_start, fft_N, 1)
+        iter_limit_refine, method,
+        mod_func, window_start, fft_N,
+        opt_rho, opt_bkg)
 # Set-up bounds and other options according to the documentation of solver/minimisation routine
 bounds = ((0.045, 0.065),)
 op_method = 'L-BFGS-B'
@@ -410,7 +427,7 @@ optimisation_options = {'disp': 0,
                         'ftol': 2.22e-12,
                         'gtol': 1e-12
                         }
-opt_result = minimize(liquid.calc_impr_interference_func, rho_0,
+opt_result = minimize(liquid.refinement_objfun, rho_0,
                       bounds=bounds, args=args,
                       options=optimisation_options,
                       method=op_method)
@@ -422,9 +439,9 @@ rho_refined = opt_result.x[0]
 interference_func = (liquid.calc_structure_factor(q_data,I_data, composition, rho_refined) - 
                      liquid.calc_S_inf(composition, q_data))
 
-args = (q_data, interference_func, composition, r_min,
-        iter_limit, method, mod_func, window_start, fft_N, 0)
-interference_func_2, chi_sq_2 = liquid.calc_impr_interference_func(rho_refined, *args)
+args = (q_data, interference_func, composition, rho_refined,
+        r_min, iter_limit, method, mod_func, window_start, fft_N)
+interference_func_2, chi_sq_2 = liquid.calc_impr_interference_func(*args)
 
 # Calculate the corresponding pair distribution functions g(r)
 r, g_r_0 = liquid.calc_correlation_func(q_data, interference_func_0, rho_0, dx=dq,
@@ -542,4 +559,4 @@ See the [license file](../master/LICENSE) for more information.
 
 This program comes with absolutely no warranty or guarantee.
 
-Copyright © 2018-2021 – Benedict J Heinen
+Copyright © 2018-2022 – Benedict J Heinen
