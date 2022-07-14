@@ -73,7 +73,7 @@ def brute_compute(brute_array, func_args,
     func_args = tuple(func_args.values())
     res = []
     for iteration, rho in enumerate(brute_array):
-        chi_sq = liquid.calc_impr_interference_func(rho, *func_args)
+        chi_sq = liquid.refinement_objfun(rho, *func_args)
         elapsed_time = time.time() - start_time
         iteration_num = (iteration + 1) + (len(brute_array)*slice_number)
         update_progress_bar(iteration_num, brute_iterations, elapsed_time, estimated_total_time)
@@ -86,7 +86,7 @@ data_file = 'example_data.dat'
 q_max = 11.8
 comp = {'Ga':(31,0,1)}
 dq = 0.02
-sq_form = 'ashcroft-langreth'
+sq_form = 'faber-ziman'
 mod_func = None
 window_start = None
 r_min = 2.3
@@ -107,7 +107,7 @@ func_args = {'Q_data': x, 'I_data': y, 'comp': comp,
              'r_min': r_min, 'n_iter': int(np.mean(brute_eggert_iterations_array)),
              'method': sq_form, 'mod_func': mod_func,
              'window_start': window_start, 'fft_N': fft_N,
-             'opt_flag': 1}
+             'opt_rho': 1, 'opt_bkg': 0}
 
 brute_array = (brute_eggert_iterations_array, brute_rho_array)
 brute_iterations = len(brute_rho_array) * len(brute_eggert_iterations_array)

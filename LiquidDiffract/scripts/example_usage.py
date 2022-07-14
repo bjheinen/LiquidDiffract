@@ -105,16 +105,20 @@ args = (q_data, interference_func_0, composition, rho_0,
 # Store the refined interference function at rho_0
 interference_func_1, chi_sq_1 = liquid.calc_impr_interference_func(*args)
 
-# Next we use opt_flag = 1 and pass the function calc_impr_interference_func to
-# a solver to estimate the density
-# Set opt_rho to 1 to indicate we are refining density
+# Next we pass the function calc_impr_interference_func to
+# a solver to estimate the density. We use a separate objective function
+# core.redinement_objfun to make this simpler.
+# The argument opt_rho is set to 1 to indicate we are refining the density
 opt_rho = 1
-# Set opt_bkg to 0 as we are not refining a background scaling factor
+# The argument opt_bkg is set to 0 to indicate we are not refining
+# the background sclaing factor.
 opt_bkg = 0
 # When refinind the density an iter_limit <= 10 is recommended
 iter_limit_refine = 7
 args = (q_data, I_data, composition, r_min,
-        iter_limit_refine, method, mod_func, window_start, fft_N, opt_rho, opt_bkg)
+        iter_limit_refine, method,
+        mod_func, window_start, fft_N,
+        opt_rho, opt_bkg)
 # Set-up bounds and other options according to the documentation of solver/minimisation routine
 bounds = ((0.045, 0.065),)
 op_method = 'L-BFGS-B'
