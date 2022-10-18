@@ -702,7 +702,7 @@ class CompositionGroupBox(QGroupBox):
 
         self.composition_table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        self.composition_table.horizontalHeader().setResizeMode(QHeaderView.Stretch)
+        self.composition_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.composition_table.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
         self.composition_table.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
 
