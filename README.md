@@ -64,7 +64,7 @@ Dependencies are handled automatically when installing with *pip*.
 
 The simplest way to install LiquidDiffract is directly from PyPI with pip:
 
-```$ pip install LiquidDiffract```
+```$ python3 -m pip install LiquidDiffract``` (on Windows use: ```py -m pip install LiquidDiffract```)
 
 The source code is directly available [here](https://github.com/bjheinen/LiquidDiffract/archive/master.zip)
 
@@ -101,7 +101,9 @@ To run the software use the command
 
 ```$ LiquidDiffract```
 
-or run *'LiquidDiffract.py'* from the installation directory ```$ python LiquidDiffract.py```
+If this fails setuptools may have placed the script in a directory not on your path. The location is usually a user or python specific scripts/bin folder, e.g. /usr/local/bin, ~/anaconda3/bin/, or Python\Python311\Scripts\
+
+Alternatively, run *'ld_launcher.py'* from the scripts folder of the installation directory ```$ python ld_launcher.py```
 
 ### Basic Usage
 
