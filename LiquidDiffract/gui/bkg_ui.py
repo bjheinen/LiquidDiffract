@@ -371,7 +371,7 @@ class BkgSubtractGroupBox(QGroupBox):
         self.scale_sb.setAlignment(Qt.AlignRight)
 
         self.scale_step.setMaximumWidth(60)
-        self.scale_step.setValidator(QDoubleValidator())
+        self.scale_step.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
         self.scale_step.setAlignment(Qt.AlignRight)
 
     def create_layout(self):
@@ -411,12 +411,12 @@ class DataConvertGroupBox(QGroupBox):
         self.data_file = None
         self.two_theta_data = None
 
-        self.load_conv_data_btn = QPushButton('2 theta Data')
+        self.load_conv_data_btn = QPushButton('2θ Data')
         self.data_filename_lbl = QLabel('None')
 
-        self.lambda_lbl = QLabel('Lambda: ')
+        self.lambda_lbl = QLabel('Wavelength (λ): ')
         self.lambda_input = QLineEdit('')
-        self.lambda_input.setValidator(QDoubleValidator())
+        self.lambda_input.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
         self.lambda_input.setMaximumWidth(60)
 
         self.data_filename_lbl.setAlignment(Qt.AlignCenter)

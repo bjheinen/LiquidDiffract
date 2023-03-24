@@ -669,7 +669,7 @@ class CompositionGroupBox(QGroupBox):
         self.density_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
 
         self.density_input.setAlignment(Qt.AlignRight)
-        self.density_input.setValidator(QDoubleValidator())
+        self.density_input.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
         self.density_input.setMaximumWidth(100)
 
         self.mass_density.setAlignment(Qt.AlignRight)
@@ -999,29 +999,29 @@ class OptimOptionsGroupBox(QGroupBox):
         self.ub_label_bkg.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
 
         self.rmin_input.setAlignment(Qt.AlignRight)
-        self.rmin_input.setValidator(QDoubleValidator())
+        self.rmin_input.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
         self.rmin_input.setMaximumWidth(70)
         self.rmin_input.setToolTip('Intramolecular distance cut-off')
         self.rmin_label.setToolTip('Intramolecular distance cut-off')
 
         self.niter_input.setAlignment(Qt.AlignRight)
-        self.niter_input.setValidator(QIntValidator())
+        self.niter_input.setValidator(QIntValidator(1,2147483647))
         self.niter_input.setMaximumWidth(70)
 
         self.lb_input.setAlignment(Qt.AlignRight)
-        self.lb_input.setValidator(QDoubleValidator())
+        self.lb_input.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
         self.lb_input.setMaximumWidth(70)
 
         self.ub_input.setAlignment(Qt.AlignRight)
-        self.ub_input.setValidator(QDoubleValidator())
+        self.ub_input.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
         self.ub_input.setMaximumWidth(70)
 
         self.lb_input_bkg.setAlignment(Qt.AlignRight)
-        self.lb_input_bkg.setValidator(QDoubleValidator())
+        self.lb_input_bkg.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
         self.lb_input_bkg.setMaximumWidth(70)
 
         self.ub_input_bkg.setAlignment(Qt.AlignRight)
-        self.ub_input_bkg.setValidator(QDoubleValidator())
+        self.ub_input_bkg.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
         self.ub_input_bkg.setMaximumWidth(70)
 
         self.opt_check.setChecked(False)
