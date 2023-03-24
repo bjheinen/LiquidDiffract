@@ -57,7 +57,7 @@ class BkgPlotWidget(QWidget):
         self.pos_label = pg.LabelItem(justify='right')
         self.pg_layout.addItem(self.pos_label, col=0, row=0)
 
-    def update_plots(self, _data, _plot_raw):
+    def update_plots(self, _data, _plot_raw, _plot_log):
         try:
             self.p1_a.clear()
             self.p2_a.clear()
@@ -74,9 +74,22 @@ class BkgPlotWidget(QWidget):
         self.p2_a = self.data_plot.plot(x=_data['bkg_x'], y=_data['bkg_y_sc'], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
         self.p3 = self.bkg_corrected_plot.plot(x=_data['cor_x'], y=_data['cor_y'], pen={'color': 0.1, 'width': 1.2})
 
+        self.p1_a.setLogMode(False, _plot_log)
+        self.p2_a.setLogMode(False, _plot_log)
+        self.p3.setLogMode(False, _plot_log)
+
         if _plot_raw:
             self.p1_b = self.data_plot.plot(x=_data['data_raw_x'], y=_data['data_raw_y'], pen=None, symbolPen={'color': 0.1}, symbolBrush=0.1, symbol='x', symbolSize=7)
             self.p2_b = self.data_plot.plot(x=_data['bkg_raw_x'], y=_data['bkg_raw_y_sc'], pen=None, symbolPen={'color': '#342256'}, symbolBrush='#342256', symbol='x', symbolSize=7)
+            self.p1_b.setLogMode(False, _plot_log)
+            self.p2_b.setLogMode(False, _plot_log)
+
+        if _plot_log:
+            self.data_plot.setLabel('left', text='log Intensity (a.u.)')
+            self.bkg_corrected_plot.setLabel('left', text='log Intensity (a.u.)')
+        else:
+            self.data_plot.setLabel('left', text='Intensity (a.u.)')
+            self.bkg_corrected_plot.setLabel('left', text='Intensity (a.u.)')
 
         self.data_plot.vb.autoRange()
         self.bkg_corrected_plot.vb.autoRange()

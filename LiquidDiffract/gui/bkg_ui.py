@@ -83,6 +83,7 @@ class BkgUI(QWidget):
         self.bkg_config_widget.data_files_gb.load_data_btn.clicked.connect(self.load_data)
         self.bkg_config_widget.data_files_gb.load_bkg_btn.clicked.connect(self.load_bkg)
         self.bkg_config_widget.data_files_gb.plot_raw_check.stateChanged.connect(self.plot_data)
+        self.bkg_config_widget.data_files_gb.plot_log_check.stateChanged.connect(self.plot_data)
         self.bkg_config_widget.bkg_subtract_gb.bkg_sub_btn.clicked.connect(self.sub_bkg)
         self.bkg_config_widget.bkg_subtract_gb.scale_sb.valueChanged.connect(self.plot_data)
         self.bkg_config_widget.bkg_subtract_gb.toggled.connect(self.sub_bkg)
@@ -189,11 +190,9 @@ class BkgUI(QWidget):
                     return
             else:
                 self.data['cor_y'] = self.data['data_y']
-        if self.bkg_config_widget.data_files_gb.plot_raw_check.isChecked():
-            _plot_raw = 1
-        else:
-            _plot_raw = 0
-        self.bkg_plot_widget.update_plots(self.data, _plot_raw)
+        _plot_raw = self.bkg_config_widget.data_files_gb.plot_raw_check.isChecked()
+        _plot_log = self.bkg_config_widget.data_files_gb.plot_log_check.isChecked()
+        self.bkg_plot_widget.update_plots(self.data, _plot_raw, _plot_log)
         # emit signal that data has changed to be picked up by second tab (optim_ui)
         self.plots_changed.emit()
 
@@ -295,10 +294,14 @@ class DataFilesGroupBox(QGroupBox):
         self.data_lbl_frame = QScrollArea()
         self.bkg_lbl_frame = QScrollArea()
 
-        self.plot_raw_check = QCheckBox()
         self.plot_raw_lbl = QLabel('Plot raw (unbinned) data?')
+        self.plot_raw_check = QCheckBox()
         self.plot_raw_check.setChecked(False)
-        
+
+        self.plot_log_label = QLabel('Plot log I(Q)?')
+        self.plot_log_check = QCheckBox()
+        self.plot_log_check.setChecked = False
+
         self.dq_label = QLabel('Re-binned resolution (Q-step):')
         self.dq_input = QLineEdit('0.02')
 
@@ -333,8 +336,10 @@ class DataFilesGroupBox(QGroupBox):
         self.grid_layout.addWidget(self.bkg_lbl_frame, 1, 1)
         self.grid_layout.addWidget(self.plot_raw_lbl, 2, 0)
         self.grid_layout.addWidget(self.plot_raw_check, 2, 1)
-        self.grid_layout.addWidget(self.dq_label, 3, 0)
-        self.grid_layout.addWidget(self.dq_input)
+        self.grid_layout.addWidget(self.plot_log_label, 3, 0)
+        self.grid_layout.addWidget(self.plot_log_check, 3, 1)
+        self.grid_layout.addWidget(self.dq_label, 4, 0)
+        self.grid_layout.addWidget(self.dq_input, 4, 1)
         self.setLayout(self.grid_layout)
 
 
