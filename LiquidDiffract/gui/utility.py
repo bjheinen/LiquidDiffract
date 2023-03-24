@@ -141,32 +141,32 @@ class PreferencesDialog(QDialog):
             _append_log_mode = 0
 
         try:
-            _data_units = np.int(self.data_settings_gb.data_units_input.currentIndex())
-            _window_length = np.int(self.data_settings_gb.window_length_input.text())
-            _poly_order = np.int(self.data_settings_gb.poly_order_input.text())
-            _rescale_AL = np.int(self.data_settings_gb.rescale_AL_input.isChecked())
-            _fft_N = np.int(self.data_settings_gb.fft_N_input.value())
+            _data_units = int(self.data_settings_gb.data_units_input.currentIndex())
+            _window_length = int(self.data_settings_gb.window_length_input.text())
+            _poly_order = int(self.data_settings_gb.poly_order_input.text())
+            _rescale_AL = int(self.data_settings_gb.rescale_AL_input.isChecked())
+            _fft_N = int(self.data_settings_gb.fft_N_input.value())
             self.fft_check = _fft_N
             self.fft_check_signal.emit()
             if self.fft_check_result == 1:
                  raise RuntimeWarning()
-            _mod_func_mode = np.int(self.ref_proc_settings_gb.mod_func_mode_input.isChecked())
+            _mod_func_mode = int(self.ref_proc_settings_gb.mod_func_mode_input.isChecked())
             _op_method = self.refine_settings_gb.op_method_input.currentText()
-            _disp = np.int(self.refine_settings_gb.disp_check.isChecked())
-            _maxiter = np.int(self.refine_settings_gb.maxiter_input.text())
-            _ftol = np.float(self.refine_settings_gb.ftol_input.text())
+            _disp = int(self.refine_settings_gb.disp_check.isChecked())
+            _maxiter = int(self.refine_settings_gb.maxiter_input.text())
+            _ftol = np.float64(self.refine_settings_gb.ftol_input.text())
             # Get l_bfgs_b specific options
             if _op_method == 'L-BFGS-B':
-                _maxfun = np.int(self.refine_settings_gb.maxfun_input.text())
-                _gtol = np.float(self.refine_settings_gb.gtol_input.text())
+                _maxfun = int(self.refine_settings_gb.maxfun_input.text())
+                _gtol = np.float64(self.refine_settings_gb.gtol_input.text())
             # Get globam minimisation (basin-hopping) options
-            _bh_disp = np.int(self.global_min_settings_gb.disp_check.isChecked())
-            _bh_niter = np.int(self.global_min_settings_gb.niter_basin_input.text())
-            _bh_temp = np.float(self.global_min_settings_gb.temp_basin_input.text())
-            _bh_step_size = np.float(self.global_min_settings_gb.stepsize_basin_input.text())
-            _bh_interval = np.int(self.global_min_settings_gb.interval_basin_input.text())
+            _bh_disp = int(self.global_min_settings_gb.disp_check.isChecked())
+            _bh_niter = int(self.global_min_settings_gb.niter_basin_input.text())
+            _bh_temp = float(self.global_min_settings_gb.temp_basin_input.text())
+            _bh_step_size = float(self.global_min_settings_gb.stepsize_basin_input.text())
+            _bh_interval = int(self.global_min_settings_gb.interval_basin_input.text())
             # Get Gaussiant fitting options
-            _xray_weight_mode = np.int(self.gaussian_fit_settings_gb.xray_weight_mode_input.isChecked())
+            _xray_weight_mode = int(self.gaussian_fit_settings_gb.xray_weight_mode_input.isChecked())
 
         # Handle for missing values
         except ValueError:
@@ -304,8 +304,8 @@ class DataSettingsGroupBox(QGroupBox):
 
     def set_data(self, preferences):
         self.data_units_input.setCurrentIndex(preferences['data_units'])
-        self.window_length_input.setText(np.str(preferences['window_length']))
-        self.poly_order_input.setText(np.str(preferences['poly_order']))
+        self.window_length_input.setText(str(preferences['window_length']))
+        self.poly_order_input.setText(str(preferences['poly_order']))
         self.rescale_AL_input.setChecked(preferences['rescale_AL'])
         self.fft_N_input.setValue(preferences['fft_N'])
 
@@ -452,13 +452,13 @@ class SolverSettingsGroupBox(QGroupBox):
         self.op_method_input.setCurrentText(preferences['op_method'])
         _min_options = preferences['minimisation_options']
         self.disp_check.setChecked(_min_options['disp'])
-        self.maxiter_input.setText(np.str(_min_options['maxiter']))
-        self.ftol_input.setText(np.str(_min_options['ftol']))
+        self.maxiter_input.setText(str(_min_options['maxiter']))
+        self.ftol_input.setText(str(_min_options['ftol']))
 
         # Handle missing maxfun/gtol if op_method!='L-BFGS-B'
         try:
-            self.maxfun_input.setText(np.str(_min_options['maxfun']))
-            self.gtol_input.setText(np.str(_min_options['gtol']))
+            self.maxfun_input.setText(str(_min_options['maxfun']))
+            self.gtol_input.setText(str(_min_options['gtol']))
         except KeyError:
             pass
 
@@ -616,10 +616,10 @@ class GlobalMinSettingsGroupBox(QGroupBox):
         _global_min_options = preferences['global_min_options']
         self.disp_check.setChecked(_global_min_options['disp'])
 
-        self.niter_basin_input.setText(np.str(_global_min_options['niter']))
-        self.temp_basin_input.setText(np.str(_global_min_options['T']))
-        self.stepsize_basin_input.setText(np.str(_global_min_options['stepsize']))
-        self.interval_basin_input.setText(np.str(_global_min_options['interval']))
+        self.niter_basin_input.setText(str(_global_min_options['niter']))
+        self.temp_basin_input.setText(str(_global_min_options['T']))
+        self.stepsize_basin_input.setText(str(_global_min_options['stepsize']))
+        self.interval_basin_input.setText(str(_global_min_options['interval']))
 
     def style_widgets(self):
 

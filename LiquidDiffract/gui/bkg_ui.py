@@ -97,7 +97,7 @@ class BkgUI(QWidget):
         before rebinning as this could hang on very large files.
         '''
         try:
-            _dx = np.float(self.bkg_config_widget.data_files_gb.dq_input.text())
+            _dx = np.float64(self.bkg_config_widget.data_files_gb.dq_input.text())
         except ValueError:
             _dx = 0
         if bkg == 1:
@@ -476,7 +476,7 @@ class DataConvertGroupBox(QGroupBox):
         if self.data_file is None or self.two_theta_data is None:
             return
         try:
-            __lambda = np.float(self.lambda_input.text())
+            __lambda = np.float64(self.lambda_input.text())
         # Return if no wavelength set
         except ValueError:
             _message = ['No Wavelength Set!', 'Please set wavelength value']

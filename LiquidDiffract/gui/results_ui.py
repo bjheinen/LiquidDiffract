@@ -108,7 +108,7 @@ class ResultsUI(QWidget):
                     f'Rho = {self.data["rho"]}\n'
                     f'S(Q) formalism : {self.data["sq_method"]}\n'
                     f'S(Q) = i(Q) + S_inf\n'
-                    f'S_inf = {np.str(self.data["S_inf"])}\n'
+                    f'S_inf = {str(self.data["S_inf"])}\n'
                     )
         if self.data['mod_func'] == 'None':
             __header += 'Q|S(Q)'

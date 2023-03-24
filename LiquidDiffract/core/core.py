@@ -712,7 +712,7 @@ def calc_correlation_func(x, y, rho, dx='check', N=12, mod_func=None,
                          'Q-space or increase value of \'N\'')
     else:
         pass
-    padding_zeros = np.int(2**N - (len(z)*2 - 1))
+    padding_zeros = int(2**N - (len(z)*2 - 1))
     # Pad array with odd image of function
     z = np.concatenate((z, np.zeros(padding_zeros), -np.flip(z[1::], 0)))
     # Fourier transform here uses scipy.fftpack over numpy.fft
@@ -819,7 +819,7 @@ def calc_D_r_iteration_term(delta_D_r, N=12, dq=0.02):
         raise ValueError('Length of array > [(2**N)/2]')
     else:
         pass
-    padding_zeros = np.int(2**N - (len(delta_D_r)*2 - 1))
+    padding_zeros = int(2**N - (len(delta_D_r)*2 - 1))
     z = np.concatenate((delta_D_r,
                         np.zeros(padding_zeros),
                         -np.flip(delta_D_r[1::], 0)))

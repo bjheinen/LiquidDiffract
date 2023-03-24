@@ -126,7 +126,7 @@ class OptimUI(QWidget):
         # Cut q at qmax first (if selected) and define cor_x_cut
         if qmax_cut:
             # Get q_max to cut at
-            self.data['qmax'] = np.float(self.optim_config_widget.data_options_gb.qmax_input.text())
+            self.data['qmax'] = np.float64(self.optim_config_widget.data_options_gb.qmax_input.text())
             # cut q data at qmax
             _cut = np.where(self.data['cor_x'] < self.data['qmax'])
             self.data['cor_x_cut'] = self.data['cor_x'][_cut]
@@ -139,7 +139,7 @@ class OptimUI(QWidget):
 
         # Cut at qmin if selected
         if qmin_cut:
-            self.data['qmin'] = np.float(self.optim_config_widget.data_options_gb.qmin_input.text())
+            self.data['qmin'] = np.float64(self.optim_config_widget.data_options_gb.qmin_input.text())
             # Take first intensity value after q_min
             # Catch empty array error caused by no data:
             try:
@@ -176,7 +176,7 @@ class OptimUI(QWidget):
         self.data['mod_func'] = self.optim_config_widget.data_options_gb.mod_func_input.currentText()
         if self.data['mod_func'] == 'Cosine-window':
             try:
-                self.data['window_start'] = np.float(self.optim_config_widget.data_options_gb.window_start_input.text())
+                self.data['window_start'] = np.float64(self.optim_config_widget.data_options_gb.window_start_input.text())
             except ValueError:
                 self.window_func_error()
                 return
@@ -190,7 +190,7 @@ class OptimUI(QWidget):
         self.data['sq_method'] = _method
         # Get rho 0 - Force intermediate values passed by QValidator to 0
         try:
-            _rho_0 = np.float(self.optim_config_widget.composition_gb.density_input.text())
+            _rho_0 = np.float64(self.optim_config_widget.composition_gb.density_input.text())
         except ValueError:
             _rho_0 = 0.0
         self.data['iq_x'] = self.data['cor_x_cut']
@@ -232,7 +232,7 @@ class OptimUI(QWidget):
         self.data['mod_func'] = self.optim_config_widget.data_options_gb.mod_func_input.currentText()
         if self.data['mod_func'] == 'Cosine-window':
             try:
-                self.data['window_start'] = np.float(self.optim_config_widget.data_options_gb.window_start_input.text())
+                self.data['window_start'] = np.float64(self.optim_config_widget.data_options_gb.window_start_input.text())
             except ValueError:
                 self.window_func_error()
                 return
@@ -246,11 +246,11 @@ class OptimUI(QWidget):
         elif self.optim_config_widget.data_options_gb.fz_btn.isChecked():
             _method = 'faber-ziman'
         # Get density
-        _rho_0 = np.float(self.optim_config_widget.composition_gb.density_input.text())
+        _rho_0 = np.float64(self.optim_config_widget.composition_gb.density_input.text())
         # Get r_min
-        _r_min = np.float(self.optim_config_widget.optim_options_gb.rmin_input.text())
+        _r_min = np.float64(self.optim_config_widget.optim_options_gb.rmin_input.text())
         # Get no. iterations for Eggert refinement
-        _n_iter = np.int(self.optim_config_widget.optim_options_gb.niter_input.text())
+        _n_iter = int(self.optim_config_widget.optim_options_gb.niter_input.text())
         if _n_iter < 2:
             print('Warning: n_iter >= 2 is recommended for convergence!')
         if (
@@ -265,15 +265,15 @@ class OptimUI(QWidget):
                         self.bkg_error()
                         return
                     # Get bounds on background scaling factor - return if none set
-                    _lb_bkg = np.float(self.optim_config_widget.optim_options_gb.lb_input_bkg.text())
-                    _ub_bkg = np.float(self.optim_config_widget.optim_options_gb.ub_input_bkg.text())
+                    _lb_bkg = float(self.optim_config_widget.optim_options_gb.lb_input_bkg.text())
+                    _ub_bkg = float(self.optim_config_widget.optim_options_gb.ub_input_bkg.text())
                     _bkg_scale_0 = self.data['bkg_scale']
                     opt_bkg = 1
                 else:
                     opt_bkg = 0
                 if self.optim_config_widget.optim_options_gb.opt_check.isChecked():
-                    _lb_rho = np.float(self.optim_config_widget.optim_options_gb.lb_input.text())
-                    _ub_rho = np.float(self.optim_config_widget.optim_options_gb.ub_input.text())
+                    _lb_rho = float(self.optim_config_widget.optim_options_gb.lb_input.text())
+                    _ub_rho = float(self.optim_config_widget.optim_options_gb.ub_input.text())
                     opt_rho = 1
                 else:
                     opt_rho = 0
@@ -281,7 +281,7 @@ class OptimUI(QWidget):
                 self.limits_error()
                 return
             if _n_iter > 10:
-                 print('Warning: n_iter <= 10 is recommended for convergence!')
+                print('Warning: n_iter <= 10 is recommended for convergence!')
             # Only use mod_func in refinement if option is set (default is no)
             if self.mod_func_mode:
                 _mod_func = self.data['mod_func']
@@ -621,7 +621,7 @@ class OptimConfigWidget(QWidget):
         self.optim_results_gb.bkg_scale_output.setEnabled(state)
         self.optim_results_gb.bkg_scale_output_label.setEnabled(state)
         self.optim_results_gb.bkg_scale_copy_btn.setEnabled(state)
-    
+
     def _copy_bkg_scale_output(self):
         # Copying of data to bkg_ui is handled by
         # gui.main_widget.table_widget.copy_bkg_scale_result
@@ -794,9 +794,9 @@ class CompositionGroupBox(QGroupBox):
         _key_list = list(CompositionGroupBox._element_dict.keys())
         _val_list = list(CompositionGroupBox._element_dict.values())
         for _row_index in range(self.composition_table.rowCount()):
-            _Z = np.int(self.composition_table.item(_row_index, 1).text())
-            _charge = np.int(self.composition_table.item(_row_index, 2).text())
-            _n = np.int(self.composition_table.item(_row_index, 3).text())
+            _Z = int(self.composition_table.item(_row_index, 1).text())
+            _charge = int(self.composition_table.item(_row_index, 2).text())
+            _n = int(self.composition_table.item(_row_index, 3).text())
             _key = str(_key_list[_val_list.index(_Z)])
             _dict_entry = {_key: [_Z, _charge, _n]}
             _composition_dict.update(_dict_entry)
@@ -815,7 +815,7 @@ class CompositionGroupBox(QGroupBox):
         # Handle errors caused by QDoubleValidator allowing intermediate
         # values to pass e.g. '.', ' ' etc.
         try:
-            _atomic_density = np.float(self.density_input.text())
+            _atomic_density = float(self.density_input.text())
         except ValueError:
             _atomic_density = 0.0
         _mass_density = core.conv_density(_atomic_density, _composition)
@@ -1122,7 +1122,7 @@ class OptimResultsGroupBox(QGroupBox):
         self.bkg_scale_output = QLineEdit()
         self.bkg_scale_copy_btn = QPushButton()
         self.density_output_label = QLabel('Refined density (at/A<sup>3</sup>): ')
-        self.density_output = QLineEdit()        
+        self.density_output = QLineEdit()
         self.density_copy_btn = QPushButton()
         self.mass_density_label = QLabel('(g/cm<sup>3</sup>): ')
         self.mass_density = QLineEdit()

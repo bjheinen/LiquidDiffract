@@ -306,36 +306,36 @@ class StructureUI(QWidget):
             _beta = _peak_widget.beta_input.currentText()
 
             try:
-                _N = np.float(_peak_widget.N_input.text())
+                _N = np.float64(_peak_widget.N_input.text())
             except ValueError:
                 _N = 0.0
-            _N_lb = np.float(_peak_widget.N_lb.text())
-            _N_ub = np.float(_peak_widget.N_ub.text())
+            _N_lb = np.float64(_peak_widget.N_lb.text())
+            _N_ub = np.float64(_peak_widget.N_ub.text())
             _N_refine = _peak_widget.N_refine.isChecked()
 
             try:
-                _r = np.float(_peak_widget.r_input.text())
+                _r = np.float64(_peak_widget.r_input.text())
             except ValueError:
                 _r = 0.0
-            _r_lb = np.float(_peak_widget.r_lb.text())
-            _r_ub = np.float(_peak_widget.r_ub.text())
+            _r_lb = np.float64(_peak_widget.r_lb.text())
+            _r_ub = np.float64(_peak_widget.r_ub.text())
             _r_refine = _peak_widget.r_refine.isChecked()
 
             try:
-                _s = np.float(_peak_widget.s_input.text())
+                _s = np.float64(_peak_widget.s_input.text())
             except ValueError:
                 _s = 0.0
-            _s_lb = np.float(_peak_widget.s_lb.text())
-            _s_ub = np.float(_peak_widget.s_ub.text())
+            _s_lb = np.float64(_peak_widget.s_lb.text())
+            _s_ub = np.float64(_peak_widget.s_ub.text())
             _s_refine = _peak_widget.s_refine.isChecked()
 
             if _peak_widget.skew_toggle.isChecked():
                 try:
-                    _xi = np.float(_peak_widget.xi_input.text())
+                    _xi = np.float64(_peak_widget.xi_input.text())
                 except ValueError:
                     _xi = 0.0
-                _xi_lb = np.float(_peak_widget.xi_lb.text())
-                _xi_ub = np.float(_peak_widget.xi_ub.text())
+                _xi_lb = np.float64(_peak_widget.xi_lb.text())
+                _xi_ub = np.float64(_peak_widget.xi_ub.text())
                 _xi_refine = _peak_widget.xi_refine.isChecked()
 
             else:
