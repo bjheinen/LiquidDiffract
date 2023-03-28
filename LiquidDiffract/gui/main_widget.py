@@ -107,10 +107,15 @@ class App(QMainWindow):
 
         if self.preferences_dialog.exec_() == utility.PreferencesDialog.Accepted:
             self.preferences = self.preferences_dialog.get_preferences()
+            _prev_data_units = self.table_widget.bkg_ui.data_units
             # Set preferences in OptimUI
             self.set_preferences()
             # Call method plot_data to update data treatment
             self.table_widget.optim_ui.plot_data()
+            # If data units changed update raw data
+            if _prev_data_units != self.table_widget.bkg_ui.data_units:
+                self.table_widget.bkg_ui.data_units_changed()
+
 
     def set_preferences(self):
         # Set data and minimisation preferences
@@ -142,19 +147,27 @@ class App(QMainWindow):
         webbrowser.open_new('https://github.com/bjheinen/LiquidDiffract')
 
     def check_fft_N(self):
+        if self.preferences_dialog.data_units_check == self.preferences['data_units']:
+            _data_units_correction = 1.0
+        else:
+            if self.preferences_dialog.data_units_check == 0:
+                _data_units_correction = 0.1
+            else:
+                _data_units_correction = 10.0
+        _dx = float(self.table_widget.bkg_ui.bkg_config_widget.data_files_gb.dq_input.text())
         try:
-            _qmax = self.table_widget.bkg_ui.data['data_raw_x'][-1]
+            _qmax = self.table_widget.bkg_ui.data['data_x'][-1]/_data_units_correction
         except IndexError:
             try:
-                _qmax = self.table_widget.bkg_ui.data['bkg_raw_x'][-1]
+                _qmax = self.table_widget.bkg_ui.data['bkg_x'][-1]/_data_units_correction
             except IndexError:
                 self.preferences_dialog.fft_check_result = 0
                 return
         _fft_check = self.preferences_dialog.fft_check
-        _dx = (self.table_widget.bkg_ui.data['data_raw_x'][1]
-               - self.table_widget.bkg_ui.data['data_raw_x'][0])
         if _qmax > ((2**_fft_check / 2) * _dx):
             self.preferences_dialog.fft_check_result = 1
+        else:
+            self.preferences_dialog.fft_check_result = 0
 
 
 class MainContainer(QWidget):

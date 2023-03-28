@@ -154,6 +154,7 @@ class PreferencesDialog(QDialog):
 
         try:
             _data_units = int(self.data_settings_gb.data_units_input.currentIndex())
+            self.data_units_check = _data_units
             _window_length = int(self.data_settings_gb.window_length_input.text())
             _poly_order = int(self.data_settings_gb.poly_order_input.text())
             _rescale_AL = int(self.data_settings_gb.rescale_AL_input.isChecked())
@@ -161,7 +162,7 @@ class PreferencesDialog(QDialog):
             self.fft_check = _fft_N
             self.fft_check_signal.emit()
             if self.fft_check_result == 1:
-                 raise RuntimeWarning()
+                raise RuntimeWarning()
             _mod_func_mode = int(self.ref_proc_settings_gb.mod_func_mode_input.isChecked())
             _op_method = self.refine_settings_gb.op_method_input.currentText()
             _disp = int(self.refine_settings_gb.disp_check.isChecked())

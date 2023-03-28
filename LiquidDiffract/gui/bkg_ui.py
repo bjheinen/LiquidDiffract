@@ -90,7 +90,7 @@ class BkgUI(QWidget):
         self.bkg_config_widget.bkg_subtract_gb.auto_sc_btn.clicked.connect(self.auto_scale_bkg)
         self.bkg_config_widget.data_files_gb.dq_input.editingFinished.connect(self.dq_changed)
 
-    def rebin_data(self, bkg='check'):
+    def rebin_data(self, bkg='check', suppress_plots=False):
         '''
         Helper function to rebin background/data arrays when necessary.
         Because the S(Q) array is padded before fourier transform operations
@@ -105,7 +105,8 @@ class BkgUI(QWidget):
             if self.data['bkg_raw_x'][-1] > ((2**self.fft_N / 2) * _dx):
                 raise RuntimeWarning('Dataset size exceeds 2**N!')
             self.data['bkg_x'], self.data['bkg_y'] = data_utils.rebin_data(self.data['bkg_raw_x'], self.data['bkg_raw_y'], dx=_dx)
-            self.plot_data()
+            if suppress_plots == False:
+                self.plot_data()
 
         elif bkg == 0:
             if self.data['data_raw_x'][-1] > ((2**self.fft_N / 2) * _dx):
@@ -117,13 +118,15 @@ class BkgUI(QWidget):
             if not self.bkg_config_widget.bkg_subtract_gb.isChecked():
                 self.sub_bkg()
             self.plots_changed.emit()
-            self.plot_data()
+            if suppress_plots == False:
+                self.plot_data()
 
         elif bkg == 'check':
             if self.data['bkg_raw_x'].size and self.bkg_file != None:
-                 self.rebin_data(bkg=1)
+                 self.rebin_data(bkg=1, suppress_plots=True)
             if self.data['data_raw_x'].size and self.data_file != None:
-                 self.rebin_data(bkg=0)
+                 self.rebin_data(bkg=0, suppress_plots=True)
+            self.plot_data()
 
     def load_data(self):
         __file_name = utility.get_filename(io='open')
@@ -186,7 +189,6 @@ class BkgUI(QWidget):
             else:
                 self.bkg_file = None
                 return
-
         try:
             self.rebin_data(bkg=1)
         except RuntimeWarning:
@@ -252,6 +254,17 @@ class BkgUI(QWidget):
              self.dq_error()
              self.bkg_config_widget.data_files_gb.dq_input.setText('0.02')
              self.dq_changed()
+
+    def data_units_changed(self):
+        if self.data_units == 1:
+            self.data['data_raw_x'] /= 10.0
+            self.data['bkg_raw_x'] /= 10.0
+        elif self.data_units == 0:
+            self.data['data_raw_x'] *= 10.0
+            self.data['bkg_raw_x'] *= 10.0
+        else:
+            raise ValueError
+        self.rebin_data(bkg='check')
 
     def load_file_error(self):
         message = ['Error loading file!', 'Unable to load file.\nPlease check filename,\nensure header lines are commented (#),\nand data is in Q-space']
