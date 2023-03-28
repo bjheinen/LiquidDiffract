@@ -10,12 +10,13 @@ except ImportError:
     import importlib_resources
 import numpy as np
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QIntValidator, QDoubleValidator, QPixmap
+from PyQt5.QtGui import QIntValidator, QDoubleValidator, QPixmap, \
+                        QTextBlockFormat, QTextCursor
 from PyQt5.QtWidgets import QFileDialog, QDialog, QStyledItemDelegate, \
                             QMessageBox, QFrame, QGroupBox, QSpinBox, \
                             QVBoxLayout, QGridLayout, QDialogButtonBox, \
                             QLabel, QLineEdit, QCheckBox, QComboBox, \
-                            QScrollArea, QTextBrowser, QWidget
+                            QScrollArea, QTextBrowser, QPlainTextEdit, QWidget
 from LiquidDiffract.version import __appname__, __version__
 
 
@@ -41,6 +42,18 @@ def get_filename(io='open', caption='Load Data File', directory=None):
         return file_name
     else:
         return None
+
+
+class ErrorMessageBox(QMessageBox):
+    def __init__(self, _message):
+        super(ErrorMessageBox, self).__init__()
+        self.setAttribute(Qt.WA_DeleteOnClose)
+        self.setIcon(QMessageBox.Warning)
+        self.setStandardButtons(QMessageBox.Ok)
+        self.setText(_message[0])
+        self.setInformativeText((_message[1]))
+        self.setWindowTitle(__appname__ + ' v' + __version__)
+        self.adjustSize()
 
 
 class ValidatedItemDelegate(QStyledItemDelegate):
@@ -78,7 +91,6 @@ class PreferencesDialog(QDialog):
     def __init__(self, preferences):
         super(PreferencesDialog, self).__init__()
         self.setAttribute(Qt.WA_DeleteOnClose)
-        self.setWindowTitle
         self.title = 'Additional Preferences | ' + __appname__ + 'v' + __version__
         self.setWindowTitle(self.title)
         self.resize(500, 500)
@@ -711,17 +723,6 @@ class GaussianFittingSettingsGroupBox(QGroupBox):
         self.setLayout(self.main_layout)
 
 
-class ErrorMessageBox(QMessageBox):
-    def __init__(self, _message):
-        super(ErrorMessageBox, self).__init__()
-        self.setIcon(QMessageBox.Warning)
-        self.setStandardButtons(QMessageBox.Ok)
-        self.setText(_message[0])
-        self.setInformativeText((_message[1]))
-        self.setWindowTitle(__appname__ + ' v' + __version__)
-        self.adjustSize()
-
-
 class AboutDialog(QDialog):
     def __init__(self):
         super(AboutDialog, self).__init__()
@@ -809,3 +810,125 @@ class AboutDialog(QDialog):
         self.vlayout.addWidget(self.logo_box)
         self.vlayout.addWidget(self.text_display)
         self.setLayout(self.vlayout)
+
+
+class CheckFileDialog(QDialog):
+
+    def __init__(self, data_file):
+        super(CheckFileDialog, self).__init__()
+        self.setAttribute(Qt.WA_DeleteOnClose)
+        self.title = 'Check Data File! | ' + __appname__ + 'v' + __version__
+        self.setWindowTitle(self.title)
+        self.resize(800, 500)
+
+        self.data_file = data_file
+
+        self.create_widgets()
+        self.create_layout()
+        self.create_signals()
+        self.init_data()
+
+    def create_widgets(self):
+
+        self.info_message = QLabel('<b>Error trying to read file! Does it contain a header?</b> \
+                                   <br>Please select the header block below, use the hash (#) \
+                                    symbol to mark header lines, or select a new file.')
+
+        self.fname_lbl = QLabel('Filename: <i>' + self.data_file + '</i>')
+        self.fname_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+
+        self.header_len_lbl = QLabel('Header length (lines)')
+        self.header_len = QSpinBox()
+        self.header_len_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.header_len.setAlignment(Qt.AlignRight)
+        self.header_len.setRange(0, 100)
+        self.header_len.setMaximumWidth(70)
+
+        # Text area for file preview
+        self.preview_file_area = QPlainTextEdit()
+        self.preview_file_area.setReadOnly(True)
+
+        self.button_box = QDialogButtonBox()
+        self.button_box.addButton('&Cancel', QDialogButtonBox.RejectRole)
+        self.button_box.addButton('&Load File', QDialogButtonBox.AcceptRole)
+
+        self.default_format = QTextBlockFormat(self.preview_file_area.document().firstBlock().blockFormat())
+        self.highlight_format = QTextBlockFormat()
+        self.highlight_format.setBackground(Qt.yellow)
+
+    def create_layout(self):
+
+        self.outer_layout = QVBoxLayout()
+        self.outer_layout.setContentsMargins(5, 3, 5, 7)
+        self.outer_layout.setSpacing(10)
+
+        self.vlayout = QVBoxLayout()
+        self.vlayout.setContentsMargins(5, 3, 5, 7)
+        self.vlayout.setSpacing(10)
+
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setSpacing(15)
+        self.grid_layout.addWidget(self.fname_lbl, 0 , 0)
+        self.grid_layout.addWidget(self.header_len_lbl, 1, 0)
+        self.grid_layout.addWidget(self.header_len, 1, 1)
+
+        self.vlayout.addWidget(self.info_message)
+        self.vlayout.addLayout(self.grid_layout)
+        self.vlayout.addWidget(self.preview_file_area)
+
+        self.preview_widget = QWidget()
+        self.preview_widget.setLayout(self.vlayout)
+
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setFrameShape(QFrame.NoFrame)
+        self.scroll_area.setWidget(self.preview_widget)
+        self.scroll_area.setWidgetResizable(True)
+
+        self.hline = QFrame()
+        self.hline.setFrameShape(QFrame.HLine)
+        self.hline.setFrameShadow(QFrame.Sunken)
+        self.hline.setObjectName('hline')
+
+        self.outer_layout.addWidget(self.scroll_area)
+        self.outer_layout.addWidget(self.hline)
+        self.outer_layout.addWidget(self.button_box)
+
+        self.setLayout(self.outer_layout)
+
+    def init_data(self):
+        with open(self.data_file, "r") as f:
+            file_contents = f.read()
+            self.preview_file_area.setPlainText(file_contents)
+        self.header_len.setValue(4)
+
+    def create_signals(self):
+        self.button_box.accepted.connect(self.attempt_file_load)
+        self.button_box.rejected.connect(self.rejected)
+        self.rejected.connect(self.close)
+        self.header_len.valueChanged.connect(self.highlight_header)
+
+    def highlight_header(self):
+        # Remove existing highlighting from entire document
+        _cursor = QTextCursor(self.preview_file_area.document())
+        _cursor.select(QTextCursor.Document)
+        _cursor.setBlockFormat(self.default_format)
+        if self.header_len.value() > 0:
+            # Highlight header lines (n-1)
+            _cursor = QTextCursor(self.preview_file_area.document().findBlockByLineNumber(self.header_len.value() - 1))
+            _cursor.movePosition(QTextCursor.Start, QTextCursor.KeepAnchor)
+            _cursor.setBlockFormat(self.highlight_format)
+        else:
+            return
+
+    def attempt_file_load(self):
+        self._header_len = self.header_len.value()
+        try:
+            _x, _y = np.loadtxt(self.data_file, unpack=True, skiprows=self._header_len)
+            self.done(1)
+        except ValueError:
+            _message = ['Error loading file!', 'Unable to load file.\nPlease check header.']
+            ErrorMessageBox(_message).exec()
+            return
+
+    def get_header_len(self):
+        return self._header_len

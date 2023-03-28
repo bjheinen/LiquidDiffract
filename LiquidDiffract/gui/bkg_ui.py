@@ -137,9 +137,20 @@ class BkgUI(QWidget):
             if self.data_units:
                 self.data['data_raw_x'] /= 10.0
         except ValueError:
-            self.data_file = None
-            self.load_file_error()
-            return
+            try:
+                _header_len = self.check_file_header(self.data_file)
+            except UnicodeDecodeError:
+                self.data_file = None
+                self.load_file_error()
+                return
+            if _header_len:
+                self.data['data_raw_x'], self.data['data_raw_y'] = np.loadtxt(self.data_file, unpack=True, skiprows=_header_len)
+                # Convert to angstroms if data_units == 1 (nm)
+                if self.data_units:
+                    self.data['data_raw_x'] /= 10.0
+            else:
+                self.data_file = None
+                return
         try:
             self.rebin_data(bkg=0)
         except RuntimeWarning:
@@ -161,9 +172,21 @@ class BkgUI(QWidget):
             if self.data_units:
                 self.data['bkg_raw_x'] /= 10.0
         except ValueError:
-            self.bkg_file = None
-            self.load_file_error()
-            return
+            try:
+                _header_len = self.check_file_header(self.bkg_file)
+            except UnicodeDecodeError:
+                self.bkg_file = None
+                self.load_file_error()
+                return
+            if _header_len:
+                self.data['bkg_raw_x'], self.data['bkg_raw_y'] = np.loadtxt(self.bkg_file, unpack=True, skiprows=_header_len)
+                # Convert to angstroms if data_units == 1 (nm)
+                if self.data_units:
+                    self.data['bkg_raw_x'] /= 10.0
+            else:
+                self.bkg_file = None
+                return
+
         try:
             self.rebin_data(bkg=1)
         except RuntimeWarning:
@@ -172,6 +195,13 @@ class BkgUI(QWidget):
             return
         self.bkg_config_widget.data_files_gb.bkg_filename_lbl.setText(self.bkg_file.split('/')[-1])
         print(f'Background File: {self.bkg_file}')
+
+    def check_file_header(self, _fname):
+        _check_dialog = utility.CheckFileDialog(_fname)
+        if _check_dialog.exec_() == utility.CheckFileDialog.Accepted:
+            return _check_dialog.get_header_len()
+        else:
+            return None
 
     def plot_data(self):
         if self.data['bkg_y'].size:
