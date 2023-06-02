@@ -2,9 +2,13 @@
 *.pyc
 # Temp files
 *~
+# Build directory
+dist
 # Test directory / files
 tests
 # egg
 LiquidDiffract.egg-info
 # Local files
 .directory
+# Refinement logs generated during tests
+LiquidDiffract/scripts/refinement.log
