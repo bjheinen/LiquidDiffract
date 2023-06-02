@@ -4,8 +4,6 @@
 *~
 # Build directory
 dist
-# Test directory / files
-tests
 # egg
 LiquidDiffract.egg-info
 # Local files
