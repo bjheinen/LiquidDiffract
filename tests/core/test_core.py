@@ -170,8 +170,21 @@ class TestCalcJ(unittest.TestCase, CustomAssertions):
         self.assertFloatArrayEqual(calc_J_CaSiO3, expected_J_CaSiO3)
 
 
-
-
+class TestCalcKP(unittest.TestCase, CustomAssertions):
+    def test_calc_k_p(self):
+        Q = np.arange(0, 12, 0.02)
+        composition_CaSiO3 = {'Ca': (20,0,1), 'Si': (14,0,1), 'O': (8,0,3)}
+        composition_Ga = {'Ga': (31,0,1)}
+        composition_GaGa = {'Ga': (31,0,2)}
+        expected_K_CaSiO3 = np.array([22.28649729, 15.07790776,  6.87853165,  6.87853165,  6.87853165])
+        K_Ga = core.calc_K_p(composition_Ga, Q)
+        K_GaGa = core.calc_K_p(composition_GaGa, Q)
+        K_CaSiO3 = core.calc_K_p(composition_CaSiO3, Q)
+        self.assertTrue(len(K_Ga), 1)
+        self.assertTrue(len(K_GaGa), 2)
+        self.assertTrue(len(K_CaSiO3), 5)
+        self.assertEqual(K_Ga, 31.0)
+        self.assertFloatArrayEqual(expected_K_CaSiO3, K_CaSiO3)
 
 
 if __name__ == "__main__":
