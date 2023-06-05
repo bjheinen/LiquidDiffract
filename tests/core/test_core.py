@@ -206,5 +206,23 @@ class TestCalcWeights(unittest.TestCase, CustomAssertions):
         self.assertEqual(sum(c_dict_test.values()), 1.0)
 
 
+class TestCalcSInf(unittest.TestCase, CustomAssertions):
+    def test_calc_s_inf(self):
+        Q = np.arange(0, 12, 0.02)
+        composition_Ga = {'Ga': (31,0,1)}
+        composition_H2O = {'H': (1,0,2), 'O': (8,0,1)}
+        expected_S_inf_H2O = 0.8471353203169478
+        S_inf_Ga = core.calc_S_inf(composition_Ga, Q)
+        S_inf_H2O = core.calc_S_inf(composition_H2O, Q)
+        self.assertFloatEqual(S_inf_H2O, expected_S_inf_H2O)
+        self.assertEqual(S_inf_Ga, 1.0)
+
+    def test_calc_s_inf_fz(self):
+        test_1 = core.calc_S_inf({'Ga': (31,0,1)}, np.arange(0,12,0.02))
+        test_2 = core.calc_S_inf('ARG', {'ARG2': (0,0,False)}, method='faber-ziman')
+        self.assertTrue(test_1 == test_2 == 1.0)
+
+
+
 if __name__ == "__main__":
     unittest.main()
