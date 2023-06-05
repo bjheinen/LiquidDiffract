@@ -145,5 +145,25 @@ class TestCalcAverageScattering(unittest.TestCase, CustomAssertions):
         self.assertFloatArrayEqual(average_scattering_CaSiO3[1], expected_avg_scattering_CaSiO3[1])
 
 
+class TestCalcTotalComptonScattering(unittest.TestCase, CustomAssertions):
+    def test_calc_compton_scattering(self):
+        Q = np.arange(0, 12, 0.02)
+        composition_Ga = {'Ga': (31,0,1)}
+        composition_GaGa = {'Ga': (31,0,2)}
+        composition_CaSiO3 = {'Ca': (20,0,1), 'Si': (14,0,1), 'O': (8,0,3)}
+        expected_compton_CaSiO3 = np.load(os.path.join(data_path, 'compton_scattering_CaSiO3_0-12.npy'))
+
+        compton_Ga = core.calc_total_compton_scattering(composition_Ga, Q)
+        compton_GaGa = core.calc_total_compton_scattering(composition_GaGa, Q)
+        compton_CaSiO3 = core.calc_total_compton_scattering(composition_CaSiO3, Q)
+
+        self.assertFloatArrayEqual(compton_Ga, compton_GaGa/2.0)
+        self.assertFloatArrayEqual(compton_CaSiO3, expected_compton_CaSiO3)
+
+
+
+
+
+
 if __name__ == "__main__":
     unittest.main()
