@@ -187,5 +187,24 @@ class TestCalcKP(unittest.TestCase, CustomAssertions):
         self.assertFloatArrayEqual(expected_K_CaSiO3, K_CaSiO3)
 
 
+class TestCalcWeights(unittest.TestCase, CustomAssertions):
+    def test_calculate_weights(self):
+        Q = np.arange(0, 12, 0.02)
+        composition_Ga = {'Ga': (31, 0, 1)}
+        composition_H2O = {'H': (1,0,2), 'O':(8,0,1)}
+        composition_test = {'Mg': (12,0,1), 'Al': (13,0,1), 'Pd': (46,0,1), 'W': (74,0,1), 'Sn': (50,0,1), 'N': (7,0,5)}
+        weights_Ga, c_dict_Ga = core.calculate_weights(composition_Ga, Q)
+        weights_H2O, c_dict_H2O = core.calculate_weights(composition_H2O, Q)
+        weights_test, c_dict_test = core.calculate_weights(composition_test, Q)
+        self.assertEqual(weights_Ga[('Ga', 'Ga')], 1.0)
+        self.assertEqual(c_dict_Ga['Ga'], 1.0)
+        self.assertFloatEqual(weights_H2O[('O', 'H')], 0.14955153186983297)
+        self.assertFloatEqual(weights_H2O[('H', 'O')], 0.14955153186983297)
+        self.assertFloatEqual(weights_H2O[('H', 'H')], 0.006626295626438653)
+        self.assertFloatEqual(weights_H2O[('O', 'O')], 0.8438221725037282)
+        self.assertEqual(len(weights_test), 36)
+        self.assertEqual(sum(c_dict_test.values()), 1.0)
+
+
 if __name__ == "__main__":
     unittest.main()
