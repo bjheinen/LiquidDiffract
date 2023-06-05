@@ -109,5 +109,40 @@ class TestCalcAtomicFF(unittest.TestCase, CustomAssertions):
         self.assertArrayEqual(atomic_ff_Si, expected_atomic_ff_Si)
 
 
+class TestCalcEffectiveFF(unittest.TestCase, CustomAssertions):
+    def test_calc_effective_ff(self):
+        Q = np.arange(0, 12, 0.02)
+        composition_Ga = {'Ga': (31,0,1)}
+        composition_CaSiO3 = {'Ca': (20,0,1), 'Si': (14,0,1), 'O': (8,0,3)}
+        composition_GaSn = {'Ga': [31, 0, 915], 'Sn': [50, 0, 85]}
+        expected_aff_Ga = np.load(os.path.join(data_path, 'atomic_ff_Ga_0-12.npy'))
+        expected_eff_CaSiO3 = np.load(os.path.join(data_path, 'effective_ff_CaSiO3_0-12.npy'))
+
+        eff_Ga, aff_Ga = core.calc_effective_ff(composition_Ga, Q)
+        self.assertTrue(len(aff_Ga) == 1)
+        self.assert_allclose(aff_Ga, expected_aff_Ga)
+        self.assert_allclose(aff_Ga/eff_Ga/31.0, 1.0)
+
+        eff_CaSiO3, _ = core.calc_effective_ff(composition_CaSiO3, Q)
+        self.assert_allclose(eff_CaSiO3, expected_eff_CaSiO3)
+
+        self.assertIsInstance(core.calc_effective_ff(composition_GaSn, Q), tuple)
+
+
+class TestCalcAverageScattering(unittest.TestCase, CustomAssertions):
+    def test_calc_average_scattering(self):
+        Q = np.arange(0, 12, 0.02)
+        composition_Ga = {'Ga': (31,0,1)}
+        composition_CaSiO3 = {'Ca': (20,0,1), 'Si': (14,0,1), 'O': (8,0,3)}
+        expected_avg_scattering_CaSiO3 = np.load(os.path.join(data_path, 'average_scattering_functions_CaSiO3_0-12.npy'))
+        average_scattering_Ga = core.calc_average_scattering(composition_Ga, Q)
+        average_scattering_CaSiO3 = core.calc_average_scattering(composition_CaSiO3, Q)
+        # <f2> == <f>2 for monatomic case
+        self.assert_allclose(average_scattering_Ga[0], average_scattering_Ga[1])
+        self.assertEqual(len(average_scattering_CaSiO3), 2)
+        self.assert_allclose(average_scattering_CaSiO3[0], expected_avg_scattering_CaSiO3[0])
+        self.assert_allclose(average_scattering_CaSiO3[1], expected_avg_scattering_CaSiO3[1])
+
+
 if __name__ == "__main__":
     unittest.main()
