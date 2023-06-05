@@ -120,11 +120,12 @@ class TestCalcEffectiveFF(unittest.TestCase, CustomAssertions):
 
         eff_Ga, aff_Ga = core.calc_effective_ff(composition_Ga, Q)
         self.assertTrue(len(aff_Ga) == 1)
-        self.assert_allclose(aff_Ga, expected_aff_Ga)
-        self.assert_allclose(aff_Ga/eff_Ga/31.0, 1.0)
+        self.assertTrue(len(aff_Ga[0]) == 600)
+        self.assertFloatArrayEqual(aff_Ga[0], expected_aff_Ga)
+        self.assertFloatArrayEqual(aff_Ga/eff_Ga/31.0, 1.0)
 
         eff_CaSiO3, _ = core.calc_effective_ff(composition_CaSiO3, Q)
-        self.assert_allclose(eff_CaSiO3, expected_eff_CaSiO3)
+        self.assertFloatArrayEqual(eff_CaSiO3, expected_eff_CaSiO3)
 
         self.assertIsInstance(core.calc_effective_ff(composition_GaSn, Q), tuple)
 
@@ -138,10 +139,10 @@ class TestCalcAverageScattering(unittest.TestCase, CustomAssertions):
         average_scattering_Ga = core.calc_average_scattering(composition_Ga, Q)
         average_scattering_CaSiO3 = core.calc_average_scattering(composition_CaSiO3, Q)
         # <f2> == <f>2 for monatomic case
-        self.assert_allclose(average_scattering_Ga[0], average_scattering_Ga[1])
+        self.assertFloatArrayEqual(average_scattering_Ga[0], average_scattering_Ga[1])
         self.assertEqual(len(average_scattering_CaSiO3), 2)
-        self.assert_allclose(average_scattering_CaSiO3[0], expected_avg_scattering_CaSiO3[0])
-        self.assert_allclose(average_scattering_CaSiO3[1], expected_avg_scattering_CaSiO3[1])
+        self.assertFloatArrayEqual(average_scattering_CaSiO3[0], expected_avg_scattering_CaSiO3[0])
+        self.assertFloatArrayEqual(average_scattering_CaSiO3[1], expected_avg_scattering_CaSiO3[1])
 
 
 if __name__ == "__main__":
