@@ -161,6 +161,15 @@ class TestCalcTotalComptonScattering(unittest.TestCase, CustomAssertions):
         self.assertFloatArrayEqual(compton_CaSiO3, expected_compton_CaSiO3)
 
 
+class TestCalcJ(unittest.TestCase, CustomAssertions):
+    def test_calc_j(self):
+        composition_CaSiO3 = {'Ca': (20,0,1), 'Si': (14,0,1), 'O': (8,0,3)}
+        Q = np.array([0, 1, 50])
+        expected_J_CaSiO3 = np.array([0, 0.002139397870661679, 5.261489234552006])
+        calc_J_CaSiO3 = core.calc_J(composition_CaSiO3, Q)
+        self.assertFloatArrayEqual(calc_J_CaSiO3, expected_J_CaSiO3)
+
+
 
 
 
