@@ -6,12 +6,15 @@ import numpy as np
 # Get test data path
 unittest_path = os.path.dirname(__file__)
 data_path = os.path.join(unittest_path, './data')
+__unittest = True
 
 class CustomAssertions:
     # Compare floats
     def assertFloatEqual(self, a, b, rtol=1e-7, atol=1e-16, err_msg=''):       
+        std_err_msg = (f'{a} != {b} with relative tolerance of {rtol:.3g}'
+                       f' and absolute tolerance of {atol:.3g}')
         # equivalent to abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
-        assert math.isclose(a, b, rel_tol=rtol, abs_tol=atol), err_msg
+        assert math.isclose(a, b, rel_tol=rtol, abs_tol=atol), f'{std_err_msg} : {err_msg}'
     # Compare numpy arrays with np.testing
     def assertArrayEqual(self, a, b, err_msg='', verbose=True, strict=True):
         np.testing.assert_array_equal(a, b, err_msg=err_msg, verbose=verbose, strict=strict)
