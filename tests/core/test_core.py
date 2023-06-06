@@ -10,6 +10,7 @@ import os.path
 import numpy as np
 # import core module to test
 import LiquidDiffract.core.core as core
+import LiquidDiffract.core.data_utils as data_utils
 # import data path and custom assertions from tests/util
 from util import data_path
 from util import CustomAssertions
@@ -222,6 +223,35 @@ class TestCalcSInf(unittest.TestCase, CustomAssertions):
         test_2 = core.calc_S_inf('ARG', {'ARG2': (0,0,False)}, method='faber-ziman')
         self.assertTrue(test_1 == test_2 == 1.0)
 
+
+class TestCalcAlpha(unittest.TestCase, CustomAssertions):
+    def test_calc_alpha(self):
+        with resources.files('LiquidDiffract.scripts').joinpath('example_data.dat').open('r') as fp:
+            q_test, I_test = np.loadtxt(fp, unpack=True, skiprows=0)
+        q_test, I_test = data_utils.rebin_data(q_test, I_test, dx=0.02)
+        composition_Ga = {'Ga': (31,0,1)}
+        J_Ga = core.calc_J(composition_Ga, q_test)
+        Z_tot_Ga = core.calc_Z_sum(composition_Ga)
+        S_inf_Ga = core.calc_S_inf(composition_Ga, q_test)
+        eff_Ga, _ = core.calc_effective_ff(composition_Ga, q_test)
+        avg_scattering_Ga = core.calc_average_scattering(composition_Ga, q_test)
+        compton_Ga = core.calc_total_compton_scattering(composition_Ga, q_test) / 1.0
+        alpha_Ga_al = core.calc_alpha(q_test, I_test, 0.05, Z_tot=Z_tot_Ga, J=J_Ga, S_inf=S_inf_Ga, effective_ff=eff_Ga, method='ashcroft-langreth')
+        alpha_Ga_fz = core.calc_alpha(q_test, I_test, 0.05, average_scattering=avg_scattering_Ga, compton_scattering=compton_Ga, method='faber-ziman')
+        composition_CaSiO3 = {'Ca': (20,0,1), 'Si': (14,0,1), 'O': (8,0,3)}
+        J_CaSiO3 = core.calc_J(composition_CaSiO3, q_test)
+        Z_tot_CaSiO3 = core.calc_Z_sum(composition_CaSiO3)
+        S_inf_CaSiO3 = core.calc_S_inf(composition_CaSiO3, q_test)
+        eff_CaSiO3, _ = core.calc_effective_ff(composition_CaSiO3, q_test)
+        avg_scattering_CaSiO3 = core.calc_average_scattering(composition_CaSiO3, q_test)
+        compton_CaSiO3 = core.calc_total_compton_scattering(composition_CaSiO3, q_test) / 5.0
+        alpha_CaSiO3_al = core.calc_alpha(q_test, I_test, 0.12, Z_tot=Z_tot_CaSiO3, J=J_CaSiO3, S_inf=S_inf_CaSiO3, effective_ff=eff_CaSiO3, method='ashcroft-langreth')
+        alpha_CaSiO3_fz = core.calc_alpha(q_test, I_test, 0.12, average_scattering=avg_scattering_CaSiO3, compton_scattering=compton_CaSiO3, method='faber-ziman')
+
+        self.assertFloatEqual(alpha_Ga_al, alpha_Ga_fz)
+        self.assertFloatEqual(alpha_Ga_fz, 12.38770462391852)
+        self.assertFloatEqual(alpha_CaSiO3_al, 10.544150126760833)
+        self.assertFloatEqual(alpha_CaSiO3_fz, 2.201685124321958)
 
 
 if __name__ == "__main__":
