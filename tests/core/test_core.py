@@ -254,5 +254,19 @@ class TestCalcAlpha(unittest.TestCase, CustomAssertions):
         self.assertFloatEqual(alpha_CaSiO3_fz, 2.201685124321958)
 
 
+class TestCalcCoherentScattering(unittest.TestCase, CustomAssertions):
+    def test_calc_coherent_scattering(self):
+        composition_H2O = {'H': (1,0,2), 'O': (8,0,1)}
+        fz_test = core.calc_coherent_scattering(None, 2, composition_H2O, 3, compton_scattering=3.5, method='faber-ziman')
+        al_test = core.calc_coherent_scattering(None, 2, composition_H2O, 3, compton_scattering=3.5, method='ashcroft-langreth')
+        fz_comp_test = core.calc_coherent_scattering([0], 2, composition_H2O, 3, method='faber-ziman')
+        al_comp_test = core.calc_coherent_scattering([0], 2, composition_H2O, 3, method='ashcroft-langreth')
+        self.assertEqual(fz_test, 2.5)
+        self.assertEqual(al_test, 7.5)
+        self.assertEqual(fz_comp_test, 6.0)
+        self.assertEqual(al_comp_test, 18.0)
+
+
+
 if __name__ == "__main__":
     unittest.main()
