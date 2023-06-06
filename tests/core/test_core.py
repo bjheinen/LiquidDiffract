@@ -266,6 +266,93 @@ class TestCalcCoherentScattering(unittest.TestCase, CustomAssertions):
         self.assertEqual(fz_comp_test, 6.0)
         self.assertEqual(al_comp_test, 18.0)
 
+class TestNormaliseALFunc(unittest.TestCase, CustomAssertions):
+    def test_normalise_al(self):
+        sq_norm = core.normalise_achroft_langreth_func(0.5, sq=np.array([1, 2]))
+        gr_norm = core.normalise_achroft_langreth_func(0.5, gr=np.array([1, 3]))
+        rdf_norm = core.normalise_achroft_langreth_func(0.5, rdf=np.array([1, 3]), rho_0=(1/np.pi), r=np.array([0, 0.5]))
+        expected_sq_norm = np.array([2.0, 4.0])
+        expected_gr_norm = np.array([1.0, 5.0])
+        expected_rdf_norm = np.array([2.0, 5.0])
+        self.assertArrayEqual(sq_norm, expected_sq_norm)
+        self.assertArrayEqual(gr_norm, expected_gr_norm)
+        self.assertArrayEqual(rdf_norm, expected_rdf_norm)
+
+
+class TestGetModFunc(unittest.TestCase):
+    def test_get_lorch(self):
+        pass
+    def test_get_cosine_window(self):
+        pass
+    def test_no_mod(self):
+        Q = np.arange(0, 12, 0.02)
+        self.assertTrue(core.get_mod_func(Q, None, None) == 1)
+
+
+class TestCalcModelDIntraR(unittest.TestCase, CustomAssertions):
+    def test_calc_model(self):
+        # model = −4πrρ
+        rho = 0.5
+        r = np.array([0, 1.5, 2])
+        test_model = core.calc_model_D_intra_r(rho, r)
+        expected_model = np.array([0, -9.42477796076938, -12.566370614359172])
+        test_model_unity = core.calc_model_D_intra_r(1/np.pi, [-1/4])
+        expected_model_unity = np.array([1.0])
+        self.assertFloatArrayEqual(test_model, expected_model)
+        self.assertArrayEqual(test_model_unity, expected_model_unity)
+
+
+class TestCalcChiSquared(unittest.TestCase, CustomAssertions):
+    def test_calc_chi_squared(self):
+        x = np.array([1, 3, 4])
+        y = x
+        chi_squared = core.calc_chi_squared(x, y)
+        self.assertEqual(chi_squared, 21e6)
+
+    def test_bad_method(self):
+        x = np.array([1, 3, 4])
+        y = x
+        self.assertRaises(NotImplementedError, core.calc_chi_squared, x, y, method='quadrature')
+
+
+class TestStopIteration(unittest.TestCase):
+    def test_stop_iteration(self):
+        self.assertTrue(core.stop_iteration(count=5, iter_limit=5))
+        self.assertFalse(core.stop_iteration(count=5, iter_limit=6))
+    def test_bad_method(self):
+        self.assertRaises(NotImplementedError, core.stop_iteration, chi_squared=1.0, stop_condition='chi2_converge')
+
+
+class TestIntegrateCoordSphere(unittest.TestCase, CustomAssertions):
+    def test_integrate_coordination_sphere(self):
+        test_r = np.arange(0, 3.5, 0.01)
+        test_rdf = np.cos(test_r)
+        r_0 = 0.0
+        rp_max = np.pi/2.0
+        r_max = np.pi/2.0
+        r_min = np.pi
+        N_a, N_b, N_c = core.integrate_coordination_sphere(test_r, test_rdf, r_0=r_0, rp_max=rp_max, r_max=r_max, r_min=r_min)
+        self.assertFloatEqual(N_a, 2)
+        self.assertFloatEqual(N_b, 2)
+        self.assertFloatEqual(N_c, 0, atol=1e-10)
+
+
+class TestCalcStructureFactor():
+    def test_bad_method(self):
+        #self.assertRaises(ValueError, core.calc_structure_factor(Q_cor, I_cor, composition, rho))
+        pass
+
+class TestCalcImprIntFunc():
+    def test(self):
+        pass
+
+class TestCalcCorrelationFunc():
+    def test(self):
+        pass
+    # Test going one way, then back to see if equal
+    # Test data loaded in against g(r), D(r), RDF(r)
+
+
 
 
 if __name__ == "__main__":
