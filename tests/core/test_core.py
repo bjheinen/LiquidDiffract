@@ -280,11 +280,27 @@ class TestNormaliseALFunc(unittest.TestCase, CustomAssertions):
         self.assertArrayEqual(rdf_norm, expected_rdf_norm)
 
 
-class TestGetModFunc(unittest.TestCase):
+class TestGetModFunc(unittest.TestCase, CustomAssertions):
     def test_get_lorch(self):
-        pass
+        test_Q = np.array([0, 0.02, 0.5, 1, 9.9, 10.0])
+        expected_lorch = np.array([1.0,
+                                   0.9999934202767204, 0.9958927352435614,
+                                   0.983631643083466, 0.010099348633439868, 0])
+        lorch = core.get_mod_func(test_Q, 'Lorch', None)
+        self.assertFloatArrayEqual(lorch, expected_lorch)
+
     def test_get_cosine_window(self):
-        pass
+        test_Q = np.array([0, 0.02, 0.5, 1, 2.2, 4.2,
+                           4.5, 6.5, 7.0, 9.9, 10.0])
+        expected_window = np.array([1, 1, 1, 1, 1, 1,
+                                    1.0,
+                                    0.5 + 2**0.5/4,
+                                    0.5,
+                                    0.5 - 2**0.5/4,
+                                    0])
+        cosine_window = core.get_mod_func(test_Q, 'Cosine-window', 4.4)
+        self.assertFloatArrayEqual(cosine_window, expected_window)
+
     def test_no_mod(self):
         Q = np.arange(0, 12, 0.02)
         self.assertTrue(core.get_mod_func(Q, None, None) == 1)
