@@ -21,6 +21,11 @@ class TestCustomAssertions(unittest.TestCase, CustomAssertions):
         b = a + 1e-20
         self.assertFloatArrayEqual(a,b)
 
+    def test_assert_not_float_array_equal(self):
+        a = np.array([1,1e-12,2,1e-5,1e6,0])
+        b = a + 1e-3
+        self.assertNotFloatArrayEqual
+
 class TestDataPath(unittest.TestCase):
     def test_data_path(self):
         fname = os.path.join(data_path, 'atomic_ff_Ga_0-12.npy')

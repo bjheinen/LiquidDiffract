@@ -21,3 +21,7 @@ class CustomAssertions:
     def assertFloatArrayEqual(self, a, b, rtol=1e-7, atol=1e-16, err_msg='', equal_nan=True, verbose=True):
         # np.allclose calculates abs(a - b) <= (atol + rtol * abs(b)), which is not great
         np.testing.assert_allclose(a, b, rtol=rtol, atol=atol, err_msg=err_msg, equal_nan=equal_nan, verbose=verbose)
+    def assertNotFloatArrayEqual(self, a, b, rtol=1e-7, atol=1e-16, err_msg='', equal_nan=True, verbose=True):
+        np.testing.assert_raises(AssertionError,
+                                 np.testing.assert_allclose,
+                                 a, b, rtol=rtol, atol=atol, err_msg=err_msg, equal_nan=equal_nan, verbose=verbose)
