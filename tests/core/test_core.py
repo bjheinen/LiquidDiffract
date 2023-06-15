@@ -29,8 +29,7 @@ class TestCalcMolMass(unittest.TestCase, CustomAssertions):
 
     def test_bad_element_key(self):
         composition = {'BAD_SYMBOL': (1, 0, 2)}
-        with self.assertRaises(KeyError):
-            core.calc_mol_mass(composition)
+        self.assertRaises(KeyError, core.calc_mol_mass, composition)
 
     def test_data_coherence(self):
         with resources.open_binary('LiquidDiffract.resources', 'mass_data.npy') as fp:
@@ -136,6 +135,7 @@ class TestCalcAverageScattering(unittest.TestCase, CustomAssertions):
         Q = np.arange(0, 12, 0.02)
         composition_Ga = {'Ga': (31,0,1)}
         composition_CaSiO3 = {'Ca': (20,0,1), 'Si': (14,0,1), 'O': (8,0,3)}
+        #composition_GaSn = {'Ga': [31, 0, 915], 'Sn': [50, 0, 85]}
         expected_avg_scattering_CaSiO3 = np.load(os.path.join(data_path, 'average_scattering_functions_CaSiO3_0-12.npy'))
         average_scattering_Ga = core.calc_average_scattering(composition_Ga, Q)
         average_scattering_CaSiO3 = core.calc_average_scattering(composition_CaSiO3, Q)
@@ -144,6 +144,7 @@ class TestCalcAverageScattering(unittest.TestCase, CustomAssertions):
         self.assertEqual(len(average_scattering_CaSiO3), 2)
         self.assertFloatArrayEqual(average_scattering_CaSiO3[0], expected_avg_scattering_CaSiO3[0])
         self.assertFloatArrayEqual(average_scattering_CaSiO3[1], expected_avg_scattering_CaSiO3[1])
+        #self.assertIsInstance(core.calc_average_scattering(composition_GaSn, Q), list)
 
 
 class TestCalcTotalComptonScattering(unittest.TestCase, CustomAssertions):
@@ -337,10 +338,35 @@ class TestIntegrateCoordSphere(unittest.TestCase, CustomAssertions):
         self.assertFloatEqual(N_c, 0, atol=1e-10)
 
 
-class TestCalcStructureFactor():
+class TestCalcStructureFactor(unittest.TestCase, CustomAssertions):
+    def setUp(self):
+        with resources.files('LiquidDiffract.scripts').joinpath('example_data.dat').open('r') as fp:
+            _q_test, _I_test = np.loadtxt(fp, unpack=True, skiprows=0)
+        self.q_test, self.I_test = data_utils.rebin_data(_q_test, _I_test, dx=0.02)
+        self.composition_Ga = {'Ga': (31,0,1)}
+        self.composition_CaSiO3 = {'Ca': (20,0,1), 'Si': (14,0,1), 'O': (8,0,3)}
+        self.S_inf_CaSiO3 = core.calc_S_inf(self.composition_CaSiO3, self.q_test)
+        self.expected_SQ_Ga = np.load(os.path.join(data_path, 'SQ_initial_Ga.npy'))
+        self.expected_SQ_CaSiO3_AL = np.load(os.path.join(data_path, 'SQ_initial_CaSiO3_AL.npy'))
+        self.expected_SQ_CaSiO3_FZ = np.load(os.path.join(data_path, 'SQ_initial_CaSiO3_FZ.npy'))
+
+    def test_calc_sq_mono(self):
+        SQ_Ga_AL = core.calc_structure_factor(self.q_test, self.I_test, self.composition_Ga, 0.048, method='ashcroft-langreth')
+        SQ_Ga_FZ = core.calc_structure_factor(self.q_test, self.I_test, self.composition_Ga, 0.048, method='faber-ziman')
+        self.assertFloatArrayEqual(SQ_Ga_AL, SQ_Ga_FZ)
+        self.assertFloatArrayEqual(SQ_Ga_FZ, self.expected_SQ_Ga)
+
+    def test_calc_sq_poly(self):
+        SQ_CaSiO3_AL = core.calc_structure_factor(self.q_test, self.I_test, self.composition_CaSiO3, 0.048, method='ashcroft-langreth')
+        SQ_CaSiO3_AL_rescaled = core.normalise_achroft_langreth_func(SQ_CaSiO3_AL, self.S_inf_CaSiO3)
+        SQ_CaSiO3_FZ = core.calc_structure_factor(self.q_test, self.I_test, self.composition_CaSiO3, 0.048, method='faber-ziman')
+        self.assertFloatArrayEqual(SQ_CaSiO3_AL, self.expected_SQ_CaSiO3_AL)
+        self.assertFloatArrayEqual(SQ_CaSiO3_FZ, self.expected_SQ_CaSiO3_FZ)
+        self.assertNotFloatArrayEqual(SQ_CaSiO3_AL_rescaled, SQ_CaSiO3_FZ)
+
     def test_bad_method(self):
-        #self.assertRaises(ValueError, core.calc_structure_factor(Q_cor, I_cor, composition, rho))
-        pass
+        self.assertRaises(ValueError, core.calc_structure_factor, self.q_test, self.I_test, self.composition_Ga, 0.048, method='BAD')
+
 
 class TestCalcImprIntFunc():
     def test(self):
