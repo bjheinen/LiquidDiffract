@@ -384,17 +384,68 @@ class TestCalcStructureFactor(unittest.TestCase, CustomAssertions):
         self.assertRaises(ValueError, core.calc_structure_factor, self.q_test, self.I_test, self.composition_Ga, 0.048, method='BAD')
 
 
+class TestCalcCorrelationFunc(unittest.TestCase, CustomAssertions):
+
+    def setUp(self):
+        # Can combine with fixtures from other tests
+        with resources.files('LiquidDiffract.scripts').joinpath('example_data.dat').open('r') as fp:
+            _q_test, _I_test = np.loadtxt(fp, unpack=True, skiprows=0)
+        self.q_test, self.I_test = data_utils.rebin_data(_q_test, _I_test, dx=0.02)
+        self.composition_Ga = {'Ga': (31,0,1)}
+        self.rho = 0.048
+        self.intf_func_Ga = core.calc_structure_factor(self.q_test, self.I_test, self.composition_Ga, self.rho, method='faber-ziman') - core.calc_S_inf(self.composition_Ga, self.q_test)
+        # self.q_test, self.intf_func_Ga, self.rho, mod_func
+
+        # Need to generate this data
+        #self.expected_r_Ga, self.expected_Dr_Ga = np.load(os.path.join(data_path, 'Dr_Ga.npy'))
+
+    def test_bad_method(self):
+        # some setup for x, y, and rho
+        self.assertRaises(ValueError, core.calc_correlation_func, self.q_test, self.intf_func_Ga, self.rho, function='BAD')
+
+    def test_calc_Dr(self):
+        # Test calculation of D(r) and r-values
+        r_Ga, Dr_Ga = core.calc_correlation_func(self.q_test, self.intf_func_Ga, self.rho, mod_func='Cosine-window', window_start=8.0)
+        self.assertFloatArrayEqual(Dr_Ga, self.expected_Dr_Ga)
+        self.assertFloatArrayEqual(r_Ga, self.expected_r_Ga)
+
+    def test_calc_correlation_funcs(self):
+        # Test calculation of g(r), D(r), and RDF(r)
+        r_Ga_from_Dr, Dr_Ga = core.calc_correlation_func(self.q_test, self.intf_func_Ga, self.rho, function='density_func')
+        r_Ga_from_gr, gr_Ga = core.calc_correlation_func(self.q_test, self.intf_func_Ga, self.rho, function='pair_dist_func')
+        r_Ga_from_RDF, RDF_Ga = core.calc_correlation_func(self.q_test, self.intf_func_Ga, self.rho, function='radial_dist_func')
+        # Check r-values calculated in the same way
+        self.assertFloatArrayEqual(r_Ga_from_Dr, r_Ga_from_gr)
+        self.assertFloatArrayEqual(r_Ga_from_gr, r_Ga_from_RDF)
+        # Test function returned g(r) vs recalculating from D(r)
+        test_gr_Ga = (Dr_Ga / (4*np.pi*r_Ga_from_Dr*self.rho)) + 1
+        self.assertFloatArrayEqual(test_gr_Ga, gr_Ga)
+        # Test function returned RDF vs recalculating from g(r)
+        test_RDF_Ga = 4 * np.pi * r_Ga_from_gr**2 * self.rho * gr_Ga
+        self.assertFloatArrayEqual(test_RDF_Ga, RDF_Ga)
+
+    def test_calc_correlation_FT(self):
+        # Sinc function should give peak centred at pi
+        x = np.arange(0, 50, 0.5)
+        y = np.sinc(x)
+        r, Dr = core.calc_correlation_func(x, y, 1.0)
+        self.assertEqual(r[np.argmax(Dr)].round(2), 3.14)
+
+    def test_calc_D_r_iteration_term(self):
+        # Test backward transform case
+        r_Ga, Dr_Ga = core.calc_correlation_func(self.q_test, self.intf_func_Ga, self.rho, mod_func='Cosine-window', window_start=8.0)
+        test_intf_func_Ga = core.calc_D_r_iteration_term(Dr_Ga*np.pi/2, dq=0.02)[:len(self.q_test)]/self.q_test
+        self.assertFloatArrayEqual(test_intf_func_Ga, self.intf_func_Ga)
+
+
 class TestCalcImprIntFunc():
     def test(self):
         pass
-
-class TestCalcCorrelationFunc():
-    def test(self):
-        pass
-    # Test going one way, then back to see if equal
-    # Test data loaded in against g(r), D(r), RDF(r)
-
-
+        #calc_impr_interference_func(q_data, interference_func,
+        #                            composition, rho,
+        #                            r_min, iter_limit,
+        #                            method, mod_func, window_start, fft_N)
+        # test against the Ga int func... load data to check
 
 
 if __name__ == "__main__":
