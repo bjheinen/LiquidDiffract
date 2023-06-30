@@ -137,7 +137,7 @@ class TestCalcAverageScattering(unittest.TestCase, CustomAssertions):
         Q = np.arange(0, 12, 0.02)
         composition_Ga = {'Ga': (31,0,1)}
         composition_CaSiO3 = {'Ca': (20,0,1), 'Si': (14,0,1), 'O': (8,0,3)}
-        #composition_GaSn = {'Ga': [31, 0, 915], 'Sn': [50, 0, 85]}
+        composition_GaSn = {'Ga': [31, 0, 915], 'Sn': [50, 0, 85]}
         expected_avg_scattering_CaSiO3 = np.load(os.path.join(data_path, 'average_scattering_functions_CaSiO3_0-12.npy'))
         average_scattering_Ga = core.calc_average_scattering(composition_Ga, Q)
         average_scattering_CaSiO3 = core.calc_average_scattering(composition_CaSiO3, Q)
@@ -146,7 +146,7 @@ class TestCalcAverageScattering(unittest.TestCase, CustomAssertions):
         self.assertEqual(len(average_scattering_CaSiO3), 2)
         self.assertFloatArrayEqual(average_scattering_CaSiO3[0], expected_avg_scattering_CaSiO3[0])
         self.assertFloatArrayEqual(average_scattering_CaSiO3[1], expected_avg_scattering_CaSiO3[1])
-        #self.assertIsInstance(core.calc_average_scattering(composition_GaSn, Q), list)
+        self.assertIsInstance(core.calc_average_scattering(composition_GaSn, Q), list)
 
 
 class TestCalcTotalComptonScattering(unittest.TestCase, CustomAssertions):
@@ -444,14 +444,30 @@ class TestCalcCorrelationFunc(unittest.TestCase, CustomAssertions):
                           f' with relative tolerance of {1e-7:.3g} and absolute tolerance of {1e-16:.3g}')
 
 
-class TestCalcImprIntFunc():
-    def test(self):
-        pass
-        #calc_impr_interference_func(q_data, interference_func,
-        #                            composition, rho,
-        #                            r_min, iter_limit,
-        #                            method, mod_func, window_start, fft_N)
-        # test against the Ga int func... load data to check
+class TestCalcImprIntFunc(unittest.TestCase, CustomAssertions):
+
+    def setUp(self):
+        # Need to combine with fixtures from other tests
+        with resources.files('LiquidDiffract.scripts').joinpath('example_data.dat').open('r') as fp:
+            _q_test, _I_test = np.loadtxt(fp, unpack=True, skiprows=0)
+        self.q_test, self.I_test = data_utils.rebin_data(_q_test, _I_test, dx=0.02)
+        self.composition_Ga = {'Ga': (31,0,1)}
+        self.rho = 0.048
+        self.intf_func_Ga = core.calc_structure_factor(self.q_test, self.I_test, self.composition_Ga, self.rho, method='faber-ziman') - core.calc_S_inf(self.composition_Ga, self.q_test)
+        self.expected_refined_intf_func_Ga = np.load(os.path.join(data_path, 'iQ_refined_Ga.npy'))
+
+    def test_calc_impr_interference_func(self):
+        r_min = 2.3
+        iter_limit = 5
+        method = 'faber-ziman'
+        mod_func = None
+        window_start = None
+        fft_N = 12
+        impr_intf_func, chi_sq = core.calc_impr_interference_func(self.q_test, self.intf_func_Ga,
+                                                          self.composition_Ga, self.rho,
+                                                          r_min, iter_limit,
+                                                          method, mod_func, window_start, fft_N)
+        self.assertFloatArrayEqual(impr_intf_func, self.expected_refined_intf_func_Ga)
 
 
 if __name__ == "__main__":
