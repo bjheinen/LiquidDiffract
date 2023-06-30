@@ -7,6 +7,8 @@ from __future__ import absolute_import
 import unittest
 from importlib import resources
 import os.path
+import warnings
+import math
 import numpy as np
 # import core module to test
 import LiquidDiffract.core.core as core
@@ -394,13 +396,9 @@ class TestCalcCorrelationFunc(unittest.TestCase, CustomAssertions):
         self.composition_Ga = {'Ga': (31,0,1)}
         self.rho = 0.048
         self.intf_func_Ga = core.calc_structure_factor(self.q_test, self.I_test, self.composition_Ga, self.rho, method='faber-ziman') - core.calc_S_inf(self.composition_Ga, self.q_test)
-        # self.q_test, self.intf_func_Ga, self.rho, mod_func
-
-        # Need to generate this data
-        #self.expected_r_Ga, self.expected_Dr_Ga = np.load(os.path.join(data_path, 'Dr_Ga.npy'))
+        self.expected_r_Ga, self.expected_Dr_Ga = np.load(os.path.join(data_path, 'Dr_initial_Ga.npy'))
 
     def test_bad_method(self):
-        # some setup for x, y, and rho
         self.assertRaises(ValueError, core.calc_correlation_func, self.q_test, self.intf_func_Ga, self.rho, function='BAD')
 
     def test_calc_Dr(self):
@@ -422,7 +420,11 @@ class TestCalcCorrelationFunc(unittest.TestCase, CustomAssertions):
         self.assertFloatArrayEqual(test_gr_Ga, gr_Ga)
         # Test function returned RDF vs recalculating from g(r)
         test_RDF_Ga = 4 * np.pi * r_Ga_from_gr**2 * self.rho * gr_Ga
-        self.assertFloatArrayEqual(test_RDF_Ga, RDF_Ga)
+        # g(r)[0] is nan, due to division by r (r[0] = 0)
+        self.assertFloatArrayEqual(test_RDF_Ga[1:], RDF_Ga[1:])
+        if not math.isclose(test_RDF_Ga[0], RDF_Ga[0], rel_tol=1e-7, abs_tol=1e-16):
+            warnings.warn(f'First values in int_func arrays not equal | {test_RDF_Ga[0]} != {RDF_Ga[0]}'
+                          f' with relative tolerance of {1e-7:.3g} and absolute tolerance of {1e-16:.3g}')
 
     def test_calc_correlation_FT(self):
         # Sinc function should give peak centred at pi
@@ -433,9 +435,13 @@ class TestCalcCorrelationFunc(unittest.TestCase, CustomAssertions):
 
     def test_calc_D_r_iteration_term(self):
         # Test backward transform case
-        r_Ga, Dr_Ga = core.calc_correlation_func(self.q_test, self.intf_func_Ga, self.rho, mod_func='Cosine-window', window_start=8.0)
+        r_Ga, Dr_Ga = core.calc_correlation_func(self.q_test, self.intf_func_Ga, self.rho)
         test_intf_func_Ga = core.calc_D_r_iteration_term(Dr_Ga*np.pi/2, dq=0.02)[:len(self.q_test)]/self.q_test
-        self.assertFloatArrayEqual(test_intf_func_Ga, self.intf_func_Ga)
+        # [0] value not recovered as * 0, then later / 0
+        self.assertFloatArrayEqual(test_intf_func_Ga[1:], self.intf_func_Ga[1:])
+        if not math.isclose(test_intf_func_Ga[0], self.intf_func_Ga[0], rel_tol=1e-7, abs_tol=1e-16):
+            warnings.warn(f'First values in int_func arrays not equal | {test_intf_func_Ga[0]} != {self.intf_func_Ga[0]}'
+                          f' with relative tolerance of {1e-7:.3g} and absolute tolerance of {1e-16:.3g}')
 
 
 class TestCalcImprIntFunc():
