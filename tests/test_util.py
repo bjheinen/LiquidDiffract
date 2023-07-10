@@ -24,7 +24,7 @@ class TestCustomAssertions(unittest.TestCase, CustomAssertions):
     def test_assert_not_float_array_equal(self):
         a = np.array([1,1e-12,2,1e-5,1e6,0])
         b = a + 1e-3
-        self.assertNotFloatArrayEqual
+        self.assertNotFloatArrayEqual(a, b)
 
 class TestDataPath(unittest.TestCase):
     def test_data_path(self):
