@@ -12,6 +12,7 @@ import math
 from packaging.version import parse as parse_version
 import numpy as np
 from scipy import __version__ as sp_ver
+from platform import python_version
 # import core module to test
 import LiquidDiffract.core.core as core
 import LiquidDiffract.core.data_utils as data_utils
@@ -239,6 +240,7 @@ class TestCalcSInf(unittest.TestCase, CustomAssertions):
 
 class TestCalcAlpha(unittest.TestCase, CustomAssertions):
     @unittest.skipIf(parse_version(sp_ver) < parse_version('1.11.0'), 'scipy.integrate.simpson behaviour changed in scipy=1.11.0 - Test data assumes scipy>1.11.0 and your version is earlier')
+    @unittest.skipIf(parse_version(python_version()) < parse_version('3.9'), 'Tests unsupported for python<3.9 - Suppport will be removed in a future version of LiquidDiffract')
     def test_calc_alpha(self):
         with resources.files('LiquidDiffract.scripts').joinpath('example_data.dat').open('r') as fp:
             q_test, I_test = np.loadtxt(fp, unpack=True, skiprows=0)
@@ -372,6 +374,7 @@ class TestIntegrateCoordSphere(unittest.TestCase, CustomAssertions):
         self.assertFloatEqual(N_c, 0, atol=1e-10)
 
 
+@unittest.skipIf(parse_version(python_version()) < parse_version('3.9'), 'Tests unsupported for python<3.9 - Suppport will be removed in a future version of LiquidDiffract')
 class TestCalcStructureFactor(unittest.TestCase, CustomAssertions):
     def setUp(self):
         with resources.files('LiquidDiffract.scripts').joinpath('example_data.dat').open('r') as fp:
@@ -404,6 +407,7 @@ class TestCalcStructureFactor(unittest.TestCase, CustomAssertions):
         self.assertRaises(ValueError, core.calc_structure_factor, self.q_test, self.I_test, self.composition_Ga, 0.048, method='BAD')
 
 
+@unittest.skipIf(parse_version(python_version()) < parse_version('3.9'), 'Tests unsupported for python<3.9 - Suppport will be removed in a future version of LiquidDiffract')
 class TestCalcCorrelationFunc(unittest.TestCase, CustomAssertions):
 
     def setUp(self):
@@ -463,6 +467,7 @@ class TestCalcCorrelationFunc(unittest.TestCase, CustomAssertions):
                           f' with relative tolerance of {1e-7:.3g} and absolute tolerance of {1e-16:.3g}')
 
 
+@unittest.skipIf(parse_version(python_version()) < parse_version('3.9'), 'Tests unsupported for python<3.9 - Suppport will be removed in a future version of LiquidDiffract')
 class TestCalcImprIntFunc(unittest.TestCase, CustomAssertions):
 
     def setUp(self):
