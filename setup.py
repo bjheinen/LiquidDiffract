@@ -26,7 +26,7 @@ setup(
     packages=find_packages(),
     python_requires='>=3.5',
     install_requires=['numpy', 'scipy', 'PyQt5', 'pyqtgraph', 'lmfit',
-                      "importlib_resources ; python_version<'3.7'"],
+                      "importlib_resources ; python_version<'3.7'", 'packaging'],
     package_data={'LiquidDiffract': ['resources/*', 'resources/icons/*',
                                      'resources/hubbel_compton/*',
                                      'resources/docs/*',
