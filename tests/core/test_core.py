@@ -459,7 +459,8 @@ class TestCalcCorrelationFunc(unittest.TestCase, CustomAssertions):
     def test_calc_D_r_iteration_term(self):
         # Test backward transform case
         r_Ga, Dr_Ga = core.calc_correlation_func(self.q_test, self.intf_func_Ga, self.rho)
-        test_intf_func_Ga = core.calc_D_r_iteration_term(Dr_Ga*np.pi/2, dq=0.02)[:len(self.q_test)]/self.q_test
+        with np.errstate(divide='ignore', invalid='ignore'):
+            test_intf_func_Ga = core.calc_D_r_iteration_term(Dr_Ga*np.pi/2, dq=0.02)[:len(self.q_test)]/self.q_test
         # [0] value not recovered as * 0, then later / 0
         self.assertFloatArrayEqual(test_intf_func_Ga[1:], self.intf_func_Ga[1:])
         if not math.isclose(test_intf_func_Ga[0], self.intf_func_Ga[0], rel_tol=1e-7, abs_tol=1e-16):
