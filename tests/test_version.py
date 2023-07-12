@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import unittest
 import warnings
+from packaging.version import Version
 
 class TestVersionFile(unittest.TestCase):
     def test_appname(self):
@@ -12,6 +13,10 @@ class TestVersionFile(unittest.TestCase):
         # Version numbers on dev branch like '1.2.7-dev'
         # Check if version number still -dev and warn if true
         self.assertGreater(len(__version__), 5)
+        try:
+            self.assertTrue(Version(__version__))
+        except InvalidVersion:
+            self.fail("Version number invalid!")
         if 'dev' in __version__ or not __version__[-1].isdigit():
             warnings.warn(f'Version number not in release format| v: {__version__}')
 
