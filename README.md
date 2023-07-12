@@ -50,10 +50,10 @@ Please cite this article if you use LiquidDiffract in your work.
 ## Requirements
 
 * [Python >= 3.8](https://www.python.org)
-* [SciPy](https://www.scipy.org)
-* [NumPy](https://numpy.org)
-* [PyQt5](https://riverbankcomputing.com/software/pyqt/intro)
-* [pyqtgraph](http://www.pyqtgraph.org)
+* [SciPy >= 1.6](https://www.scipy.org)
+* [NumPy >= 1.20](https://numpy.org)
+* [PyQt5 >= 5.14](https://riverbankcomputing.com/software/pyqt/intro)
+* [pyqtgraph >= 0.13](http://www.pyqtgraph.org)
 
 We recommend Python >= 3.9, and the latest available versions of the required packages.
 LiquidDiffract should run with earlier versions of these python packages but testing is limited.
