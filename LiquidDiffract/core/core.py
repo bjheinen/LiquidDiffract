@@ -29,11 +29,7 @@ import numpy as np
 from scipy.integrate import simpson, quadrature
 import scipy.interpolate
 import scipy.fftpack
-# importlib.resources only available in python>=3.7
-try:
-    from importlib import resources as importlib_resources
-except ImportError:
-    import importlib_resources
+from importlib import resources
 
 # Get version number from version.py
 from LiquidDiffract.version import __appname__, __version__
@@ -49,7 +45,7 @@ def calc_mol_mass(composition):
     composition is dictionary in the form: (Z, charge, n)
     where n is number of atoms in formula unit
     '''
-    with importlib_resources.open_binary('LiquidDiffract.resources', 'mass_data.npy') as fp:
+    with resources.open_binary('LiquidDiffract.resources', 'mass_data.npy') as fp:
         mass_dict = np.load(fp, allow_pickle=True).item()
     mol_mass = np.sum([mass_dict[element]*(composition[element][2]) for element in composition])
     return mol_mass
@@ -96,7 +92,7 @@ def calc_Z_sum(composition):
 
 @lru_cache(maxsize=1)
 def load_ff_data():
-    with importlib_resources.open_binary('LiquidDiffract.resources', 'form_factors.npy') as fp:
+    with resources.open_binary('LiquidDiffract.resources', 'form_factors.npy') as fp:
         ff_data = np.load(fp, allow_pickle=True)
     return ff_data
 
@@ -229,7 +225,7 @@ def calc_average_scattering(composition, Q):
 @lru_cache(maxsize=8)
 def load_compton_data(element):
     element_data_fname = element + '.npy'
-    with importlib_resources.open_binary('LiquidDiffract.resources.hubbel_compton', element_data_fname) as fp:
+    with resources.open_binary('LiquidDiffract.resources.hubbel_compton', element_data_fname) as fp:
         cs_Q, _, cs_comp = np.load(fp, allow_pickle=True)
     return cs_Q, cs_comp
 

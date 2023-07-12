@@ -5,11 +5,7 @@ __email__ = "benedict.heinen@gmail.com"
 
 import os.path
 import datetime
-# importlib.resources only available in python>=3.7
-try:
-    from importlib import resources as importlib_resources
-except ImportError:
-    import importlib_resources
+from importlib import resources
 import numpy as np
 from scipy.optimize import minimize, basinhopping
 from PyQt5.QtCore import Qt, pyqtSignal, QEventLoop
@@ -637,7 +633,7 @@ class OptimConfigWidget(QWidget):
 
 class CompositionGroupBox(QGroupBox):
 
-    with importlib_resources.open_binary('LiquidDiffract.resources', 'pt_data.npy') as fp:
+    with resources.open_binary('LiquidDiffract.resources', 'pt_data.npy') as fp:
         _element_dict = np.load(fp, allow_pickle=True).item()
 
     def __init__(self, *args):

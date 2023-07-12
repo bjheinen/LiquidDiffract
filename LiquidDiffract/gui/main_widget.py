@@ -9,11 +9,7 @@ __email__ = "benedict.heinen@gmail.com"
 
 import os.path
 import webbrowser
-# importlib.resources only available in python>=3.7
-try:
-    from importlib import resources as importlib_resources
-except ImportError:
-    import importlib_resources
+from importlib import resources
 import numpy as np
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTabWidget, QAction
 from PyQt5.QtGui import QIcon
@@ -41,7 +37,7 @@ class App(QMainWindow):
         self.title = __appname__ + ' v' + __version__
         self.setWindowTitle(self.title)
         self.icon_module = 'LiquidDiffract.resources.icons'
-        with importlib_resources.path(self.icon_module, 'gs_icon.png') as path:
+        with resources.path(self.icon_module, 'gs_icon.png') as path:
             self.setWindowIcon(QIcon(str(path)))
         self.setGeometry(0, 0, self.width, self.height)
 
@@ -49,15 +45,15 @@ class App(QMainWindow):
         self.tools_menu = self.menu_bar.addMenu('&Tools')
         self.help_menu = self.menu_bar.addMenu('&Help')
 
-        with importlib_resources.path(self.icon_module, 'config.png') as path:
+        with resources.path(self.icon_module, 'config.png') as path:
             self.preferences_action = QAction(QIcon(str(path)),
                                               'Additional Preferences...', self)
 
-        with importlib_resources.path(self.icon_module, 'browser.png') as path:
+        with resources.path(self.icon_module, 'browser.png') as path:
             self.documentation_action = QAction(QIcon(str(path)),
                                                 self.title + ' Documentation', self)
 
-        with importlib_resources.path(self.icon_module, 'info.png') as path:
+        with resources.path(self.icon_module, 'info.png') as path:
             self.about_action = QAction(QIcon(str(path)), 'About', self)
 
         self.tools_menu.addAction(self.preferences_action)
@@ -102,7 +98,7 @@ class App(QMainWindow):
         self.preferences_dialog = utility.PreferencesDialog(self.preferences)
         self.preferences_dialog.fft_check_signal.connect(self.check_fft_N)
         # set window icon
-        with importlib_resources.path(self.icon_module, 'gs_icon.png') as path:
+        with resources.path(self.icon_module, 'gs_icon.png') as path:
             self.preferences_dialog.setWindowIcon(QIcon(str(path)))
 
         if self.preferences_dialog.exec_() == utility.PreferencesDialog.Accepted:

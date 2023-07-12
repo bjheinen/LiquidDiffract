@@ -3,11 +3,7 @@ __author__ = "Benedict J. Heinen"
 __copyright__ = "Copyright 2018, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
-# importlib.resources only available in python>=3.7
-try:
-    from importlib import resources as importlib_resources
-except ImportError:
-    import importlib_resources
+from importlib import resources
 import numpy as np
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIntValidator, QDoubleValidator, QPixmap, \
@@ -739,7 +735,7 @@ class AboutDialog(QDialog):
 
         self.logo_box = QLabel()
 
-        with importlib_resources.path('LiquidDiffract.resources.icons',
+        with resources.path('LiquidDiffract.resources.icons',
                                       'logo.png') as path:
             self.logo = QPixmap(str(path))
         self.logo_box.setPixmap(self.logo)

@@ -49,14 +49,14 @@ Please cite this article if you use LiquidDiffract in your work.
 
 ## Requirements
 
-* [Python >= 3.5](https://www.python.org)
-* [SciPy >= 1.2.1](https://www.scipy.org)
-* [NumPy >= 1.16.2](https://numpy.org)
-* [PyQt5 >= 5.12](https://riverbankcomputing.com/software/pyqt/intro)
-* [pyqtgraph >= 0.10.0](http://www.pyqtgraph.org)
-* [importlib_resources](https://pypi.org/project/importlib_resources/) is required if using Python<3.7
+* [Python >= 3.8](https://www.python.org)
+* [SciPy](https://www.scipy.org)
+* [NumPy](https://numpy.org)
+* [PyQt5](https://riverbankcomputing.com/software/pyqt/intro)
+* [pyqtgraph](http://www.pyqtgraph.org)
 
-LiquidDiffract should run with earlier versions of these python packages but is untested.
+We recommend Python >= 3.9, and the latest available versions of the required packages.
+LiquidDiffract should run with earlier versions of these python packages but testing is limited.
 LiquidDiffract is system-independent and has been tested on Linux, Mac, and Windows.
 Dependencies are handled automatically when installing with *pip*.
 
@@ -68,8 +68,7 @@ The simplest way to install LiquidDiffract is directly from PyPI with pip:
 
 The source code is directly available [here](https://github.com/bjheinen/LiquidDiffract/archive/master.zip)
 
-We still recommend pip for installing from a local directory.
-*(Invoke setup.py directly at your own risk!)*
+You can also use pip to install from a local directory.
 
 <details><summary><b>Development installation</b></summary>
 
@@ -77,7 +76,7 @@ You can make a development (editable) install by using pip's *-e* flag:
 
 ```$ pip install -e git+https://github.com/bjheinen/LiquidDiffract#egg=LiquidDiffract```
 
-From a local directory:
+You can also clone the git repo or download the source directly and install from a local directory:
 
 ```
 $ cd /path/to/local/directory/
@@ -87,9 +86,14 @@ $ mv LiquidDiffract-*/ LiquidDiffract/
 $ pip install -e /path/to/local/directory/LiquidDiffract/
 ```
 
-This will not actually install anything, but create an .egg-link file in the deployment directory that links to LiquidDiffract's source code.
-
 It is useful if you want to make changes to the source code without having to re-install. Use Python's site-packages directory as the deployment directory if you want your editable install of LiquidDiffract available on your sys.path for other programs using your Python installation. To do this from the github page use the *-t* flag ```-t /path/to/directory```
+
+To run the test suite (incomplete), do:
+```
+$ python -m unittest discover -v -s ./tests
+```
+
+Some tests are skipped in using Python<3.9, or Scipy<1.11.0
 
 </details>
 
