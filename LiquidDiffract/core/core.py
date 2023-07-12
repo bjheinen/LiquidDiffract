@@ -613,7 +613,7 @@ def get_mod_func(q, mod_func, window_start):
 
     elif mod_func == 'Lorch':
         with np.errstate(divide='ignore', invalid='ignore'):
-            modification = np.sin(np.pi * q / np.max(q)) / (np.pi * q / np.max(q))
+            modification = np.sinc(q / np.max(q))
     else:
         modification = 1
 
