@@ -26,7 +26,7 @@ __license__ = 'GNU GPL v3'
 from functools import lru_cache
 from itertools import product as cartesian_product
 import numpy as np
-from scipy.integrate import simps, quadrature
+from scipy.integrate import simpson, quadrature
 import scipy.interpolate
 import scipy.fftpack
 # importlib.resources only available in python>=3.7
@@ -440,15 +440,15 @@ def calc_alpha(Q_cor, I_cor, rho,
     '''
     if method == 'ashcroft-langreth':
         # define the two integrals in the equation
-        int_1 = simps((J + S_inf) * Q_cor**2, Q_cor)
-        int_2 = simps((I_cor / effective_ff**2) * Q_cor**2, Q_cor)
+        int_1 = simpson((J + S_inf) * Q_cor**2, Q_cor)
+        int_2 = simpson((I_cor / effective_ff**2) * Q_cor**2, Q_cor)
         # calculate alpha
         alpha = Z_tot**2 * (((-2 * np.pi**2 * rho) + int_1) / int_2)
         return alpha
     elif method == 'faber-ziman':
         # define the two integrals in the equation
-        int_1 = simps(((compton_scattering + average_scattering[0])/average_scattering[1]) * Q_cor**2, Q_cor)
-        int_2 = simps(((Q_cor**2 * I_cor) / average_scattering[1]), Q_cor)
+        int_1 = simpson(((compton_scattering + average_scattering[0])/average_scattering[1]) * Q_cor**2, Q_cor)
+        int_2 = simpson(((Q_cor**2 * I_cor) / average_scattering[1]), Q_cor)
         # Calculate alpha
         alpha = ((-2 * np.pi**2 * rho) + int_1)/int_2
         return alpha
@@ -864,7 +864,7 @@ def calc_model_D_intra_r(rho, r):
     return model_D_intra_r
 
 
-def calc_chi_squared(r_intra, delta_D_r, method='simps'):
+def calc_chi_squared(r_intra, delta_D_r, method='simpson'):
     '''
     Calculates a chi squared figure of merit as in equation 50 of Eggert. This
     is a measure of how small Delta_D_i(r) is, to be used as a tolerance factor
@@ -885,9 +885,9 @@ def calc_chi_squared(r_intra, delta_D_r, method='simps'):
     '''
     # Square to remove negatives
     f = delta_D_r ** 2
-    if method == 'simps':
+    if method == 'simpson':
         # Integrate using simpson's rule
-        chi_squared = simps(f, x=r_intra)
+        chi_squared = simpson(f, x=r_intra)
     else:
         raise NotImplementedError()
     return chi_squared * 1e6

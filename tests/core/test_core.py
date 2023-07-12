@@ -9,7 +9,9 @@ from importlib import resources
 import os.path
 import warnings
 import math
+from packaging.version import parse as parse_version
 import numpy as np
+from scipy import __version__ as sp_ver
 # import core module to test
 import LiquidDiffract.core.core as core
 import LiquidDiffract.core.data_utils as data_utils
@@ -236,6 +238,7 @@ class TestCalcSInf(unittest.TestCase, CustomAssertions):
 
 
 class TestCalcAlpha(unittest.TestCase, CustomAssertions):
+    @unittest.skipIf(parse_version(sp_ver) < parse_version('1.11.0'), 'scipy.integrate.simpson behaviour changed in scipy=1.11.0 - Test data assumes scipy>1.11.0 and your version is earlier')
     def test_calc_alpha(self):
         with resources.files('LiquidDiffract.scripts').joinpath('example_data.dat').open('r') as fp:
             q_test, I_test = np.loadtxt(fp, unpack=True, skiprows=0)
@@ -260,9 +263,9 @@ class TestCalcAlpha(unittest.TestCase, CustomAssertions):
         alpha_CaSiO3_fz = core.calc_alpha(q_test, I_test, 0.12, average_scattering=avg_scattering_CaSiO3, compton_scattering=compton_CaSiO3, method='faber-ziman')
 
         self.assertFloatEqual(alpha_Ga_al, alpha_Ga_fz)
-        self.assertFloatEqual(alpha_Ga_fz, 12.38770462391852)
-        self.assertFloatEqual(alpha_CaSiO3_al, 10.544150126760833)
-        self.assertFloatEqual(alpha_CaSiO3_fz, 2.201685124321958)
+        self.assertFloatEqual(alpha_Ga_fz, 12.385819924876388)
+        self.assertFloatEqual(alpha_CaSiO3_al, 10.54252314476738)
+        self.assertFloatEqual(alpha_CaSiO3_fz, 2.20134540142743)
 
 
 class TestCalcCoherentScattering(unittest.TestCase, CustomAssertions):
@@ -381,12 +384,14 @@ class TestCalcStructureFactor(unittest.TestCase, CustomAssertions):
         self.expected_SQ_CaSiO3_AL = np.load(os.path.join(data_path, 'SQ_initial_CaSiO3_AL.npy'))
         self.expected_SQ_CaSiO3_FZ = np.load(os.path.join(data_path, 'SQ_initial_CaSiO3_FZ.npy'))
 
+    @unittest.skipIf(parse_version(sp_ver) < parse_version('1.11.0'), 'scipy.integrate.simpson behaviour changed in scipy=1.11.0 - Test data assumes scipy>1.11.0 and your version is earlier')
     def test_calc_sq_mono(self):
         SQ_Ga_AL = core.calc_structure_factor(self.q_test, self.I_test, self.composition_Ga, 0.048, method='ashcroft-langreth')
         SQ_Ga_FZ = core.calc_structure_factor(self.q_test, self.I_test, self.composition_Ga, 0.048, method='faber-ziman')
         self.assertFloatArrayEqual(SQ_Ga_AL, SQ_Ga_FZ)
         self.assertFloatArrayEqual(SQ_Ga_FZ, self.expected_SQ_Ga)
 
+    @unittest.skipIf(parse_version(sp_ver) < parse_version('1.11.0'), 'scipy.integrate.simpson behaviour changed in scipy=1.11.0 - Test data assumes scipy>1.11.0 and your version is earlier')
     def test_calc_sq_poly(self):
         SQ_CaSiO3_AL = core.calc_structure_factor(self.q_test, self.I_test, self.composition_CaSiO3, 0.048, method='ashcroft-langreth')
         SQ_CaSiO3_AL_rescaled = core.normalise_achroft_langreth_func(SQ_CaSiO3_AL, self.S_inf_CaSiO3)
@@ -414,6 +419,7 @@ class TestCalcCorrelationFunc(unittest.TestCase, CustomAssertions):
     def test_bad_method(self):
         self.assertRaises(ValueError, core.calc_correlation_func, self.q_test, self.intf_func_Ga, self.rho, function='BAD')
 
+    @unittest.skipIf(parse_version(sp_ver) < parse_version('1.11.0'), 'scipy.integrate.simpson behaviour changed in scipy=1.11.0 - Test data assumes scipy>1.11.0 and your version is earlier')
     def test_calc_Dr(self):
         # Test calculation of D(r) and r-values
         r_Ga, Dr_Ga = core.calc_correlation_func(self.q_test, self.intf_func_Ga, self.rho, mod_func='Cosine-window', window_start=8.0)
@@ -469,6 +475,7 @@ class TestCalcImprIntFunc(unittest.TestCase, CustomAssertions):
         self.intf_func_Ga = core.calc_structure_factor(self.q_test, self.I_test, self.composition_Ga, self.rho, method='faber-ziman') - core.calc_S_inf(self.composition_Ga, self.q_test)
         self.expected_refined_intf_func_Ga = np.load(os.path.join(data_path, 'iQ_refined_Ga.npy'))
 
+    @unittest.skipIf(parse_version(sp_ver) < parse_version('1.11.0'), 'scipy.integrate.simpson behaviour changed in scipy=1.11.0 - Test data assumes scipy>1.11.0 and your version is earlier')
     def test_calc_impr_interference_func(self):
         r_min = 2.3
         iter_limit = 5
