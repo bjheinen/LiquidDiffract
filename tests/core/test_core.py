@@ -117,8 +117,8 @@ class TestCalcAtomicFF(unittest.TestCase, CustomAssertions):
         Q = np.arange(0, 12, 0.02)
         atomic_ff_Ga = core.calc_atomic_ff(element_Ga,Q)
         atomic_ff_Si = core.calc_atomic_ff(element_Si,Q)
-        self.assertArrayEqual(atomic_ff_Ga, expected_atomic_ff_Ga)
-        self.assertArrayEqual(atomic_ff_Si, expected_atomic_ff_Si)
+        self.assertFloatArrayEqual(atomic_ff_Ga, expected_atomic_ff_Ga)
+        self.assertFloatArrayEqual(atomic_ff_Si, expected_atomic_ff_Si)
 
 
 class TestCalcEffectiveFF(unittest.TestCase, CustomAssertions):
