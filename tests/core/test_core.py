@@ -305,7 +305,7 @@ class TestGetModFunc(unittest.TestCase, CustomAssertions):
         self.assertFloatArrayEqual(lorch[1:], expected_lorch[1:])
 
         if not math.isclose(lorch[0], expected_lorch[0], rel_tol=1e-7, abs_tol=1e-16):
-            warnings.warn(f'First values in int_func arrays not equal | {lorch[0]} != {expected_lorch[0]}'
+            warnings.warn(f'First values in lorch function arrays not equal | {lorch[0]} != {expected_lorch[0]}'
                           f' with relative tolerance of {1e-7:.3g} and absolute tolerance of {1e-16:.3g}')
 
 
@@ -446,7 +446,7 @@ class TestCalcCorrelationFunc(unittest.TestCase, CustomAssertions):
         # g(r)[0] is nan, due to division by r (r[0] = 0)
         self.assertFloatArrayEqual(test_RDF_Ga[1:], RDF_Ga[1:])
         if not math.isclose(test_RDF_Ga[0], RDF_Ga[0], rel_tol=1e-7, abs_tol=1e-16):
-            warnings.warn(f'First values in int_func arrays not equal | {test_RDF_Ga[0]} != {RDF_Ga[0]}'
+            warnings.warn(f'First values in RDF arrays not equal | {test_RDF_Ga[0]} != {RDF_Ga[0]}'
                           f' with relative tolerance of {1e-7:.3g} and absolute tolerance of {1e-16:.3g}')
 
     def test_calc_correlation_FT(self):
