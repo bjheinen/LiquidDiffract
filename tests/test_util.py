@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Unit tests for custom test classes in tests/util
+"""
+__author__ = "Benedict J. Heinen"
+__copyright__ = "Copyright 2023, Benedict J. Heinen"
+__email__ = "benedict.heinen@gmail.com"
+
 import unittest
 import os.path
 import numpy as np

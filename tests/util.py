@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+Custom test classes for unit tests
+"""
+__author__ = "Benedict J. Heinen"
+__copyright__ = "Copyright 2023, Benedict J. Heinen"
+__email__ = "benedict.heinen@gmail.com"
+
 import math
 import os.path
 import numpy as np

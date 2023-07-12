@@ -1,5 +1,8 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+__author__ = "Benedict J. Heinen"
+__copyright__ = "Copyright 2023, Benedict J. Heinen"
+__email__ = "benedict.heinen@gmail.com"
+
 import unittest
 import warnings
 from packaging.version import Version
