@@ -24,7 +24,7 @@ __email__ = 'benedict.heinen@gmail.com'
 __license__ = 'GNU GPL v3'
 
 from functools import lru_cache
-from itertools import product as cartesian_product
+import itertools
 import numpy as np
 from scipy.integrate import simpson, quadrature
 import scipy.interpolate
@@ -157,14 +157,14 @@ def calc_effective_ff(composition, Q):
     Z_tot = calc_Z_sum(composition)
     # Expand composition dictionary to list of tuples with entries repeated
     # where n>1
-    composition_atoms = [tuple(element) for expanded in
-                         [[composition[species]]*composition[species][2]
-                          for species in composition]
-                         for element in expanded]
+    composition_atoms = itertools.chain.from_iterable(
+        itertools.repeat(tuple(composition[el]),composition[el][2])
+        for el in composition)
     atomic_ff = []
     for atom in composition_atoms:
         atomic_ff.append(np.copy(calc_atomic_ff(atom, Q)))
     atomic_ff = np.asarray(atomic_ff)
+
     effective_ff = np.sum(atomic_ff, 0) / Z_tot
     return effective_ff, atomic_ff
 
@@ -197,27 +197,25 @@ def calc_average_scattering(composition, Q):
     '''
     # Expand composition dictionary to list of tuples with entries repeated
     # where n>1
-    composition_atoms = [tuple(element) for expanded in
-                         [[composition[species]]*composition[species][2]
-                          for species in composition]
-                         for element in expanded]
-    N = len(composition_atoms)
+    composition_atoms = itertools.chain.from_iterable(
+        itertools.repeat(tuple(composition[el]),composition[el][2])
+        for el in composition)
+    composition_atoms, N_counter = itertools.tee(composition_atoms)
+    N = sum(1 for _x in N_counter)
     atomic_ff = []
     for atom in composition_atoms:
         atomic_ff.append(np.copy(calc_atomic_ff(atom, Q)))
     atomic_ff = np.asarray(atomic_ff)
-
-    # Create list to hold both function
+    # Create list to hold both functions
     average_scattering = []
-
     # 1st function
     average_scattering.append(
-            1/N * np.sum(atomic_ff**2, 0)
+            1/N * np.einsum('ij,ij->j', atomic_ff, atomic_ff) # eqivalent to np.sum(atomic_ff**2, 0)
             )
     # 2nd function
     average_scattering.append(
             1/N**2 *
-            np.sum(np.asarray([x*y for x in atomic_ff for y in atomic_ff]), 0)
+            np.einsum('ij,kj->j', atomic_ff, atomic_ff)
             )
     return average_scattering
 
@@ -343,7 +341,7 @@ def calculate_weights(composition, Q):
     # Dict of Kp for each atom species
     K_p_dict = dict(zip(atom_list, K_p_list))
     # List of atom (alpha-beta) pairs
-    pairs = list(set(cartesian_product(atom_list, repeat=2)))
+    pairs = list(set(itertools.product(atom_list, repeat=2)))
     weights = {}
     c_dict = {}
 

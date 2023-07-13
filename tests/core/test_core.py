@@ -144,7 +144,7 @@ class TestCalcEffectiveFF(unittest.TestCase, CustomAssertions):
         eff_CaSiO3, _ = core.calc_effective_ff(composition_CaSiO3, Q)
         self.assertFloatArrayEqual(eff_CaSiO3, expected_eff_CaSiO3)
 
-        #self.assertIsInstance(core.calc_effective_ff(composition_GaSn, Q), tuple)
+        self.assertIsInstance(core.calc_effective_ff(composition_GaSn, Q), tuple)
 
 
 class TestCalcAverageScattering(unittest.TestCase, CustomAssertions):
@@ -161,7 +161,7 @@ class TestCalcAverageScattering(unittest.TestCase, CustomAssertions):
         self.assertEqual(len(average_scattering_CaSiO3), 2)
         self.assertFloatArrayEqual(average_scattering_CaSiO3[0], expected_avg_scattering_CaSiO3[0])
         self.assertFloatArrayEqual(average_scattering_CaSiO3[1], expected_avg_scattering_CaSiO3[1])
-        #self.assertIsInstance(core.calc_average_scattering(composition_GaSn, Q), list)
+        self.assertIsInstance(core.calc_average_scattering(composition_GaSn, Q), list)
 
 
 class TestCalcTotalComptonScattering(unittest.TestCase, CustomAssertions):
