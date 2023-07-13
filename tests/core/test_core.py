@@ -442,8 +442,9 @@ class TestCalcCorrelationFunc(unittest.TestCase, CustomAssertions):
         # Check r-values calculated in the same way
         self.assertFloatArrayEqual(r_Ga_from_Dr, r_Ga_from_gr)
         self.assertFloatArrayEqual(r_Ga_from_gr, r_Ga_from_RDF)
-        # Test function returned g(r) vs recalculating from D(r)
-        test_gr_Ga = (Dr_Ga / (4*np.pi*r_Ga_from_Dr*self.rho)) + 1
+        with np.errstate(divide='ignore', invalid='ignore'):
+            # Test function returned g(r) vs recalculating from D(r)
+            test_gr_Ga = (Dr_Ga / (4*np.pi*r_Ga_from_Dr*self.rho)) + 1
         self.assertFloatArrayEqual(test_gr_Ga, gr_Ga)
         # Test function returned RDF vs recalculating from g(r)
         test_RDF_Ga = 4 * np.pi * r_Ga_from_gr**2 * self.rho * gr_Ga
