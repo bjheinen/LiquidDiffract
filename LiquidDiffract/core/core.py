@@ -1008,7 +1008,8 @@ def calc_impr_interference_func(q_data, interference_func,
         #   Δα(n)_AL = (1/Q) * [S_inf+J(Q)]^-1 * ∫ΔD(r)sin(Qr)dr
         #   This is: t1 * 1/t2_divisor * t3
         if return_alpha:
-            delta_alpha = t1 * (1/t2_divisor) * t3
+            with np.errstate(invalid='ignore'):
+                delta_alpha = t1 * (1/t2_divisor) * t3
             alpha_impr = alpha * (1 + delta_alpha)
 
         count += 1
