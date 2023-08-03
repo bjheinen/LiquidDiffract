@@ -203,6 +203,7 @@ class MainContainer(QWidget):
                               'sq_x': np.asarray([]), 'sq_y': np.asarray([]),
                               'dr_x': np.asarray([]), 'dr_y': np.asarray([]),
                               'rescaled_cor_y_cut': np.asarray([]),
+                              'scattering_factors': np.asarray([]),
                               'mod_func': 'None', 'qmin': None, 'qmax': None
                               }
         # Pass data to Optim UI

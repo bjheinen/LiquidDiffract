@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QHBoxLayout, QGroupBox, QPushButton, QLineEdit, \
                             QComboBox, QTableWidget, QTableWidgetItem, \
                             QLabel, QCheckBox, QButtonGroup, QRadioButton, \
-                            QScrollArea, QSplitter, QSizePolicy,  \
+                            QScrollArea, QSplitter, QSizePolicy, \
                             QAbstractScrollArea, QHeaderView, QStyle, \
                             QApplication
 from LiquidDiffract.gui import plot_widgets
@@ -70,21 +70,24 @@ class OptimUI(QWidget):
                      'int_func': np.asarray([]), 'impr_int_func': np.asarray([]),
                      'impr_dr_x': np.asarray([]), 'impr_dr_y': np.asarray([]),
                      'impr_iq_x': np.asarray([]), 'mod_func': 'None',
+                     'scattering_factors': np.asarray([]),
                      'rescaled_cor_y_cut': np.asarray([]),
                      'qmin': None, 'qmax': None}
 
         self.create_signals()
 
     def create_signals(self):
+        self.optim_config_widget.composition_gb.mass_density.textChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.qmax_check.stateChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.qmax_input.textChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.qmin_check.stateChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.qmin_input.textChanged.connect(self.plot_data)
-        self.optim_config_widget.composition_gb.mass_density.textChanged.connect(self.plot_data)
+        self.optim_config_widget.data_options_gb.smooth_data_check.toggled.connect(self.plot_data)
+        self.optim_config_widget.data_options_gb.plot_selfscatter_check.toggled.connect(self.toggle_plot_scattering_factors)
+        self.optim_config_widget.data_options_gb.plot_compton_check.toggled.connect(self.toggle_plot_scattering_factors)
         self.optim_config_widget.data_options_gb.al_btn.toggled.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.mod_func_input.currentIndexChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.calc_sq_btn.clicked.connect(self.on_click_calc_sq)
-        self.optim_config_widget.data_options_gb.smooth_data_check.toggled.connect(self.plot_data)
         self.optim_config_widget.optim_options_gb.opt_button.clicked.connect(self.on_click_refine)
 
     def plot_data(self):
@@ -125,13 +128,15 @@ class OptimUI(QWidget):
             self.data['qmax'] = np.float64(self.optim_config_widget.data_options_gb.qmax_input.text())
             # cut q data at qmax
             _cut = np.where(self.data['cor_x'] < self.data['qmax'])
-            self.data['cor_x_cut'] = self.data['cor_x'][_cut]
-            self.data['cor_y_cut'] = self.data['cor_y'][_cut]
+            # Take copy of array to avoid modifying cor_x/cor_y
+            self.data['cor_x_cut'] = self.data['cor_x'].copy()[_cut]
+            self.data['cor_y_cut'] = self.data['cor_y'].copy()[_cut]
 
         # Define cor_x_cut = cor_x for simpler plotting logic
         else:
-            self.data['cor_x_cut'] = self.data['cor_x']
-            self.data['cor_y_cut'] = self.data['cor_y']
+            # Take copy of arrays to avoid later modifying cor_x/cor_y
+            self.data['cor_x_cut'] = self.data['cor_x'].copy()
+            self.data['cor_y_cut'] = self.data['cor_y'].copy()
 
         # Cut at qmin if selected
         if qmin_cut:
@@ -148,6 +153,8 @@ class OptimUI(QWidget):
 
         # this method is only used for 'raw' S(Q) actual data so mod_func = 1
         self.data['modification'] = 1
+        # Plot scattering factors
+        self.toggle_plot_scattering_factors()
         # Smooth data if option checked. Error handling for empty array
         if self.optim_config_widget.data_options_gb.smooth_data_check.isChecked() and self.data['cor_y_cut'].size:
             self.smooth_data()
@@ -178,6 +185,8 @@ class OptimUI(QWidget):
                 return
         else:
             self.data['window_start'] = None
+        # Clear previous rescaled I(Q)
+        self.data['rescaled_cor_y_cut'] = np.asarray([])
         # Get S(Q) method
         if self.optim_config_widget.data_options_gb.al_btn.isChecked():
             _method = 'ashcroft-langreth'
@@ -190,18 +199,22 @@ class OptimUI(QWidget):
         except ValueError:
             _rho_0 = 0.0
         self.data['iq_x'] = self.data['cor_x_cut']
-        self.data['sq_y'] = core.calc_structure_factor(self.data['cor_x_cut'],
-                                                       self.data['cor_y_cut'],
-                                                       _composition, _rho_0,
-                                                       method=_method)
+        self.data['sq_y'], self.data['alpha'] = core.calc_structure_factor(
+                                                    self.data['cor_x_cut'],
+                                                    self.data['cor_y_cut'],
+                                                    _composition, _rho_0,
+                                                    method=_method,
+                                                    return_alpha=True)
         _S_inf = core.calc_S_inf(_composition, self.data['cor_x_cut'], method=_method)
         self.data['int_func'] = self.data['sq_y'] - _S_inf
+        # Scale I(Q) by the Krogh-Moe-Norman normalisation factor (α)
+        self.data['rescaled_cor_y_cut'] = self.data['cor_y_cut'] * self.data['alpha']
         self.data['dr_x'], self.data['dr_y'] = core.calc_correlation_func(self.data['iq_x'], self.data['int_func'], _rho_0,
                                                              N=self.fft_N, mod_func=self.data['mod_func'], window_start=self.data['window_start'])
         self.data['modification'] = core.get_mod_func(self.data['iq_x'], self.data['mod_func'], self.data['window_start'])
         self.optim_plot_widget.update_plots(self.data)
         self.results_cleared.emit()
-        # If optimisation gb is not checked pass through Krogh-Moe/Norman S(Q)
+        # If optimisation gb is not checked pass through Krogh-Moe-Norman S(Q)
         # to results
         if not self.optim_config_widget.optim_options_gb.isChecked():
             self.results_changed.emit()
@@ -236,6 +249,8 @@ class OptimUI(QWidget):
         # Don't run if no composition set
         if not _composition:
             return
+        # Clear re-scaled I(Q)
+        self.data['rescaled_cor_y_cut'] = np.asarray([])
         # Get S(Q) method
         if self.optim_config_widget.data_options_gb.al_btn.isChecked():
             _method = 'ashcroft-langreth'
@@ -411,17 +426,20 @@ class OptimUI(QWidget):
                     _I_data_corrected = data_utils.smooth_data(_I_data_corrected,
                                             window_length=self.window_length,
                                             poly_order=self.poly_order)
-                _structure_factor = core.calc_structure_factor(_cut_q_data, _I_data_corrected,
-                                                               _composition, _rho_temp, method=_method)
+                _structure_factor, _alpha = core.calc_structure_factor(_cut_q_data, _I_data_corrected,
+                                                                       _composition, _rho_temp, method=_method,
+                                                                       return_alpha=True)
                 _int_func_temp = _structure_factor - core.calc_S_inf(_composition, _cut_q_data, method=_method)
                 self.data['rescaled_cor_y_cut'] = _I_data_corrected
             else:
-                _structure_factor = core.calc_structure_factor(self.data['cor_x_cut'], self.data['cor_y_cut'],
-                                                               _composition, _rho_temp, method=_method)
+                _structure_factor, _alpha = core.calc_structure_factor(self.data['cor_x_cut'], self.data['cor_y_cut'],
+                                                                       _composition, _rho_temp, method=_method,
+                                                                       return_alpha=True)
                 _int_func_temp = _structure_factor - core.calc_S_inf(_composition, self.data['cor_x_cut'], method=_method)
         else:
             _rho_temp = _rho_0
             _int_func_temp = self.data['int_func']
+            _alpha = self.data['alpha']
         # Only use mod_func in refinement if option is set (default is no)
         if self.mod_func_mode:
             _mod_func = self.data['mod_func']
@@ -430,7 +448,8 @@ class OptimUI(QWidget):
         _args = (self.data['cor_x_cut'], _int_func_temp,
                  _composition, _rho_temp, _r_min, _n_iter, _method,
                  _mod_func, self.data['window_start'], self.fft_N)
-        self.data['impr_int_func'], self.data['chi_sq'] = core.calc_impr_interference_func(*_args)
+        self.data['impr_int_func'], self.data['chi_sq'], _alpha_Q = core.calc_impr_interference_func(*_args,
+                                                                                                     return_alpha=True, alpha=_alpha)
         self.optim_config_widget.optim_results_gb.chi_sq_output.setText('{:.4e}'.format(self.data['chi_sq']))
         # Calculated improved F_r
         self.data['impr_dr_x'], self.data['impr_dr_y'] = core.calc_correlation_func(self.data['iq_x'], self.data['impr_int_func'], _rho_temp, N=self.fft_N,
@@ -439,12 +458,16 @@ class OptimUI(QWidget):
         # Set modification function to None so it is not plotted this time
         _mod_func = self.data['mod_func']
         self.data['mod_func'] = 'None'
+        # Calculate I(Q)*α(Q)
+        if self.data['rescaled_cor_y_cut'].size:
+            # Existing rescaled array is I(Q) with new bkg scaling factor
+            self.data['rescaled_cor_y_cut'] = self.data['rescaled_cor_y_cut'] * _alpha_Q
+        else:
+            self.data['rescaled_cor_y_cut'] = self.data['cor_y_cut'] * _alpha_Q
         # Plot data
         self.optim_plot_widget.update_plots(self.data)
         self.data['mod_func'] = _mod_func
         self.data['sq_method'] = _method
-        # Reset rescaled I(Q) data to prevent plot persistence
-        self.data['rescaled_cor_y_cut'] = np.asarray([])
 
         # Save refinement parameters to file
         if self.optim_config_widget.data_options_gb.smooth_data_check.isChecked():
@@ -542,6 +565,34 @@ class OptimUI(QWidget):
 
         # Emit results changed signal to main_widget
         self.results_changed.emit()
+
+    def toggle_plot_scattering_factors(self):
+        # Run only if composition set
+        _composition = self.optim_config_widget.composition_gb.get_composition_dict()
+        if not _composition:
+            self.data['scattering_factors'] = np.asarray([])
+            return
+        # Run only if data present
+        if not self.data['cor_x_cut'].size:
+            return
+        if not (
+            self.optim_config_widget.data_options_gb.plot_selfscatter_check.isChecked()
+            or self.optim_config_widget.data_options_gb.plot_compton_check.isChecked()
+        ):
+            self.data['scattering_factors'] = np.asarray([])
+            self.optim_plot_widget.update_plots(self.data)
+            return
+        if self.optim_config_widget.data_options_gb.plot_selfscatter_check.isChecked():
+            _self_scattering = core.calc_average_scattering(_composition, self.data['cor_x_cut'])[0]
+        else:
+            _self_scattering = 0
+        if self.optim_config_widget.data_options_gb.plot_compton_check.isChecked():
+            _compton_scattering = core.calc_total_compton_scattering(_composition, self.data['cor_x_cut']) / \
+                                  sum(_composition[element][2] for element in _composition)
+        else:
+            _compton_scattering = 0
+        self.data['scattering_factors'] = _self_scattering + _compton_scattering
+        self.optim_plot_widget.update_plots(self.data)
 
     def smooth_data(self):
         # Update with smoothed data
@@ -844,6 +895,12 @@ class DataOptionsGroupBox(QGroupBox):
         self.smooth_label = QLabel('Smooth Data? ')
         self.smooth_data_check = QCheckBox()
 
+        self.plot_scattering_factors_lbl = QLabel('Plot scattering factors?: ')
+        self.plot_selfscatter_lbl = QLabel('<i>&lt;f(Q)<sup>2</sup>&gt;</i>') # Make tooltips for these!
+        self.plot_selfscatter_check = QCheckBox()
+        self.plot_compton_lbl = QLabel('<i>f<sub>C</sub>(Q)</i>')
+        self.plot_compton_check = QCheckBox()
+
         self.mod_func_lbl = QLabel('Use modification function?')
         self.mod_func_input = QComboBox()
         self.mod_func_input.insertItem(0, 'None')
@@ -884,6 +941,10 @@ class DataOptionsGroupBox(QGroupBox):
         self.smooth_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.smooth_data_check.setChecked(False)
 
+        self.plot_scattering_factors_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.plot_selfscatter_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.plot_compton_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+
         self.window_start_input.setValidator(QDoubleValidator())
         self.window_start_input.setEnabled(False)
         self.fz_btn.setChecked(True)
@@ -910,10 +971,17 @@ class DataOptionsGroupBox(QGroupBox):
         self.grid_layout.addWidget(self.smooth_label, 2, 0)
         self.grid_layout.addWidget(self.smooth_data_check, 2, 2)
 
-        self.grid_layout.addWidget(self.mod_func_lbl, 3, 0, 1, 2)
-        self.grid_layout.addWidget(self.mod_func_input, 4, 0, 1, 2)
-        self.grid_layout.addWidget(self.window_start_input, 4, 2)
-        self.grid_layout.addWidget(self.method_lbl, 5, 0)
+        self.grid_layout.addWidget(self.plot_scattering_factors_lbl, 3, 0)
+        self.grid_layout.addWidget(self.plot_selfscatter_lbl, 3, 1)
+        self.grid_layout.addWidget(self.plot_selfscatter_check, 3, 2)
+        self.grid_layout.addWidget(self.plot_compton_lbl, 4, 1)
+        self.grid_layout.addWidget(self.plot_compton_check, 4, 2)
+
+        self.grid_layout.addWidget(self.mod_func_lbl, 5, 0, 1, 2)
+        self.grid_layout.addWidget(self.mod_func_input, 6, 0, 1, 2)
+        self.grid_layout.addWidget(self.window_start_input, 6, 2)
+
+        self.grid_layout.addWidget(self.method_lbl, 7, 0)
 
         self.hbtn_layout = QHBoxLayout()
         self.hbtn_layout.addWidget(self.fz_btn)

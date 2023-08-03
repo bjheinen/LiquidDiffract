@@ -195,6 +195,10 @@ class OptimPlotWidget(QWidget):
         except AttributeError:
             pass
         try:
+            self.p1_c.clear()
+        except AttributeError:
+            pass
+        try:
             self.p2_b.clear()
             self.p3_b.clear()
         except AttributeError:
@@ -237,6 +241,7 @@ class OptimPlotWidget(QWidget):
 
         self.p1_a = self.data_plot.plot(x=_data['cor_x_cut'], y=_data['cor_y_cut'], pen={'color': 0.1, 'width': 1.2})
         self.p1_b = self.data_plot.plot(x=_data['cor_x_cut'], y=_data['rescaled_cor_y_cut'], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
+        self.p1_c = self.data_plot.plot(x=_data['cor_x_cut'], y=_data['scattering_factors'], pen={'color': '#783091', 'width': 1.2, 'style': Qt.DashLine})
         self.p2_a = self.iq_plot.plot(x=_data['iq_x'], y=_data['int_func'], pen={'color': 0.1, 'width': 1.2})
         self.p2_b = self.iq_plot.plot(x=_data['impr_iq_x'], y=_data['impr_int_func'], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
         self.p3_a = self.dr_plot.plot(x=_data['dr_x'][:_window], y=_data['dr_y'][:_window], pen={'color': 0.1, 'width': 1.2})
