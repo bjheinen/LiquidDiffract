@@ -12,7 +12,7 @@ import scipy.interpolate
 import scipy.optimize
 import scipy.signal
 
-def rebin_data(x, y, dx=0.02, x_lim=None):
+def rebin_data(x, y, dx=0.02, x_lim=None, extrapolate_mode='fill'):
     '''
     Re-bins x,y data (using interpolation) to achieve a set step size of x (dx)
     Extrapolates x < x_min to zero
@@ -21,10 +21,17 @@ def rebin_data(x, y, dx=0.02, x_lim=None):
         x_rebin = np.arange(x_lim[0], x_lim[1], dx)
     else:
         x_rebin = np.arange(0, x[-1], dx)
-    f_interp = scipy.interpolate.interp1d(x, y,
-                                          kind='cubic',
-                                          fill_value=y[0],
-                                          bounds_error=False)
+    if extrapolate_mode == 'fill':
+        f_interp = scipy.interpolate.interp1d(x, y,
+                                              kind='cubic',
+                                              fill_value=y[0],
+                                              bounds_error=False)
+    elif extrapolate_mode == 'extrapolate':
+        f_interp = scipy.interpolate.interp1d(x, y,
+                                              kind='cubic',
+                                              fill_value='extrapolate')
+    else:
+        raise NotImplementedError('Extrapolate mode not valid')
     y_rebin = f_interp(x_rebin)
     return x_rebin, y_rebin
 

@@ -248,7 +248,7 @@ class TestCalcAlpha(unittest.TestCase, CustomAssertions):
     def test_calc_alpha(self):
         with resources.files('LiquidDiffract.scripts').joinpath('example_data.dat').open('r') as fp:
             q_test, I_test = np.loadtxt(fp, unpack=True, skiprows=0)
-        q_test, I_test = data_utils.rebin_data(q_test, I_test, dx=0.02)
+        q_test, I_test = data_utils.rebin_data(q_test, I_test, dx=0.02, extrapolate_mode='extrapolate')
         composition_Ga = {'Ga': (31,0,1)}
         J_Ga = core.calc_J(composition_Ga, q_test)
         Z_tot_Ga = core.calc_Z_sum(composition_Ga)
@@ -383,7 +383,7 @@ class TestCalcStructureFactor(unittest.TestCase, CustomAssertions):
     def setUp(self):
         with resources.files('LiquidDiffract.scripts').joinpath('example_data.dat').open('r') as fp:
             _q_test, _I_test = np.loadtxt(fp, unpack=True, skiprows=0)
-        self.q_test, self.I_test = data_utils.rebin_data(_q_test, _I_test, dx=0.02)
+        self.q_test, self.I_test = data_utils.rebin_data(_q_test, _I_test, dx=0.02, extrapolate_mode='extrapolate')
         self.composition_Ga = {'Ga': (31,0,1)}
         self.composition_CaSiO3 = {'Ca': (20,0,1), 'Si': (14,0,1), 'O': (8,0,3)}
         self.S_inf_CaSiO3 = core.calc_S_inf(self.composition_CaSiO3, self.q_test)
@@ -435,7 +435,7 @@ class TestCalcCorrelationFunc(unittest.TestCase, CustomAssertions):
         # Can combine with fixtures from other tests
         with resources.files('LiquidDiffract.scripts').joinpath('example_data.dat').open('r') as fp:
             _q_test, _I_test = np.loadtxt(fp, unpack=True, skiprows=0)
-        self.q_test, self.I_test = data_utils.rebin_data(_q_test, _I_test, dx=0.02)
+        self.q_test, self.I_test = data_utils.rebin_data(_q_test, _I_test, dx=0.02,extrapolate_mode='extrapolate')
         self.composition_Ga = {'Ga': (31,0,1)}
         self.rho = 0.048
         self.intf_func_Ga = core.calc_structure_factor(self.q_test, self.I_test, self.composition_Ga, self.rho, method='faber-ziman') - core.calc_S_inf(self.composition_Ga, self.q_test)
@@ -497,7 +497,7 @@ class TestCalcImprIntFunc(unittest.TestCase, CustomAssertions):
         # Need to combine with fixtures from other tests
         with resources.files('LiquidDiffract.scripts').joinpath('example_data.dat').open('r') as fp:
             _q_test, _I_test = np.loadtxt(fp, unpack=True, skiprows=0)
-        self.q_test, self.I_test = data_utils.rebin_data(_q_test, _I_test, dx=0.02)
+        self.q_test, self.I_test = data_utils.rebin_data(_q_test, _I_test, dx=0.02, extrapolate_mode='extrapolate')
         self.composition_Ga = {'Ga': (31,0,1)}
         self.rho = 0.048
         self.intf_func_Ga = core.calc_structure_factor(self.q_test, self.I_test, self.composition_Ga, self.rho, method='faber-ziman') - core.calc_S_inf(self.composition_Ga, self.q_test)
