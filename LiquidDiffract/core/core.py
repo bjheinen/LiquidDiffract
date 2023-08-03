@@ -491,7 +491,7 @@ def calc_coherent_scattering(Q_sample, I_sample, composition, alpha,
     return coherent_scattering
 
 
-def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langreth'):
+def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langreth', return_alpha=False):
     '''
     Calculates the molecular structure factor in normalised units using the
     method first developed by Krogh-Moe (1956) and Norman (1957).
@@ -502,6 +502,10 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langr
         composition - dictionary of atomic elements, with values as tuples in
                       the form (Z,charge,n)
         rho - actual or initial estimate of atomic density in atoms/Angstrom^3
+
+    Kwargs:
+        return_alpha (bool) - optionally return the Krogh-Moe-Norman normalisation factor (α) along with S(Q)
+        method - S(Q) formalism (see below)
 
     The code provides an option to use either the Ashcroft-Langreth or
     Faber-Ziman formulation of the structure factor S(Q)
@@ -549,7 +553,6 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langr
                            effective_ff=effective_ff, method='ashcroft-langreth')
         coherent_scattering = calc_coherent_scattering(Q_cor, I_cor, composition, alpha, method=method)
         structure_factor = coherent_scattering / (n_atoms * Z_tot**2 * effective_ff**2)
-        return structure_factor
 
     elif method == 'faber-ziman':
         # Calculate average scattering functions <f^2> & <f>^2
@@ -571,10 +574,14 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langr
         structure_factor = (coherent_scattering -
                             (avg_scattering_f[0] - avg_scattering_f[1])
                            ) / avg_scattering_f[1]
-        return structure_factor
 
     else:
         raise ValueError('Please select a valid method for structure factor')
+
+    if return_alpha:
+        return structure_factor, alpha
+    else:
+        return structure_factor
 
 def get_mod_func(q, mod_func, window_start):
     '''
@@ -907,7 +914,8 @@ def stop_iteration(stop_condition='count', count=None,
 def calc_impr_interference_func(q_data, interference_func,
                                 composition, rho,
                                 r_min, iter_limit,
-                                method, mod_func, window_start, fft_N):
+                                method, mod_func, window_start, fft_N,
+                                return_alpha=False, alpha=None):
     '''
     Calculates an improved estimate of the interference function via the
     iterative procedure described in Eggert et al., 2002. This is done by
@@ -934,6 +942,10 @@ def calc_impr_interference_func(q_data, interference_func,
         window_start - Start of Cosine-window function needed if
                        mod_func == 'Cosine-window'
         fft_N - Sets size of array for fft where array_size = 2^N
+
+    Kwargs:
+        return_alpha (bool) - Optionally return the modified Q-dependent normalisation factor
+        alpha - Krogh-Moe-Norman normalisation factor (α_0), required if return_alpha==True
 
     Returns:
         interference_func_impr - Interference function after iter_limit iterations
@@ -973,6 +985,8 @@ def calc_impr_interference_func(q_data, interference_func,
             r, D_r = calc_correlation_func(q_data, interference_func, rho,
                               mod_func=mod_func, window_start=window_start,
                               dx=dq, N=fft_N)
+            if return_alpha:
+                alpha = alpha_impr
         except NameError:
             pass
 
@@ -988,9 +1002,21 @@ def calc_impr_interference_func(q_data, interference_func,
         with np.errstate(invalid='ignore'):
             interference_func_impr = interference_func - (t1 * t2 * t3)
 
+        # Calculate next iteration of alpha
+        # α(n+1) = α(n)*[1 + Δα(n)]
+        #   Δα(n)_FZ = (1/Q) * ∫ΔD(r)sin(Qr)dr
+        #   Δα(n)_AL = (1/Q) * [S_inf+J(Q)]^-1 * ∫ΔD(r)sin(Qr)dr
+        #   This is: t1 * 1/t2_divisor * t3
+        if return_alpha:
+            delta_alpha = t1 * (1/t2_divisor) * t3
+            alpha_impr = alpha * (1 + delta_alpha)
+
         count += 1
 
-    return interference_func_impr, chi_squared
+    if return_alpha:
+        return interference_func_impr, chi_squared, alpha_impr
+    else:
+        return interference_func_impr, chi_squared
 
 
 def refinement_objfun(minvar, *args):
