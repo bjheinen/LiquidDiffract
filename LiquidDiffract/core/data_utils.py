@@ -23,7 +23,8 @@ def rebin_data(x, y, dx=0.02, x_lim=None):
         x_rebin = np.arange(0, x[-1], dx)
     f_interp = scipy.interpolate.interp1d(x, y,
                                           kind='cubic',
-                                          fill_value='extrapolate')
+                                          fill_value=y[0],
+                                          bounds_error=False)
     y_rebin = f_interp(x_rebin)
     return x_rebin, y_rebin
 
