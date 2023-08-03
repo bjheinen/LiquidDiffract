@@ -935,6 +935,7 @@ class DataOptionsGroupBox(QGroupBox):
     def style_widgets(self):
 
         self.qmax_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.qmax_label.setToolTip('Maximum Q value - set to truncate data')
         self.qmax_input.setAlignment(Qt.AlignRight)
         self.qmax_input.setValidator(QDoubleValidator())
         self.qmax_input.setMaximumWidth(70)
@@ -943,6 +944,7 @@ class DataOptionsGroupBox(QGroupBox):
         self.qmax_label.setEnabled(False)
 
         self.qmin_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.qmin_label.setToolTip('Minimum Q value - set to truncate data') 
         self.qmin_input.setAlignment(Qt.AlignRight)
         self.qmin_input.setValidator(QDoubleValidator())
         self.qmin_input.setMaximumWidth(70)
@@ -951,11 +953,14 @@ class DataOptionsGroupBox(QGroupBox):
         self.qmin_label.setEnabled(False)
 
         self.smooth_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.smooth_label.setToolTip('Apply a Savitsky-Golay filter - see <i>Additional Preferences</i> for filter parameters')
         self.smooth_data_check.setChecked(False)
 
         self.plot_scattering_factors_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.plot_selfscatter_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.plot_selfscatter_lbl.setToolTip('Plot sample self-scattering?')
         self.plot_compton_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.plot_compton_lbl.setToolTip('Plot sample incoherent (Compton) scattering?')
 
         self.window_start_input.setValidator(QDoubleValidator())
         self.window_start_input.setEnabled(False)
