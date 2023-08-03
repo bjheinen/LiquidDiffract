@@ -579,6 +579,10 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langr
         raise ValueError('Please select a valid method for structure factor')
 
     if return_alpha:
+        if method == 'ashcroft-langreth':
+            # The normalisation factor in AL formalism is scaled
+            # by the number of atoms in the compositional unit
+            alpha = alpha / n_atoms
         return structure_factor, alpha
     else:
         return structure_factor
