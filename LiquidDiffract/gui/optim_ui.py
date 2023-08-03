@@ -88,6 +88,7 @@ class OptimUI(QWidget):
         self.optim_config_widget.data_options_gb.al_btn.toggled.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.mod_func_input.currentIndexChanged.connect(self.plot_data)
         self.optim_config_widget.data_options_gb.calc_sq_btn.clicked.connect(self.on_click_calc_sq)
+        self.optim_config_widget.optim_options_gb.toggled.connect(self.toggle_optim_gb)
         self.optim_config_widget.optim_options_gb.opt_button.clicked.connect(self.on_click_refine)
 
     def plot_data(self):
@@ -608,6 +609,13 @@ class OptimUI(QWidget):
     def enable_config_panel(self, state):
         self.optim_config_widget.setEnabled(state)
         QApplication.processEvents(QEventLoop.ExcludeUserInputEvents)
+
+    def toggle_optim_gb(self):
+        # Run on_click_calc_sq when optimisation groupbox toggled
+        # Don't run if sq/int_func not calculated yet
+        if not self.data['int_func'].size:
+            return
+        self.on_click_calc_sq()
 
     def window_func_error(self):
         print('Please set limit for Cosine-window function')
