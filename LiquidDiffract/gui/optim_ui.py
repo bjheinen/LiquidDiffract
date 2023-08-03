@@ -91,6 +91,8 @@ class OptimUI(QWidget):
         self.optim_config_widget.optim_options_gb.opt_button.clicked.connect(self.on_click_refine)
 
     def plot_data(self):
+        # If S(Q) already calculated, re-calculate after changes
+        _recalc_SQ = self.data['sq_y'].size
         # Clear the results tab as well
         self.results_cleared.emit()
         # Plots the data, no through update when this is changed
@@ -160,6 +162,8 @@ class OptimUI(QWidget):
             self.smooth_data()
         else:
             self.optim_plot_widget.update_plots(self.data)
+        if _recalc_SQ:
+            self.on_click_calc_sq()
 
     def on_click_calc_sq(self):
         # Run only if data present
