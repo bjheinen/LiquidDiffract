@@ -410,6 +410,23 @@ class TestCalcStructureFactor(unittest.TestCase, CustomAssertions):
     def test_bad_method(self):
         self.assertRaises(ValueError, core.calc_structure_factor, self.q_test, self.I_test, self.composition_Ga, 0.048, method='BAD')
 
+    def test_prescale_IQ(self):
+        SQ_CaSiO3_FZ = core.calc_structure_factor(self.q_test, self.I_test, self.composition_CaSiO3, 0.048, method='faber-ziman')
+        SQ_CaSiO3_FZ_a = core.calc_structure_factor(self.q_test, self.I_test*10.0, self.composition_CaSiO3, 0.048, method='faber-ziman')
+        SQ_CaSiO3_FZ_b = core.calc_structure_factor(self.q_test, self.I_test*1e9, self.composition_CaSiO3, 0.048, method='faber-ziman')
+        SQ_CaSiO3_FZ_c = core.calc_structure_factor(self.q_test, self.I_test*1e-9, self.composition_CaSiO3, 0.048, method='faber-ziman')
+        self.assertFloatArrayEqual(SQ_CaSiO3_FZ_a, SQ_CaSiO3_FZ)
+        self.assertFloatArrayEqual(SQ_CaSiO3_FZ_b, SQ_CaSiO3_FZ)
+        self.assertFloatArrayEqual(SQ_CaSiO3_FZ_c, SQ_CaSiO3_FZ)
+
+        SQ_CaSiO3_AL = core.calc_structure_factor(self.q_test, self.I_test, self.composition_CaSiO3, 0.048, method='ashcroft-langreth')
+        SQ_CaSiO3_AL_a = core.calc_structure_factor(self.q_test, self.I_test*10.0, self.composition_CaSiO3, 0.048, method='ashcroft-langreth')
+        SQ_CaSiO3_AL_b = core.calc_structure_factor(self.q_test, self.I_test*1e9, self.composition_CaSiO3, 0.048, method='ashcroft-langreth')
+        SQ_CaSiO3_AL_c = core.calc_structure_factor(self.q_test, self.I_test*1e-9, self.composition_CaSiO3, 0.048, method='ashcroft-langreth')
+        self.assertFloatArrayEqual(SQ_CaSiO3_AL_a, SQ_CaSiO3_AL)
+        self.assertFloatArrayEqual(SQ_CaSiO3_AL_b, SQ_CaSiO3_AL)
+        self.assertFloatArrayEqual(SQ_CaSiO3_AL_c, SQ_CaSiO3_AL)
+
 
 @unittest.skipIf(parse_version(python_version()) < parse_version('3.9'), 'Tests unsupported for python<3.9 - Suppport will be removed in a future version of LiquidDiffract')
 class TestCalcCorrelationFunc(unittest.TestCase, CustomAssertions):
