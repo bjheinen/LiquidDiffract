@@ -545,8 +545,8 @@ class DataConvertGroupBox(QGroupBox):
         if not self.convert_filename:
             return
         # Convert 2theta data
-        __q_data = data_utils.convert_two_theta(self.two_theta_data[0], __lambda)
-        __out_data = np.column_stack((__q_data, self.two_theta_data[1]))
+        __q_data = data_utils.convert_two_theta(self.two_theta_data[:,0], __lambda)
+        __out_data = np.column_stack((__q_data, self.two_theta_data[:,1]))
         np.savetxt(self.convert_filename, __out_data)
         # Message user success
         self.success_msg = QMessageBox()
