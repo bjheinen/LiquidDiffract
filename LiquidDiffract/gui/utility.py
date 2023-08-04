@@ -29,8 +29,10 @@ def get_filename(io='open', caption='Load Data File', directory=None):
                                                 directory=directory,
                                                 filter=_filter)
         file_name = file_name[0]
-        if not file_name.lower().endswith(('.dat', '.chi', '.xy')):
-            file_name += '.dat'
+        # Only check/add extensiton if filename returned
+        if file_name:
+            if not file_name.lower().endswith(('.dat', '.chi', '.xy')):
+                file_name += '.dat'
     else:
         raise ValueError('Bad argument')
 
