@@ -210,7 +210,7 @@ class MainContainer(QWidget):
         self.optim_ui.data['cor_x'] = self.bkg_ui.data['cor_x']
         self.optim_ui.data['cor_y'] = self.bkg_ui.data['cor_y']
         if self.bkg_ui.bkg_config_widget.bkg_subtract_gb.isChecked() and self.bkg_ui.data['bkg_y'].size:
-            self.optim_ui.data['uncorrected_y'] = self.bkg_ui.data['data_y']
+            self.optim_ui.data['uncorrected_y'] = self.bkg_ui.data['data_y'] + self.bkg_ui.data['data_correction']
             self.optim_ui.data['bkg_y'] = self.bkg_ui.data['bkg_y']
             self.optim_ui.data['bkg_scale'] = self.bkg_ui.bkg_config_widget.bkg_subtract_gb.scale_sb.value()
         self.optim_ui.plot_data()

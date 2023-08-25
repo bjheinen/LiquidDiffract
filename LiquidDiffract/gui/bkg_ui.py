@@ -11,7 +11,8 @@ from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QHBoxLayout, QGroupBox, QPushButton, QLineEdit, \
                             QDoubleSpinBox, QLabel, QScrollArea, QMessageBox, \
-                            QCheckBox, QSplitter
+                            QCheckBox, QSplitter, QButtonGroup, QRadioButton, \
+                            QAbstractSpinBox
 # LiquidDiffract imports
 from LiquidDiffract.gui import plot_widgets
 from LiquidDiffract.gui import utility
@@ -72,7 +73,8 @@ class BkgUI(QWidget):
                      'bkg_raw_x':  __a, 'bkg_raw_y':    __a,
                      'bkg_x':      __a, 'bkg_y':        __a,
                      'bkg_y_sc':   __a, 'bkg_raw_y_sc': __a,
-                     'cor_x':      __a, 'cor_y':        __a
+                     'cor_x':      __a, 'cor_y':        __a,
+                     'data_correction': 0
                      }
         self.bkg_file = None
         self.data_file = None
@@ -89,6 +91,10 @@ class BkgUI(QWidget):
         self.bkg_config_widget.bkg_subtract_gb.toggled.connect(self.sub_bkg)
         self.bkg_config_widget.bkg_subtract_gb.auto_sc_btn.clicked.connect(self.auto_scale_bkg)
         self.bkg_config_widget.data_files_gb.dq_input.editingFinished.connect(self.dq_changed)
+        self.bkg_config_widget.data_corrections_gb.zero_shift_check.stateChanged.connect(self.plot_data)
+        self.bkg_config_widget.data_corrections_gb.zero_shift_button_group.buttonClicked.connect(self.plot_data)
+        self.bkg_config_widget.data_corrections_gb.shift_sb.valueChanged.connect(self.plot_data)
+
 
     def rebin_data(self, bkg='check', suppress_plots=False):
         '''
@@ -224,6 +230,7 @@ class BkgUI(QWidget):
                 self.data['cor_y'] = self.data['data_y']
         _plot_raw = self.bkg_config_widget.data_files_gb.plot_raw_check.isChecked()
         _plot_log = self.bkg_config_widget.data_files_gb.plot_log_check.isChecked()
+        self.data_corrections()
         self.bkg_plot_widget.update_plots(self.data, _plot_raw, _plot_log)
         # emit signal that data has changed to be picked up by second tab (optim_ui)
         self.plots_changed.emit()
@@ -246,6 +253,27 @@ class BkgUI(QWidget):
                                options={'xtol': 1e-8, 'disp': False})
         bkg_scaling = bkg_scaling.x
         self.bkg_config_widget.bkg_subtract_gb.scale_sb.setValue(bkg_scaling)
+
+    def data_corrections(self):
+        self.data['data_correction'] = 0
+        if self.bkg_config_widget.data_corrections_gb.zero_shift_check.isChecked():
+            _shift_correction = self.zero_shift_data()
+        else:
+            _shift_correction = 0
+        self.data['data_correction'] = _shift_correction
+
+    def zero_shift_data(self):
+        if self.bkg_config_widget.data_corrections_gb.zero_first_val_btn.isChecked():
+            _shift = self.data['cor_y'][0]
+        elif self.bkg_config_widget.data_corrections_gb.zero_min_val_btn.isChecked():
+            _shift = np.min(self.data['cor_y'])
+        elif self.bkg_config_widget.data_corrections_gb.custom_shift_btn.isChecked():
+            _shift = -1 * self.bkg_config_widget.data_corrections_gb.shift_sb.value()
+        else:
+            raise NotImplementedError()
+            return
+        self.data['cor_y'] = (self.data['cor_y'] - _shift) + 1e-22
+        return _shift * -1
 
     def dq_changed(self):
         try:
@@ -308,9 +336,11 @@ class BkgConfigWidget(QWidget):
         self.data_files_gb = DataFilesGroupBox()
         self.bkg_subtract_gb = BkgSubtractGroupBox()
         self.data_conv_gb = DataConvertGroupBox()
+        self.data_corrections_gb = DataCorrectionsGroupBox()
         self.vlayout.addWidget(self.data_files_gb, 1)
         self.vlayout.addWidget(self.bkg_subtract_gb, 1)
         self.vlayout.addWidget(self.data_conv_gb, 1)
+        self.vlayout.addWidget(self.data_corrections_gb, 1)
         self.vlayout.addWidget(QWidget(), 3)
         self.setLayout(self.vlayout)
 
@@ -559,3 +589,98 @@ class DataConvertGroupBox(QGroupBox):
         self.success_msg.show()
         # Clear variables
         del __lambda, __q_data, __out_data, self.convert_filename
+
+
+class DataCorrectionsGroupBox(QGroupBox):
+
+    def __init__(self, *args):
+        super(DataCorrectionsGroupBox, self).__init__(*args)
+        self.setTitle('Data Corrections')
+        self.setAlignment(Qt.AlignLeft)
+        self.setStyleSheet('GroupBox::title{subcontrol-origin: margin; subcontrol-position: top left;}')
+        self.setCheckable(False)
+
+        self.create_widgets()
+        self.style_widgets()
+        self.create_layout()
+        self.create_signals()
+
+    def create_widgets(self):
+        self.zero_shift_check = QCheckBox('Zero offset')
+
+        self.zero_shift_button_group = QButtonGroup()
+        self.zero_first_val_btn = QRadioButton('Zero I(Q=0)')
+        self.zero_min_val_btn = QRadioButton('Zero min I(Q)')
+        self.custom_shift_btn = QRadioButton('Custom Shift: ')
+
+        self.zero_shift_button_group.addButton(self.zero_first_val_btn)
+        self.zero_shift_button_group.addButton(self.zero_min_val_btn)
+        self.zero_shift_button_group.addButton(self.custom_shift_btn)
+
+        self.shift_sb = QDoubleSpinBox()
+        self.shift_sb_step = QLineEdit('1')
+
+    def style_widgets(self):
+        self.zero_first_val_btn.setEnabled(False)
+        self.zero_min_val_btn.setEnabled(False)
+        self.custom_shift_btn.setEnabled(False)
+        self.zero_first_val_btn.setChecked(True)
+
+        self.shift_sb.setValue(0.0)
+        self.shift_sb.setSingleStep(1)
+        self.shift_sb.setDecimals(3)
+        self.shift_sb.setMaximumWidth(200)
+        self.shift_sb.setAlignment(Qt.AlignRight)
+        self.shift_sb.setMinimum(-np.inf)
+        self.shift_sb.setMaximum(np.inf)
+        self.shift_sb.setEnabled(False)
+        # Adaptive spin box steps
+        #self.shift_sb.setStepType(QAbstractSpinBox.AdaptiveDecimalStepType)
+
+        self.shift_sb_step.setMaximumWidth(100)
+        self.shift_sb_step.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
+        self.shift_sb_step.setAlignment(Qt.AlignRight)
+        self.shift_sb_step.setEnabled(False)
+
+    def create_layout(self):
+
+        self.outer_layout = QVBoxLayout()
+        self.outer_layout.setContentsMargins(25, 10, 25, 7)
+        self.outer_layout.setSpacing(5)
+
+        self.outer_layout.addWidget(self.zero_shift_check)
+        self.zero_grid_layout = QGridLayout()
+        self.zero_grid_layout.setContentsMargins(25, 5, 10, 5)
+        self.zero_grid_layout.setSpacing(5)
+
+        self.zero_grid_layout.addWidget(self.zero_first_val_btn, 0, 0)
+        self.zero_grid_layout.addWidget(self.zero_min_val_btn, 1, 0)
+
+        self.zero_grid_layout.addWidget(self.custom_shift_btn, 2, 0)
+
+        self.sb_layout = QHBoxLayout()
+        self.sb_layout.addWidget(self.shift_sb)
+        self.sb_layout.addWidget(self.shift_sb_step)
+
+        self.zero_grid_layout.addLayout(self.sb_layout, 2, 1)
+        self.outer_layout.addLayout(self.zero_grid_layout)
+        self.setLayout(self.outer_layout)
+
+    def create_signals(self):
+        self.zero_shift_check.toggled.connect(self.toggle_zero_correction)
+        self.shift_sb_step.editingFinished.connect(self.shift_step_changed)
+        self.custom_shift_btn.toggled.connect(self.toggle_custom_shift)
+
+    def shift_step_changed(self):
+        self.shift_sb.setSingleStep(float(str(self.shift_sb_step.text())))
+
+    def toggle_custom_shift(self, btn_state):
+        self.shift_sb.setEnabled(btn_state)
+        self.shift_sb_step.setEnabled(btn_state)
+
+    def toggle_zero_correction(self, check_state):
+        for btn in self.zero_shift_button_group.buttons():
+            btn.setEnabled(check_state)
+        if self.custom_shift_btn.isChecked():
+            self.shift_sb.setEnabled(check_state)
+            self.shift_sb_step.setEnabled(check_state)
