@@ -96,7 +96,7 @@ class BkgUI(QWidget):
         self.bkg_config_widget.data_corrections_gb.shift_sb.valueChanged.connect(self.plot_data)
 
 
-    def rebin_data(self, bkg='check', suppress_plots=False):
+    def rebin_data(self, bkg='check', x_lim=None, suppress_plots=False):
         '''
         Helper function to rebin background/data arrays when necessary.
         Because the S(Q) array is padded before fourier transform operations
@@ -110,14 +110,14 @@ class BkgUI(QWidget):
         if bkg == 1:
             if self.data['bkg_raw_x'][-1] > ((2**self.fft_N / 2) * _dx):
                 raise RuntimeWarning('Dataset size exceeds 2**N!')
-            self.data['bkg_x'], self.data['bkg_y'] = data_utils.rebin_data(self.data['bkg_raw_x'], self.data['bkg_raw_y'], dx=_dx)
+            self.data['bkg_x'], self.data['bkg_y'] = data_utils.rebin_data(self.data['bkg_raw_x'], self.data['bkg_raw_y'], dx=_dx, x_lim=x_lim)
             if suppress_plots == False:
                 self.plot_data()
 
         elif bkg == 0:
             if self.data['data_raw_x'][-1] > ((2**self.fft_N / 2) * _dx):
                  raise RuntimeWarning('Dataset size exceeds 2**N!')
-            self.data['data_x'], self.data['data_y'] = data_utils.rebin_data(self.data['data_raw_x'], self.data['data_raw_y'], dx=_dx)
+            self.data['data_x'], self.data['data_y'] = data_utils.rebin_data(self.data['data_raw_x'], self.data['data_raw_y'], dx=_dx, x_lim=x_lim)
             # Delete any processed data when loading new file
             self.data['cor_x'] = np.asarray([])
             self.data['cor_y'] = np.asarray([])
@@ -128,11 +128,16 @@ class BkgUI(QWidget):
                 self.plot_data()
 
         elif bkg == 'check':
+            if self.data['data_raw_x'].size and self.data['bkg_raw_x'].size:
+                _x_lim = (0, min(self.data['bkg_raw_x'][-1], self.data['data_raw_x'][-1]))
+            else:
+                _x_lim = None
             if self.data['bkg_raw_x'].size and self.bkg_file != None:
-                 self.rebin_data(bkg=1, suppress_plots=True)
+                 self.rebin_data(bkg=1, x_lim=_x_lim, suppress_plots=True)
             if self.data['data_raw_x'].size and self.data_file != None:
-                 self.rebin_data(bkg=0, suppress_plots=True)
-            self.plot_data()
+                 self.rebin_data(bkg=0, x_lim=_x_lim, suppress_plots=True)
+            if suppress_plots == False:
+                self.plot_data()
 
     def load_data(self):
         __file_name = utility.get_filename(io='open')
@@ -224,8 +229,15 @@ class BkgUI(QWidget):
                 try:
                     self.data['cor_y'] = self.data['data_y'] - self.data['bkg_y_sc']
                 except ValueError:
-                    self.bkg_match_error()
-                    return
+                    self.rebin_data(suppress_plots=True)
+                    # Check if data_x and bkg_x now the same
+                    if np.allclose(self.data['data_x'], self.data['bkg_x']):
+                        self.data['cor_x'] = self.data['data_x']
+                        self.plot_data()
+                        return
+                    else:
+                        self.bkg_match_error()
+                        return
             else:
                 self.data['cor_y'] = self.data['data_y']
         _plot_raw = self.bkg_config_widget.data_files_gb.plot_raw_check.isChecked()
@@ -245,8 +257,10 @@ class BkgUI(QWidget):
             self.missing_bkg_file_error()
             return
         if len(self.data['data_y']) != len(self.data['bkg_y']):
-            self.bkg_match_error()
-            return
+            self.rebin_data(suppress_plots=True)
+            if len(self.data['data_y']) != len(self.data['bkg_y']):
+                self.bkg_match_error()
+                return
         bkg_scaling = minimize(data_utils.bkg_scaling_residual, 1,
                                args=(self.data['data_y'], self.data['bkg_y']),
                                method='nelder-mead',
