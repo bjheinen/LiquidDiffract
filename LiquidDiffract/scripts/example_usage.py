@@ -139,7 +139,7 @@ rho_refined = opt_result.x[0]
 # and the F(r) refined as above.
 interference_func = (liquid.calc_structure_factor(q_data, I_data, composition, rho_refined) -
                      liquid.calc_S_inf(composition, q_data))
-args = (q_data, interference_func_0, composition, rho_refined,
+args = (q_data, interference_func, composition, rho_refined,
         r_min, iter_limit, method, mod_func, window_start, fft_N)
 interference_func_2, chi_sq_2 = liquid.calc_impr_interference_func(*args)
 
