@@ -162,7 +162,10 @@ class StructureUI(QWidget):
 
     def plot_data(self, _reset_view=1):
         self.update_plot_data()
-        self.structure_plot_widget.update_plot_windows(self.data, _reset_view)
+        if not self.data['rdf_y'].size:
+            return
+        else:
+            self.structure_plot_widget.update_plot_windows(self.data, _reset_view)
 
     def update_plot_data(self):
         self.data['r0'] = self.structure_config_widget.monatomic_gb.r0_input.value()
