@@ -80,7 +80,7 @@ class StructureUI(QWidget):
         self.structure_config_widget.monatomic_gb.rmin_input.valueChanged.connect(self.calc_integrals)
 
         self.int_limit_signalMapper = QSignalMapper()
-        self.int_limit_signalMapper.mapped[QObject].connect(self.update_int_limits)
+        self.int_limit_signalMapper.mappedObject.connect(self.update_int_limits)
 
         self.structure_config_widget.monatomic_gb.find_limits_btn.clicked.connect(self.auto_integration_limits)
         self.structure_config_widget.monatomic_gb.calc_N_btn.clicked.connect(self.calc_integrals)
@@ -869,10 +869,10 @@ class PolyatomicGroupBox(QGroupBox):
         self.add_peak_btn.clicked.connect(self.add_peak)
 
         self.del_peak_signalMapper = QSignalMapper()
-        self.del_peak_signalMapper.mapped[int].connect(self.del_peak)
+        self.del_peak_signalMapper.mappedInt.connect(self.del_peak)
 
         self.rename_peak_signalMapper = QSignalMapper()
-        self.rename_peak_signalMapper.mapped[int].connect(self.rename_peak)
+        self.rename_peak_signalMapper.mappedInt.connect(self.rename_peak)
 
         self.min_limit_input.valueChanged.connect(self.gauss_params_changed_relay)
         self.max_limit_input.valueChanged.connect(self.gauss_params_changed_relay)
