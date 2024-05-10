@@ -5,10 +5,10 @@ __email__ = "benedict.heinen@gmail.com"
 
 from importlib import resources
 import numpy as np
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QIntValidator, QDoubleValidator, QPixmap, \
+from qtpy.QtCore import Qt, Signal
+from qtpy.QtGui import QIntValidator, QDoubleValidator, QPixmap, \
                         QTextBlockFormat, QTextCursor
-from PyQt5.QtWidgets import QFileDialog, QDialog, QStyledItemDelegate, \
+from qtpy.QtWidgets import QFileDialog, QDialog, QStyledItemDelegate, \
                             QMessageBox, QFrame, QGroupBox, QSpinBox, \
                             QVBoxLayout, QGridLayout, QDialogButtonBox, \
                             QLabel, QLineEdit, QCheckBox, QComboBox, \
@@ -83,7 +83,7 @@ class ValidatedItemDelegate(QStyledItemDelegate):
 
 class PreferencesDialog(QDialog):
 
-    fft_check_signal = pyqtSignal()
+    fft_check_signal = Signal()
     fft_check_result = 0
 
     def __init__(self, preferences):

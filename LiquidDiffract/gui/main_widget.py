@@ -11,8 +11,8 @@ import os.path
 import webbrowser
 from importlib import resources
 import numpy as np
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTabWidget, QAction
-from PyQt5.QtGui import QIcon
+from qtpy.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTabWidget
+from qtpy.QtGui import QIcon, QAction
 
 from LiquidDiffract.gui import bkg_ui
 from LiquidDiffract.gui import optim_ui
@@ -101,7 +101,7 @@ class App(QMainWindow):
         with resources.path(self.icon_module, 'gs_icon.png') as path:
             self.preferences_dialog.setWindowIcon(QIcon(str(path)))
 
-        if self.preferences_dialog.exec_() == utility.PreferencesDialog.Accepted:
+        if self.preferences_dialog.exec() == utility.PreferencesDialog.Accepted:
             self.preferences = self.preferences_dialog.get_preferences()
             _prev_data_units = self.table_widget.bkg_ui.data_units
             # Set preferences in OptimUI
@@ -137,7 +137,7 @@ class App(QMainWindow):
 
     def call_about_dialog(self):
         self.about_dialog = utility.AboutDialog()
-        self.about_dialog.exec_()
+        self.about_dialog.exec()
 
     def open_docs(self):
         webbrowser.open_new('https://github.com/bjheinen/LiquidDiffract')
@@ -169,7 +169,7 @@ class App(QMainWindow):
 class MainContainer(QWidget):
 
     def __init__(self, parent):
-        super(QWidget, self).__init__(parent)
+        super(MainContainer, self).__init__(parent)
         self.setStyleSheet('QTabWidget::pane { border: 0; } \
                             QTabBar {font-size: 11pt; text-align: center} \
                             QTabWidget::pane {border-top: 4px solid #444; }')

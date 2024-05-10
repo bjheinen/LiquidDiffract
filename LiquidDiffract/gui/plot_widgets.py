@@ -3,8 +3,8 @@ __author__ = "Benedict J. Heinen"
 __copyright__ = "Copyright 2018-2021, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
+from qtpy.QtCore import Qt, Signal
+from qtpy.QtWidgets import QWidget, QVBoxLayout
 import pyqtgraph as pg
 import numpy as np
 from LiquidDiffract.core import data_utils
@@ -1020,7 +1020,7 @@ class CustomPlotItem(pg.PlotItem):
 
 class WindowedPlotItem(CustomPlotItem):
 
-    reset_window = pyqtSignal()
+    reset_window = Signal()
 
     def autoBtnClicked(self):
         self.reset_window.emit()

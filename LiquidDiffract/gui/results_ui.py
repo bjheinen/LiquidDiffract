@@ -4,7 +4,7 @@ __copyright__ = "Copyright 2018-2021, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
 import numpy as np
-from PyQt5.QtWidgets import QWidget, QFrame, QVBoxLayout, QHBoxLayout, \
+from qtpy.QtWidgets import QWidget, QFrame, QVBoxLayout, QHBoxLayout, \
                             QPushButton, QScrollArea
 from LiquidDiffract.gui import plot_widgets
 from LiquidDiffract.gui import utility
@@ -15,7 +15,7 @@ from LiquidDiffract.version import __appname__, __version__
 class ResultsUI(QWidget):
 
     def __init__(self, parent):
-        super(QWidget, self).__init__(parent)
+        super(ResultsUI, self).__init__(parent)
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)

@@ -8,9 +8,9 @@ import datetime
 from importlib import resources
 import numpy as np
 from scipy.optimize import minimize, basinhopping
-from PyQt5.QtCore import Qt, pyqtSignal, QEventLoop
-from PyQt5.QtGui import QDoubleValidator, QIntValidator
-from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
+from qtpy.QtCore import Qt, QEventLoop, Signal
+from qtpy.QtGui import QDoubleValidator, QIntValidator
+from qtpy.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QHBoxLayout, QGroupBox, QPushButton, QLineEdit, \
                             QComboBox, QTableWidget, QTableWidgetItem, \
                             QLabel, QCheckBox, QButtonGroup, QRadioButton, \
@@ -26,11 +26,11 @@ from LiquidDiffract.version import __appname__, __version__
 
 class OptimUI(QWidget):
     # Create custom signal to link Optim/Results UI
-    results_changed = pyqtSignal()
-    results_cleared = pyqtSignal()
+    results_changed = Signal()
+    results_cleared = Signal()
 
     def __init__(self, parent):
-        super(QWidget, self).__init__(parent)
+        super(OptimUI, self).__init__(parent)
         self.layout = QHBoxLayout(self)
         self.layout.setSpacing(0)
 
@@ -621,19 +621,19 @@ class OptimUI(QWidget):
         print('Please set limit for Cosine-window function')
         _message = ['Error computing S(Q)!', 'Please set limit for Cosine-window function']
         _error_msg = utility.ErrorMessageBox(_message)
-        _error_msg.exec_()
+        _error_msg.exec()
 
     def limits_error(self):
         print('Warning: Must set bounds to refine density!')
         _message = ['Refinement error!', 'Must set bounds to refine density!']
         _error_msg = utility.ErrorMessageBox(_message)
-        _error_msg.exec_()
+        _error_msg.exec()
 
     def bkg_error(self):
         print('Warning: Must load background file to refine background scaling factor')
         _message = ['Missing background!', 'Must load background to refine background scale factor']
         _error_msg = utility.ErrorMessageBox(_message)
-        _error_msg.exec_()
+        _error_msg.exec()
 
 
 class OptimConfigWidget(QWidget):
@@ -688,7 +688,7 @@ class OptimConfigWidget(QWidget):
         print('Background subtraction tab updated with refined scaling factor!')
         _message = ['Background subtraction tab updated!', 'The background subtration tab has been updated with the refined scaling factor']
         _error_msg = utility.ErrorMessageBox(_message)
-        _error_msg.exec_()
+        _error_msg.exec()
 
     def _copy_density_output(self):
         self.composition_gb.density_input.setText(self.optim_results_gb.density_output.text())

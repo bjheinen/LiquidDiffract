@@ -7,9 +7,9 @@ import os.path
 import datetime
 import numpy as np
 import lmfit
-from PyQt5.QtCore import Qt, pyqtSignal, QSignalMapper, QObject
-from PyQt5.QtGui import QDoubleValidator
-from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
+from qtpy.QtCore import Qt, QSignalMapper, QObject, Signal
+from qtpy.QtGui import QDoubleValidator
+from qtpy.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QHBoxLayout, QGroupBox, QPushButton, QRadioButton, \
                             QLineEdit, QDoubleSpinBox, QLabel, QScrollArea, \
                             QCheckBox, QSplitter, QComboBox, QStyle
@@ -24,7 +24,7 @@ from LiquidDiffract.version import __appname__, __version__
 class StructureUI(QWidget):
 
     def __init__(self, parent):
-        super(QWidget, self).__init__(parent)
+        super(StructureUI, self).__init__(parent)
         self.layout = QHBoxLayout(self)
         self.layout.setSpacing(0)
 
@@ -788,9 +788,9 @@ class MonatomicGroupBox(QGroupBox):
 class PolyatomicGroupBox(QGroupBox):
 
     # Create custom signals emmitted when peaks added/changed
-    guess_peak = pyqtSignal(int)
+    guess_peak = Signal(int)
     # Relay signal from GaussianPeakGroupBox
-    gauss_params_changed_relay = pyqtSignal()
+    gauss_params_changed_relay = Signal()
 
     def __init__(self, *args):
         super(PolyatomicGroupBox, self).__init__(*args)
@@ -941,7 +941,7 @@ class PolyatomicGroupBox(QGroupBox):
 class GaussianPeakGroupBox(QFrame):
 
     # Create signal emmitted on parameter change
-    gauss_params_changed = pyqtSignal()
+    gauss_params_changed = Signal()
 
     def __init__(self, *args):
         super(GaussianPeakGroupBox, self).__init__(*args)

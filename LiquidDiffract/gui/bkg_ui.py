@@ -6,9 +6,9 @@ __email__ = "benedict.heinen@gmail.com"
 import os
 import numpy as np
 from scipy.optimize import minimize
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QDoubleValidator
-from PyQt5.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
+from qtpy.QtCore import Qt, Signal
+from qtpy.QtGui import QDoubleValidator
+from qtpy.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
                             QHBoxLayout, QGroupBox, QPushButton, QLineEdit, \
                             QDoubleSpinBox, QLabel, QScrollArea, QMessageBox, \
                             QCheckBox, QSplitter, QButtonGroup, QRadioButton, \
@@ -24,14 +24,14 @@ class BkgUI(QWidget):
 
     # plots_changed is handled in main_widget.MainContainer and allows the
     # next tab to be updated
-    plots_changed = pyqtSignal()
+    plots_changed = Signal()
     # file_name_changed connects to main_widget.MainContainer.update_filename
     # this method is used to set the working directory based on the data_file
     # that is loaded
-    file_name_changed = pyqtSignal()
+    file_name_changed = Signal()
 
     def __init__(self, parent):
-        super(QWidget, self).__init__(parent)
+        super(BkgUI, self).__init__(parent)
         self.layout = QHBoxLayout(self)
         self.layout.setSpacing(0)
 
@@ -211,7 +211,7 @@ class BkgUI(QWidget):
 
     def check_file_header(self, _fname):
         _check_dialog = utility.CheckFileDialog(_fname)
-        if _check_dialog.exec_() == utility.CheckFileDialog.Accepted:
+        if _check_dialog.exec() == utility.CheckFileDialog.Accepted:
             return _check_dialog.get_header_len()
         else:
             return None
