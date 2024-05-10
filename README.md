@@ -48,7 +48,7 @@ Please cite this article if you use LiquidDiffract in your work.
 
 ## Requirements
 
-* [Python >= 3.9](https://www.python.org)
+* [Python >= 3.8](https://www.python.org)
 * [SciPy >= 1.6](https://www.scipy.org)
 * [NumPy >= 1.20](https://numpy.org)
 * [PyQt6 >= 6.2.0](https://riverbankcomputing.com/software/pyqt/intro)*
