@@ -46,19 +46,19 @@ Please cite this article if you use LiquidDiffract in your work.
 * [License](#license)
 
 
-
 ## Requirements
 
-* [Python >= 3.8](https://www.python.org)
+* [Python >= 3.9](https://www.python.org)
 * [SciPy >= 1.6](https://www.scipy.org)
 * [NumPy >= 1.20](https://numpy.org)
-* [PyQt5 >= 5.14](https://riverbankcomputing.com/software/pyqt/intro)
+* [PyQt6 >= 6.2.0](https://riverbankcomputing.com/software/pyqt/intro)*
 * [pyqtgraph >= 0.13](http://www.pyqtgraph.org)
 
-We recommend Python >= 3.9, and the latest available versions of the required packages.
+We recommend Python >= 3.10, and the latest available versions of the required packages.
 LiquidDiffract should run with earlier versions of these python packages but testing is limited.
 LiquidDiffract is system-independent and has been tested on Linux, Mac, and Windows.
 Dependencies are handled automatically when installing with *pip*.
+*LiquidDiffract supports multiple Qt bindings (PyQt5, PyQt6, PySide2, PySide6). Use the QT_API environment variable to run with a specifi API, otherwise the software will default to PyQt6 if available.
 
 ## Installation
 
