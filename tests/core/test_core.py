@@ -85,10 +85,10 @@ class TestCalcZSum(unittest.TestCase):
         self.assertEqual(Z_tot_H0, 0.0)
         self.assertEqual(Z_tot_CaSiO3, 58)
 
-
+@unittest.skipIf(parse_version(python_version()) < parse_version('3.9'), 'Tests unsupported for python<3.9 - Suppport will be removed in a future version of LiquidDiffract')
 class TestLoadData(unittest.TestCase):
     def setUp(self):
-        with resources.open_binary('LiquidDiffract.resources', 'pt_data.npy') as fp:
+        with resources.files('LiquidDiffract.resources').joinpath('pt_data.npy').open('rb') as fp:
             self.element_dict = np.load(fp, allow_pickle=True).item()
 
     def test_load_ff_data(self):
@@ -107,7 +107,7 @@ class TestLoadData(unittest.TestCase):
                 self.fail("core.load_compton_data() raised FileNotFoundError!")
 
     def test_load_mass_data(self):
-        with resources.open_binary('LiquidDiffract.resources', 'mass_data.npy') as fp:
+        with resources.files('LiquidDiffract.resources').joinpath('mass_data.npy').open('rb') as fp:
             mass_dict = np.load(fp, allow_pickle=True).item()
         for element in self.element_dict:
             self.assertIn(element, mass_dict)

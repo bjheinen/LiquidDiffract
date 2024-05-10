@@ -5,7 +5,10 @@ __email__ = "benedict.heinen@gmail.com"
 
 import os.path
 import datetime
-from importlib import resources
+try:
+    import importlib_resources as resources
+except ImportError:
+    from importlib import resources
 import numpy as np
 from scipy.optimize import minimize, basinhopping
 from qtpy.QtCore import Qt, QEventLoop, Signal
@@ -696,7 +699,7 @@ class OptimConfigWidget(QWidget):
 
 class CompositionGroupBox(QGroupBox):
 
-    with resources.open_binary('LiquidDiffract.resources', 'pt_data.npy') as fp:
+    with resources.files('LiquidDiffract.resources').joinpath('pt_data.npy').open('rb') as fp:
         _element_dict = np.load(fp, allow_pickle=True).item()
 
     def __init__(self, *args):

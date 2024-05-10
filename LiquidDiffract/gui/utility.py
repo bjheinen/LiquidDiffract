@@ -3,7 +3,10 @@ __author__ = "Benedict J. Heinen"
 __copyright__ = "Copyright 2018, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
-from importlib import resources
+try:
+    import importlib_resources as resources
+except ImportError:
+    from importlib import resources
 import numpy as np
 from qtpy.QtCore import Qt, Signal
 from qtpy.QtGui import QIntValidator, QDoubleValidator, QPixmap, \
@@ -737,8 +740,7 @@ class AboutDialog(QDialog):
 
         self.logo_box = QLabel()
 
-        with resources.path('LiquidDiffract.resources.icons',
-                                      'logo.png') as path:
+        with resources.as_file(resources.files('LiquidDiffract.resources.icons').joinpath('logo.png')) as path:
             self.logo = QPixmap(str(path))
         self.logo_box.setPixmap(self.logo)
         self.logo_box.setAlignment(Qt.AlignCenter)
