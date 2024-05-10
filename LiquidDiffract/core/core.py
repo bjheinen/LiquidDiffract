@@ -434,15 +434,15 @@ def calc_alpha(Q_cor, I_cor, rho,
     '''
     if method == 'ashcroft-langreth':
         # define the two integrals in the equation
-        int_1 = simpson((J + S_inf) * Q_cor**2, Q_cor)
-        int_2 = simpson((I_cor / effective_ff**2) * Q_cor**2, Q_cor)
+        int_1 = simpson((J + S_inf) * Q_cor**2, x=Q_cor)
+        int_2 = simpson((I_cor / effective_ff**2) * Q_cor**2, x=Q_cor)
         # calculate alpha
         alpha = Z_tot**2 * (((-2 * np.pi**2 * rho) + int_1) / int_2)
         return alpha
     elif method == 'faber-ziman':
         # define the two integrals in the equation
-        int_1 = simpson(((compton_scattering + average_scattering[0])/average_scattering[1]) * Q_cor**2, Q_cor)
-        int_2 = simpson(((Q_cor**2 * I_cor) / average_scattering[1]), Q_cor)
+        int_1 = simpson(((compton_scattering + average_scattering[0])/average_scattering[1]) * Q_cor**2, x=Q_cor)
+        int_2 = simpson(((Q_cor**2 * I_cor) / average_scattering[1]), x=Q_cor)
         # Calculate alpha
         alpha = ((-2 * np.pi**2 * rho) + int_1)/int_2
         return alpha
