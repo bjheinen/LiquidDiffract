@@ -26,7 +26,7 @@ __license__ = 'GNU GPL v3'
 from functools import lru_cache
 import itertools
 import numpy as np
-from scipy.integrate import simpson, quadrature
+from scipy.integrate import simpson, quad
 import scipy.interpolate
 import scipy.fftpack
 from importlib import resources
@@ -1249,17 +1249,17 @@ def integrate_coordination_sphere(r, rdf,
         return N_a, N_b, N_c
 
     elif method == 1:
-        N_a, _ = quadrature(rdf_interp, r_0, rp_max, maxiter=200)
+        N_a, _ = quad(rdf_interp, r_0, rp_max)
         N_a *= 2.0
         return N_a
 
     elif method == 2:
-        N_b, _ = quadrature(rdf_interp, r_0, r_max, maxiter=200)
+        N_b, _ = quad(rdf_interp, r_0, r_max)
         N_b *= 2.0
         return N_b
 
     elif method == 3:
-        N_c, _ = quadrature(rdf_interp, r_0, r_min, maxiter=200)
+        N_c, _ = quad(rdf_interp, r_0, r_min)
         return N_c
 
     else:
