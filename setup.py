@@ -24,7 +24,7 @@ setup(
     author_email='benedict.heinen@gmail.com',
     url='https://github.com/bjheinen/LiquidDiffract',
     packages=find_packages(),
-    python_requires='>=3.8',
+    python_requires='>=3.9',
     install_requires=['numpy>=1.20.0', 'scipy>=1.6.0', 'PyQt5>=5.14.0',
                       'pyqtgraph>=0.13.0', 'lmfit>=1.0.2', 'packaging>=14.1'],
     package_data={'LiquidDiffract': ['resources/*', 'resources/icons/*',
