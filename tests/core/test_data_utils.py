@@ -85,11 +85,11 @@ class TestFindIntegrationLimits(unittest.TestCase, CustomAssertions):
         limits_c = data_utils.find_integration_limits(*rdf_data.T, rho=0.05, peak_search_limit=20, search_method='first')
         limits_d = data_utils.find_integration_limits(*rdf_data.T, rho=0.05, peak_search_limit=20, search_method='prominent')
         limits_e = data_utils.find_integration_limits(*rdf_data.T, peak_search_limit=20, search_method='prominent')
-        self.assertEqual(limits_a, rdf_peaks)
-        self.assertEqual(limits_b, rdf_peaks)
-        self.assertEqual(limits_c, rdf_peaks)
-        self.assertEqual(limits_d, rdf_peaks)
-        self.assertEqual(limits_e, rdf_peaks)
+        self.assertFloatArrayEqual(limits_a, rdf_peaks)
+        self.assertFloatArrayEqual(limits_b, rdf_peaks)
+        self.assertFloatArrayEqual(limits_c, rdf_peaks)
+        self.assertFloatArrayEqual(limits_d, rdf_peaks)
+        self.assertFloatArrayEqual(limits_e, rdf_peaks)
 
 
 class TestRebinData(unittest.TestCase, CustomAssertions):
