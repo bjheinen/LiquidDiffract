@@ -13,17 +13,27 @@ from scipy.special import erf
 
 @lru_cache(maxsize=2)
 def cached_sqrt(root):
-    '''Cache sqrt(2pi) and sqrt(2). Very minor speed bost'''
+    '''Cache sqrt(2pi) and sqrt(2). Very minor speed boost'''
     if root == '2':
         return sqrt(2)
-    else:
+    elif root == '2pi':
         return sqrt(2*pi)
+    else:
+        return sqrt(float(root))
 
 
 def skew_gauss(r, N_ab, r_ab, sigma_ab, xi_ab, W_ab, c_b):
     '''
-    Gaussian type function from Cormier, 2019 (pg. 1053) 
-    
+    Gaussian function with optional skew in terms of coordination
+    number (N_ab), average bond length (r_ab), the distribution of
+    interatomic distances (sigma_ab), and skew (xi_ab).
+
+    Eq. 31 in Heinen & Drewitt, 2022 (LiquidDiffract paper)
+    (also see e.g. Cormier, 2019, pg. 1053)
+
+    Here SUM_ab of skew_gauss(r) is RDF(r) and not T(r) as in
+    Eq. 31 of Heinen & Drewitt. Divide by r later to fit to T(r).
+
     Args:
         r - r-values to evaluate the function over (np array)
         N_ab* - Avg. coordination number for pair alpha-beta
