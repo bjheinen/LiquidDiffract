@@ -110,6 +110,8 @@ def smooth_data(data, method='savitzky-golay', window_length=31, poly_order=3):
     '''
     if method == 'savitzky-golay':
         return scipy.signal.savgol_filter(data, window_length, poly_order)
+    else:
+        raise NotImplementedError('Smooth method not implemented, please check keyword argument')
 
 
 def find_integration_limits(r, rdf, rho=None, peak_search_limit=10.0, search_method='first'):
@@ -194,7 +196,7 @@ def find_integration_limits(r, rdf, rho=None, peak_search_limit=10.0, search_met
         if rho != None:
             with np.errstate(divide='ignore', invalid='ignore'):
                 gr = rdf/(4*np.pi*rho*r**2)
-            gr_peak_list, _ = scipy.signal.find_peak(gr[r<peak_search_limit])
+            gr_peak_list, _ = scipy.signal.find_peaks(gr[r<peak_search_limit])
             # Take the first peak after r0
             next_peak = r[gr_peak_list[np.argmax(gr_peak_list>brent_a)+1]]
         # If rho not available use
