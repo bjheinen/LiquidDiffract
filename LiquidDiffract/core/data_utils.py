@@ -21,6 +21,9 @@ def rebin_data(x, y, dx=0.02, x_lim=None, extrapolate_mode='fill'):
         x_rebin = np.arange(x_lim[0], x_lim[1], dx)
     else:
         x_rebin = np.arange(0, x[-1], dx)
+    # Check for any nans in y and remove via interpolation
+    if np.isnan(np.sum(y)):
+        y = interp_nan(y)
     if extrapolate_mode == 'fill':
         f_interp = scipy.interpolate.interp1d(x, y,
                                               kind='cubic',

@@ -114,14 +114,17 @@ class TestRebinData(unittest.TestCase, CustomAssertions):
 
     def test_rebin_nan(self):
         # Test nan values in y have little effect
-        x = np.arange(0, 12, 0.001)
+        x = np.arange(0, 12.0, 0.001)
         y = np.cos(x)
         # Inject single np.nan
         y[500] = np.nan
         expected_rebin_y = np.cos(np.arange(0, 12, 0.02))
         _, rebin_y = data_utils.rebin_data(x, y, dx=0.02)
         # Check interpolation in rebinning accurate
-        self.assertArrayEqual(rebin_y, expected_rebin_y)
+        # y[500] --> rebin_y[25] (0.02/0.001 = 20)
+        # Check arrays equal skipping interpolated value
+        self.assertFloatArrayEqual(np.delete(rebin_y, 25), np.delete(expected_rebin_y, 25))
+        self.assertFloatEqual(rebin_y[25], expected_rebin_y[25], rtol=1e-6)
 
     def test_rebin_extrapolate_fill(self):
         x = np.arange(0.34, 12.0, 0.02)
