@@ -136,4 +136,3 @@ class TestRebinData(unittest.TestCase, CustomAssertions):
         fill_values = set(rebin_y[np.where(rebin_x < x[0])])
         self.assertEqual(len(fill_values), 1)
         self.assertEqual(fill_values.pop(), y[0])
-
