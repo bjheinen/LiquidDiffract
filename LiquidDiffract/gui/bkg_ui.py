@@ -270,6 +270,9 @@ class BkgUI(QWidget):
 
     def data_corrections(self):
         self.data['data_correction'] = 0
+        # Skip if no data present
+        if not self.data['cor_x'].size:
+            return
         if self.bkg_config_widget.data_corrections_gb.zero_shift_check.isChecked():
             _shift_correction = self.zero_shift_data()
         else:
