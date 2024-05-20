@@ -157,7 +157,7 @@ class TestCalcAverageScattering(unittest.TestCase, CustomAssertions):
         composition_CaSiO3 = {'Ca': (20,0,1), 'Si': (14,0,1), 'O': (8,0,3)}
         composition_GaSn = {'Ga': [31, 0, 915], 'Sn': [50, 0, 85]}
         expected_avg_scattering_CaSiO3 = np.load(os.path.join(data_path, 'average_scattering_functions_CaSiO3_0-12.npy'))
-        expected_avg_scattering_GaSn = np.load(os.path.join(data_path, 'average_scattering_function_Ga915Sn85_0-12.npy'))
+        expected_avg_scattering_GaSn = np.load(os.path.join(data_path, 'average_scattering_functions_Ga915Sn85_0-12.npy'))
         average_scattering_Ga = core.calc_average_scattering(composition_Ga, Q)
         average_scattering_CaSiO3 = core.calc_average_scattering(composition_CaSiO3, Q)
         average_scattering_GaSn = core.calc_average_scattering(composition_GaSn, Q)
