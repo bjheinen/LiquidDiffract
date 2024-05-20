@@ -62,7 +62,7 @@ def conv_density(rho, composition):
     # Calculate molecular mass g/mole
     mol_mass = calc_mol_mass(composition)
     # Calculate number of atoms and scale mol_mass
-    N = np.sum([composition[el][2] for el in composition])
+    N = sum([element[2] for element in composition.values()])
     # Calculate atoms/cm3 > then moles/cm3
     with np.errstate(divide='ignore', invalid='ignore'):
         mass_density = (rho * 10 / 6.0221408) * (mol_mass/N)
@@ -158,17 +158,20 @@ def calc_effective_ff(composition, Q):
         atomic_ff - atomic form factors at Q values for each element
     '''
     Z_tot = calc_Z_sum(composition)
-    # Expand composition dictionary to list of tuples with entries repeated
-    # where n>1
-    composition_atoms = itertools.chain.from_iterable(
-        itertools.repeat(tuple(composition[el]),composition[el][2])
-        for el in composition)
-    atomic_ff = []
-    for atom in composition_atoms:
-        atomic_ff.append(np.copy(calc_atomic_ff(atom, Q)))
-    atomic_ff = np.asarray(atomic_ff)
-
-    effective_ff = np.sum(atomic_ff, 0) / Z_tot
+    # Reduce composition dict to list of values for clarity
+    # Prefer explicit conversion to list of tuples over
+    # e.g. list(composition.values()) to prevent errors if
+    # dictionary values passed as lists instead of tuples
+    composition = [tuple(element) for element in composition.values()]
+    # Get counts of each species in composition (n values from (Z, charge, n))
+    element_counts = np.array([element[2] for element in composition])
+    # Get atomic form factors for each species in composition
+    atomic_ff = np.array([calc_atomic_ff(atom, Q) for atom in composition])
+    # Calculate effective electronic form factor
+    # np.dot here is the sum product over the last axis of a and b.
+    # np.dot used this way appears faster than e.g.:
+    #   np.einsum('i,ij->j', element_counts, atomic_ff)
+    effective_ff = np.dot(element_counts, atomic_ff) / Z_tot
     return effective_ff, atomic_ff
 
 
@@ -188,6 +191,26 @@ def calc_average_scattering(composition, Q):
 
     <f2> is equal to <f>2 for the monatomic case
 
+    Note:
+        The composition dict can be expanded to a list of tuples repeated for
+        the number of atoms of that type with:
+            composition_atoms = itertools.chain.from_iterable(
+                itertools.repeat(tuple(composition[el]),composition[el][2])
+                for el in composition)
+        and the atomic ff for each individual atom then with e.g.:
+            atomic_ff = []
+            for atom in composition_atoms:
+                atomic_ff.append(np.copy(calc_atomic_ff(atom, Q)))
+
+        The average scattering functions are then equivalent to:
+            1/N * np.einsum('ij,ij->j', atomic_ff, atomic_ff)
+            and
+            1/N**2 * np.einsum('ij,kj->j', atomic_ff, atomic_ff)
+            (alternatively, np.sum(atomic_ff**2, 0) and np.sum(atomic_ff, 0)**2)
+
+        Instead, here, the sum of the weighted form factors and weighted squared
+        form factors is computed more efficiently using np.dot
+
     Args:
         composition - dictionary with keys that are element symbols and values
                       are tuples of the form (Z, charge, n_atoms)
@@ -198,28 +221,26 @@ def calc_average_scattering(composition, Q):
             average_scattering[0] --> <f2>
             average_scattering[1] --> <f>2
     '''
-    # Expand composition dictionary to list of tuples with entries repeated
-    # where n>1
-    composition_atoms = itertools.chain.from_iterable(
-        itertools.repeat(tuple(composition[el]),composition[el][2])
-        for el in composition)
-    composition_atoms, N_counter = itertools.tee(composition_atoms)
-    N = sum(1 for _x in N_counter)
-    atomic_ff = []
-    for atom in composition_atoms:
-        atomic_ff.append(np.copy(calc_atomic_ff(atom, Q)))
-    atomic_ff = np.asarray(atomic_ff)
-    # Create list to hold both functions
+    # Reduce composition dict to list of values for clarity
+    # Prefer explicit conversion to list of tuples over
+    # e.g. *list(composition.values())* to prevent errors if
+    # dictionary values passed as lists instead of tuples
+    composition = [tuple(element) for element in composition.values()]
+    # Make np array of n_atoms for each element and calculate total n_atoms (N)
+    element_counts = np.array([element[2] for element in composition])
+    N = np.sum(element_counts)
+    # Get atomic_ff for each type of atom
+    atomic_ff = np.array([calc_atomic_ff(atom, Q) for atom in composition])
+    # Create list to hold both average scattering functions
     average_scattering = []
-    # 1st function
+    # 1st function - sum of squared form factors
     average_scattering.append(
-            1/N * np.einsum('ij,ij->j', atomic_ff, atomic_ff) # eqivalent to np.sum(atomic_ff**2, 0)
-            )
-    # 2nd function
+            np.dot(element_counts, atomic_ff**2) / N
+        )
+    # 2nd function - square of summed form factors
     average_scattering.append(
-            1/N**2 *
-            np.einsum('ij,kj->j', atomic_ff, atomic_ff)
-            )
+            (np.dot(element_counts, atomic_ff) / N)**2
+        )
     return average_scattering
 
 
@@ -262,11 +283,9 @@ def calc_total_compton_scattering(composition, Q):
 
     See function core.calc_compton_scattering for details on data used
     '''
-    compton_scattering = []
-    for element in composition:
-        compton_scattering.append(np.copy(calc_compton_scattering(element, Q)) *
-                                  composition[element][2])
-    compton_scattering = np.sum(np.asarray(compton_scattering), 0)
+    element_counts = np.array([element[2] for element in composition.values()])
+    compton_scattering = np.array([calc_compton_scattering(element, Q) for element in composition.keys()])
+    compton_scattering = np.dot(element_counts, compton_scattering)
     return compton_scattering
 
 
@@ -315,8 +334,9 @@ def calc_K_p(composition, Q):
         Q - Q range to evaluate over
 
     Returns:
-        K_p - numpy array of K_p values with length equal to number of atoms
-              in a formula unit of the composition
+        K_p - numpy array of K_p values for each species in composition
+              length is equal to number of species *not* number of atoms
+              in a formula unit
     '''
     effective_ff, atomic_ff = calc_effective_ff(composition, Q)
     K_p = atomic_ff / effective_ff
@@ -330,19 +350,21 @@ def calculate_weights(composition, Q):
     the composition for a set Q-range. Uses the Warren-Krutter-Morningstar
     approximation for average effective atomic number.
     '''
-    # Get average effective atomic numbers for each atom
-    K_p_list = calc_K_p(composition, Q)
+    # Get average effective atomic number for each species
+    K_p = calc_K_p(composition, Q)
+    # Get counts of each species
+    element_counts = np.array([element[2] for element in composition.values()])
     # Number of atoms in composition
-    N = len(K_p_list)
+    N = np.sum(element_counts)
     # K_p_norm - normalise to number of atoms in composition
-    K_p_norm = (np.sum(K_p_list)/N)**2
+    K_p_norm = np.dot(element_counts/N, K_p)**2
+    # Dict of Kp for each species
+    K_p_dict = dict(zip(composition.keys(), K_p))
     # List of atoms in composition
     atom_list = [atom for expanded in
                  [[species]*composition[species][2]
                   for species in composition.keys()]
                  for atom in expanded]
-    # Dict of Kp for each atom species
-    K_p_dict = dict(zip(atom_list, K_p_list))
     # List of atom (alpha-beta) pairs
     pairs = list(set(itertools.product(atom_list, repeat=2)))
     weights = {}
@@ -384,13 +406,14 @@ def calc_S_inf(composition, Q, method='ashcroft-langreth'):
         S_inf = 1.0
 
     elif method == 'ashcroft-langreth':
-        N = np.sum([composition[el][2] for el in composition])
+        element_counts = np.array([element[2] for element in composition.values()])
+        N = np.sum(element_counts)
         if N == 1:
             S_inf = 1.0
         elif N > 1:
             K_p = calc_K_p(composition, Q)
             Z_tot = calc_Z_sum(composition)
-            S_inf = np.sum(K_p**2) / Z_tot**2
+            S_inf = np.dot(element_counts, K_p**2) / Z_tot**2
         else:
             raise ValueError('Error in composition - n value < 1')
 
@@ -479,13 +502,13 @@ def calc_coherent_scattering(Q_sample, I_sample, composition, alpha,
     if compton_scattering is None:
         compton_scattering = calc_total_compton_scattering(composition, Q_sample)
         if method == 'faber-ziman':
-             compton_scattering /= sum(composition[el][2] for el in composition)
+             compton_scattering /= sum([element[2] for element in composition.values()])
     else:
         pass
     coherent_scattering = (alpha * I_sample) - compton_scattering
     if method=='ashcroft-langreth':
         # N - number of atoms in compositional unit (molecule)
-        n_atoms = sum(composition[el][2] for el in composition)
+        n_atoms = sum([element[2] for element in composition.values()])
         # Normalise coherent scattering
         coherent_scattering *= n_atoms
     else:
@@ -541,7 +564,7 @@ def calc_structure_factor(Q_cor, I_cor, composition, rho, method='ashcroft-langr
     in the Ashcroft-Langreth formulation
     '''
     # N is number of atoms in 1 formula unit
-    n_atoms = sum(composition[element][2] for element in composition)
+    n_atoms = sum([element[2] for element in composition.values()])
     if method == 'ashcroft-langreth':
         # Z is total atomic number of formula unit
         Z_tot = calc_Z_sum(composition)
