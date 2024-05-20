@@ -129,22 +129,25 @@ class TestCalcAtomicFF(unittest.TestCase, CustomAssertions):
 class TestCalcEffectiveFF(unittest.TestCase, CustomAssertions):
     def test_calc_effective_ff(self):
         Q = np.arange(0, 12, 0.02)
+        Q_long = np.arange(0, 24, 0.02)
         composition_Ga = {'Ga': (31,0,1)}
         composition_CaSiO3 = {'Ca': (20,0,1), 'Si': (14,0,1), 'O': (8,0,3)}
         composition_GaSn = {'Ga': [31, 0, 915], 'Sn': [50, 0, 85]}
         expected_aff_Ga = np.load(os.path.join(data_path, 'atomic_ff_Ga_0-12.npy'))
         expected_eff_CaSiO3 = np.load(os.path.join(data_path, 'effective_ff_CaSiO3_0-12.npy'))
+        expected_eff_GaSn = np.load(os.path.join(data_path, 'effective_ff_Ga915Sn85_0-24.npy'))
 
         eff_Ga, aff_Ga = core.calc_effective_ff(composition_Ga, Q)
-        self.assertTrue(len(aff_Ga) == 1)
-        self.assertTrue(len(aff_Ga[0]) == 600)
+        self.assertEqual(len(aff_Ga), 1)
+        self.assertEqual(len(aff_Ga[0]), 600)
         self.assertFloatArrayEqual(aff_Ga[0], expected_aff_Ga)
         self.assertFloatArrayEqual(aff_Ga/eff_Ga/31.0, 1.0)
 
         eff_CaSiO3, _ = core.calc_effective_ff(composition_CaSiO3, Q)
         self.assertFloatArrayEqual(eff_CaSiO3, expected_eff_CaSiO3)
 
-        self.assertIsInstance(core.calc_effective_ff(composition_GaSn, Q), tuple)
+        eff_GaSn, _ = core.calc_effective_ff(composition_GaSn, Q_long)
+        self.assertFloatArrayEqual(eff_GaSn, expected_eff_GaSn)
 
 
 class TestCalcAverageScattering(unittest.TestCase, CustomAssertions):
@@ -154,14 +157,17 @@ class TestCalcAverageScattering(unittest.TestCase, CustomAssertions):
         composition_CaSiO3 = {'Ca': (20,0,1), 'Si': (14,0,1), 'O': (8,0,3)}
         composition_GaSn = {'Ga': [31, 0, 915], 'Sn': [50, 0, 85]}
         expected_avg_scattering_CaSiO3 = np.load(os.path.join(data_path, 'average_scattering_functions_CaSiO3_0-12.npy'))
+        expected_avg_scattering_GaSn = np.load(os.path.join(data_path, 'average_scattering_function_Ga915Sn85_0-12.npy'))
         average_scattering_Ga = core.calc_average_scattering(composition_Ga, Q)
         average_scattering_CaSiO3 = core.calc_average_scattering(composition_CaSiO3, Q)
+        average_scattering_GaSn = core.calc_average_scattering(composition_GaSn, Q)
         # <f2> == <f>2 for monatomic case
         self.assertFloatArrayEqual(average_scattering_Ga[0], average_scattering_Ga[1])
         self.assertEqual(len(average_scattering_CaSiO3), 2)
         self.assertFloatArrayEqual(average_scattering_CaSiO3[0], expected_avg_scattering_CaSiO3[0])
         self.assertFloatArrayEqual(average_scattering_CaSiO3[1], expected_avg_scattering_CaSiO3[1])
-        self.assertIsInstance(core.calc_average_scattering(composition_GaSn, Q), list)
+        self.assertFloatArrayEqual(average_scattering_GaSn[0], expected_avg_scattering_GaSn[0])
+        self.assertFloatArrayEqual(average_scattering_GaSn[1], expected_avg_scattering_GaSn[1])
 
 
 class TestCalcTotalComptonScattering(unittest.TestCase, CustomAssertions):
@@ -195,13 +201,13 @@ class TestCalcKP(unittest.TestCase, CustomAssertions):
         composition_CaSiO3 = {'Ca': (20,0,1), 'Si': (14,0,1), 'O': (8,0,3)}
         composition_Ga = {'Ga': (31,0,1)}
         composition_GaGa = {'Ga': (31,0,2)}
-        expected_K_CaSiO3 = np.array([22.28649729, 15.07790776,  6.87853165,  6.87853165,  6.87853165])
+        expected_K_CaSiO3 = np.array([22.28649729, 15.07790776,  6.87853165])
         K_Ga = core.calc_K_p(composition_Ga, Q)
         K_GaGa = core.calc_K_p(composition_GaGa, Q)
         K_CaSiO3 = core.calc_K_p(composition_CaSiO3, Q)
-        self.assertTrue(len(K_Ga), 1)
-        self.assertTrue(len(K_GaGa), 2)
-        self.assertTrue(len(K_CaSiO3), 5)
+        self.assertEqual(len(K_Ga), 1)
+        self.assertEqual(len(K_GaGa), 1)
+        self.assertEqual(len(K_CaSiO3), 3)
         self.assertEqual(K_Ga, 31.0)
         self.assertFloatArrayEqual(expected_K_CaSiO3, K_CaSiO3)
 
@@ -239,7 +245,8 @@ class TestCalcSInf(unittest.TestCase, CustomAssertions):
     def test_calc_s_inf_fz(self):
         test_1 = core.calc_S_inf({'Ga': (31,0,1)}, np.arange(0,12,0.02))
         test_2 = core.calc_S_inf('ARG', {'ARG2': (0,0,False)}, method='faber-ziman')
-        self.assertTrue(test_1 == test_2 == 1.0)
+        self.assertEqual(test_1, test_2)
+        self.assertEqual(test_1, 1.0)
 
 
 class TestCalcAlpha(unittest.TestCase, CustomAssertions):
