@@ -860,7 +860,7 @@ class CompositionGroupBox(QGroupBox):
             _charge = int(self.composition_table.item(_row_index, 2).text())
             _n = int(self.composition_table.item(_row_index, 3).text())
             _key = str(_key_list[_val_list.index(_Z)])
-            _dict_entry = {_key: [_Z, _charge, _n]}
+            _dict_entry = {_key: (_Z, _charge, _n)}
             _composition_dict.update(_dict_entry)
 
         # This code snippet convert _n from integer number of atoms in the
