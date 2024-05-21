@@ -77,19 +77,43 @@ class TestBkgScalingResidual(unittest.TestCase, CustomAssertions):
 class TestFindIntegrationLimits(unittest.TestCase, CustomAssertions):
 
     def test_find_integration_limits(self):
-        rdf_data = np.load(os.path.join(data_path, 'rdf_peaks.npy'))
-        rdf_peaks = (2.239933089082285, 2.9162691080482155,
-                     2.9444851167454846, 3.4521306936532428)
-        limits_a = data_utils.find_integration_limits(*rdf_data.T)
-        limits_b = data_utils.find_integration_limits(*rdf_data.T, rho=0.05, peak_search_limit=10, search_method='first')
-        limits_c = data_utils.find_integration_limits(*rdf_data.T, rho=0.05, peak_search_limit=20, search_method='first')
-        limits_d = data_utils.find_integration_limits(*rdf_data.T, rho=0.05, peak_search_limit=20, search_method='prominent')
-        limits_e = data_utils.find_integration_limits(*rdf_data.T, peak_search_limit=20, search_method='prominent')
-        self.assertFloatArrayEqual(limits_a, rdf_peaks)
-        self.assertFloatArrayEqual(limits_b, rdf_peaks)
-        self.assertFloatArrayEqual(limits_c, rdf_peaks)
-        self.assertFloatArrayEqual(limits_d, rdf_peaks)
-        self.assertFloatArrayEqual(limits_e, rdf_peaks)
+        # Load test RDF data
+        rdf_data_a, rdf_data_b, rdf_data_c = np.load(os.path.join(data_path, 'rdf_peak_test_data.npy'), allow_pickle=True)
+        # State expected limit positions
+        expected_limits_a = (2.239933089082285, 2.9162691080482155,
+                             2.9444851167454846, 3.4521306936532428)
+        expected_limits_b = (2.1482738727778155, 2.906024136949478,
+                             2.9433519729572653, 3.5421030348918663)
+        expected_limits_c = (1.4413920965789064, 1.6158820019375424,
+                             1.621174657388145, 1.7887945926039175)
+
+        # Test regular case where peak_idx_prom == peak_idx_first
+        limits_a = data_utils.find_integration_limits(*rdf_data_a.T)
+        # Test kwargs, test higher peak search etc.
+        limits_a_kw = data_utils.find_integration_limits(*rdf_data_a.T, rho=0.05, peak_search_limit=10)
+        limits_a_psl = data_utils.find_integration_limits(*rdf_data_a.T, rho=0.05, peak_search_limit=50)
+
+        # Test case where no next peak, for rho and no rho
+        limits_a_np = data_utils.find_integration_limits(*rdf_data_a.T, peak_search_limit=3.5)
+        limits_a_np_rho = data_utils.find_integration_limits(*rdf_data_a.T, rho=0.05, peak_search_limit=3.5)
+
+        # Test case where peak_idx_prom > peak_idx_first (oscillations at RDF ~ 0 need to be discounted)
+        limits_b = data_utils.find_integration_limits(*rdf_data_b.T)
+
+        # Test case where peak_idx_prom < peak_idx_first (right base at RDF < 0)
+        limits_c = data_utils.find_integration_limits(*rdf_data_c.T)
+
+        self.assertFloatArrayEqual(limits_a, expected_limits_a)
+        self.assertFloatArrayEqual(limits_a_kw, expected_limits_a)
+        self.assertFloatArrayEqual(limits_a_kw, limits_a_psl)
+
+        self.assertFloatArrayEqual(limits_a_np[:-1], expected_limits_a[:-1])
+        self.assertFloatArrayEqual(limits_a_np_rho[:-1], expected_limits_a[:-1])
+        self.assertFloatArrayEqual(limits_a_np, expected_limits_a, atol=1.e-6)
+        self.assertFloatArrayEqual(limits_a_np_rho, expected_limits_a, atol=1.e-6)
+
+        self.assertFloatArrayEqual(limits_b, expected_limits_b)
+        self.assertFloatArrayEqual(limits_c, expected_limits_c)
 
 
 class TestRebinData(unittest.TestCase, CustomAssertions):
