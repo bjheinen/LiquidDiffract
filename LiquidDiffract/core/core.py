@@ -1275,17 +1275,17 @@ def integrate_coordination_sphere(r, rdf,
         return N_a, N_b, N_c
 
     elif method == 1:
-        N_a, _ = quad(rdf_interp, r_0, rp_max)
+        N_a, _ = quad(rdf_interp, r_0, rp_max, limit=200)
         N_a *= 2.0
         return N_a
 
     elif method == 2:
-        N_b, _ = quad(rdf_interp, r_0, r_max)
+        N_b, _ = quad(rdf_interp, r_0, r_max, limit=200)
         N_b *= 2.0
         return N_b
 
     elif method == 3:
-        N_c, _ = quad(rdf_interp, r_0, r_min)
+        N_c, _ = quad(rdf_interp, r_0, r_min, limit=200)
         return N_c
 
     else:
