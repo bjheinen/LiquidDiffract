@@ -716,7 +716,7 @@ class StructurePlotWidget(QWidget):
                 self.rdf_plot.removeItem(self.rmax_line_rdf)
                 self.tr_plot.removeItem(self.rmax_line_tr)
                 self.rdf_plot.removeItem(self.rmin_line_rdf)
-                self.tr_plot.removeItem(self.rmin_line_rdf)
+                self.tr_plot.removeItem(self.rmin_line_tr)
 
                 self.r0_line_rdf.deleteLater()
                 self.r0_line_tr.deleteLater()
@@ -725,7 +725,7 @@ class StructurePlotWidget(QWidget):
                 self.rmax_line_rdf.deleteLater()
                 self.rmax_line_tr.deleteLater()
                 self.rmin_line_rdf.deleteLater()
-                self.rmin_line_rdf.deleteLater()
+                self.rmin_line_tr.deleteLater()
 
                 del self.r0_line_rdf
                 del self.r0_line_tr
@@ -734,7 +734,7 @@ class StructurePlotWidget(QWidget):
                 del self.rmax_line_rdf
                 del self.rmax_line_tr
                 del self.rmin_line_rdf
-                del self.rmin_line_rdf
+                del self.rmin_line_tr
             except AttributeError:
                 pass
 
