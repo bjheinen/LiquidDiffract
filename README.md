@@ -51,7 +51,9 @@ Please cite this article if you use LiquidDiffract in your work.
 * [Python >= 3.8](https://www.python.org)
 * [SciPy >= 1.6](https://www.scipy.org)
 * [NumPy >= 1.20](https://numpy.org)
+* [lmfit >= 1.0.2](https://lmfit.github.io//lmfit-py/)
 * [PyQt6 >= 6.2.0](https://riverbankcomputing.com/software/pyqt/intro)*
+* [qtpy >= 2.3.0](https://github.com/spyder-ide/qtpy)
 * [pyqtgraph >= 0.13](http://www.pyqtgraph.org)
 
 We recommend Python >= 3.10, and the latest available versions of the required packages.
@@ -74,7 +76,9 @@ You can also use pip to install from a local directory.
 
 You can make a development (editable) install by using pip's *-e* flag:
 
-```$ pip install -e git+https://github.com/bjheinen/LiquidDiffract#egg=LiquidDiffract```
+```
+$ pip install -e git+https://github.com/bjheinen/LiquidDiffract#egg=LiquidDiffract
+```
 
 You can also clone the git repo or download the source directly and install from a local directory:
 
@@ -88,7 +92,7 @@ $ pip install -e /path/to/local/directory/LiquidDiffract/
 
 It is useful if you want to make changes to the source code without having to re-install. Use Python's site-packages directory as the deployment directory if you want your editable install of LiquidDiffract available on your sys.path for other programs using your Python installation. To do this from the github page use the *-t* flag ```-t /path/to/directory```
 
-To run the test suite (incomplete), do:
+To run the test suite, do:
 ```
 $ python -m unittest discover -v -s ./tests
 ```
@@ -136,13 +140,17 @@ This is the tab where most of the data processing takes place.
 
 The sample composition can be set here, along with data processing options. After setting these options the interference function *i(Q)* is calculated and displayed. i(Q) is related to the total molecular structure factor as: 
 
-<img src='http://latex.codecogs.com/svg.latex?i(Q)=S(Q)-1\;\;\;\text{or}\;\;\;i(Q)=S(Q)-S_{\infty}'/> 
+```math
+i(Q)=S(Q)-1~~~\text{or}~~~i(Q)=S(Q)-S_{\infty}
+```
 
 depending on the formalism used. 
 
 This function can then be normalised by minimising errors in the real-space 'differential correlation function', *D(r)*:
 
-><img src='http://latex.codecogs.com/svg.latex?D(r)=\frac{2}{\pi}\int_{0}^{Q_\mathrm{{Max}}}Qi(Q)\sin(Qr)dq'/>
+```math
+D(r)=\frac{2}{\pi}\int_{0}^{Q_\rm{{max}}}Qi(Q)\sin(Qr) dq
+```
 
 In *LiquidDiffract* the integral in the function *D(r)* is calculated by taking the imaginary portion of the inverse Fourier transform of *Qi(Q)* using a standard FFT algorithm.
 
@@ -167,22 +175,29 @@ Applying a modification function to *S(Q)* before FFT can help suppress truncati
 
 **Lorch [13]:**
 
-><img src='http://latex.codecogs.com/svg.latex?M\left(Q\right)=\frac{\sin\left(\tfrac{\pi%20Q}{Q_{max}}\right)}{\left(\tfrac{\pi%20Q}{Q_{max}}\right)}'/>
+```math
+M\left(Q\right)=\frac{\sin\left(\tfrac{\pi Q}{Q_{\rm{max}}}\right)}{\left(\tfrac{\pi Q}{Q_{\rm{max}}}\right)}
+```
 
 
 **Cosine Window (Drewitt et al.) [14]:**
 
-><img src='http://latex.codecogs.com/svg.latex?M\left(Q\right)%20=\begin{cases}1&if\;\,Q%3CQ_{window\_start}\\0.5\left[1+\cos\left(\frac{x\pi}{N-1}\right)\right]&if\;\,Q_{window\_start}%3CQ\leq%20Q_{max}\\0&if\;\,Q%3EQ_{max}\end{cases}'/>
->
->where N is width of the window function
->and x is an integer with values from 0 : (N-1) across the window
+```math
+M\left(Q\right) = \begin{cases}
+1 & if ~~ Q \lt Q_{\rm{window-start}}\\
+0.5\left[1+\cos\left(\frac{x\pi}{N-1}\right)\right] & if ~~ Q_{\rm{window-start}} \lt Q\leq Q_{\rm{max}}\\
+0 & if ~~ Q \gt Q_{\rm{max}}\end{cases}
+```
+
+where _N_ is width of the window function  
+and _x_ is an integer with values from 0 : (_N_-1) across the window
 
 After calculating the structure factor the final tab can be used to output *S(Q)*, the pair distribution function, *g(r)*, and the radial distribution function, *RDF(r)*, as is.
 
 
 #### Iterative Structure Factor Refinement
 
-The numerical iterative procedure used by LiquidDiffract to minimize the error in the determination of *g(r)* follows the one proposed by Eggert et al., 2002 [1-4]. This procedure is based on the assumption that a minimum distance, r-min, can be defined, which represents the largest distance (0 -- r-min) where no atom can be found. In a liquid, this should be the region within the 1st coordination shell. Because no atom can be present in this region, no oscillations should be observed in the *g(r)* function. As a result, the function *D(r < r-min)* = -4&pi;r&rho; However oscillations are commonly observed in this region, due to the effect of an experimentally limited *Q*-range (*Q*-max < &inf;), and systematic errors in the scattering factors and normalisation factor, &alpha;. The iterative procedure calculates the difference between real and model data in the low-*r* region and scales *S(Q)* accordingly to reduce this.
+The numerical iterative procedure used by LiquidDiffract to minimize the error in the determination of *g(r)* follows the one proposed by Eggert et al., 2002 [1-4]. This procedure is based on the assumption that a minimum distance, r-min, can be defined, which represents the largest distance (0 -- r-min) where no atom can be found. In a liquid, this should be the region within the 1st coordination shell. Because no atom can be present in this region, no oscillations should be observed in the *g(r)* function. As a result, the function *D(r < r-min)* = -4&pi;r&rho; However oscillations are commonly observed in this region, due to the effect of an experimentally limited *Q*-range (*Q*-max < &#8734;), and systematic errors in the scattering factors and normalisation factor, &alpha;. The iterative procedure calculates the difference between real and model data in the low-*r* region and scales *S(Q)* accordingly to reduce this.
 
 To refine *S(Q)* the value of *r*-min should be set carefully, as it has a strong influence. The position of *r*-min should correspond to the base of the first coordinence sphere in the *g(r)*.
 
@@ -190,11 +205,16 @@ The number of iterations in the procedure can also be set; a minimum of 3 is nor
 
 A *&Chi;<sup>2</sup>* figure of merit, defined as the area under the curve *&Delta;D(r) for r<r-min*, is used to rate the refinement.
 
-><img src='http://latex.codecogs.com/svg.latex?\chi^{2}_{\left(n\right)}(\rho;b)=\int_{0}^{r_{min}}\left[\Delta{D}_{(n)}(r)\right]^2dr'/>
+
+```math
+\chi^{2}_{\left(n\right)} (\rho ~; b) = \int_{0} ^{r_{\rm{min}}} \left[\Delta D_{(n)}(r)\right]^2 dr
+```
 
 Where,
 
-><img src='http://latex.codecogs.com/svg.latex?\Delta{D}_{(n)}(r)= D_{(n)}(r)-\left(-4\pi\rho{r}\right),\;for\;r<r_{min}'/>
+```math
+\Delta D_{(n)}(r) = D_{(n)}(r) - \left(-4\pi\rho{r}\right)~, ~~ \rm{for} ~ r \lt r_{\rm{min}}
+```
 
 #### Density (&rho;) and background scaling factor (*b*) Refinement
 
@@ -268,16 +288,21 @@ The third tab displays the optimised S(Q), g(r), and RDF(r). The buttons at the 
 
 *g(r)* is the *pair-distribution function*. It is defined as:
 
-><img src='http://latex.codecogs.com/svg.latex?g(r)-1=\frac{1}{2\pi^{2}r\rho_{0}}\int_{0}^{Q_{Max}}Qi(Q)\sin(Qr)dq'/>
+```math
+g(r)-1=\frac{1}{2\pi^{2}r\rho_{0}}\int_{0}^{Q_{\rm{max}}}Qi(Q)\sin(Qr)dq
+```
 
 Where the interference function, i(Q) is:
 
-><img src='http://latex.codecogs.com/svg.latex?i(Q)=S(Q)-S_{\infty}'/>
-
+```math
+i(Q)=S(Q)-S_{\infty}
+```
 
 RDF(r) is the radial distribution function:
 
-><img src='http://latex.codecogs.com/svg.latex?RDF(r)=4\pi{r}^2\rho_{0}g(r)=\left({\frac{2r}{\pi}\int_{0}^{Q_{Max}}Qi(Q)\sin(Qr)dq}\right)+4\pi{r}^2\rho_{0}'/>
+```math
+RDF(r)=4\pi{r}^2\rho_{0}g(r)=\left({\frac{2r}{\pi}\int_{0}^{Q_{\rm{max}}}Qi(Q)\sin(Qr)dq}\right)+4\pi{r}^2\rho_{0}
+```
 
 its integration across peaks yields atomic coordination numbers.
 
@@ -285,9 +310,14 @@ its integration across peaks yields atomic coordination numbers.
 
 The density function, *D(r)*, that is used in the data analysis and defined [above](#refinement-tab), should not be confused with *g(r)* or *RDF(r)*. In the literature it is sometimes referred to by other names, including *F(r)*, *G(r)*, and *PDF(r)*. It is defined as:
 
-><img src='http://latex.codecogs.com/svg.latex?D(r)=G(r)=F(r)=PDF(r)=4\pi{r}\left[\rho(r)-\rho_0\right]=4\pi{r}\rho_{0}\left[g(r)-1\right]'/>
 
-><img src='http://latex.codecogs.com/svg.latex?D(r)=\frac{2}{\pi}\int_{0}^{Q_{Max}}Qi(Q)\sin(Qr)dq'/>
+```math
+D(r)=G(r)=F(r)=PDF(r)=4 \pi r \left[\rho (r) - \rho_{0} \right]=4 \pi r \rho_{0}\left[g(r)-1\right]  
+```
+
+```math
+D(r)=\frac{2}{\pi}\int_{0}^{Q_{\rm{max}}}Qi(Q)\sin(Qr) dq  
+```
 
 </details>
 
@@ -299,11 +329,18 @@ This tab provides tools to extract coordination numbers and average bond lengths
 
 Integrating across the peaks in *RDF(r)* gives the average coordination number. Three methods for doing this are provided based on those commonly used in the literature [24]. The first method is based on the assumption that the quantity *rg(r)* is symmetrical for a coordination shell about its average position. The second method is based on the assumption that the coordination shell is instead symmetrical about a radius which defines the maximum in the *r<sup>2</sup>g(r)* curve. Since the first peak is not truly symmetrical *N<sub>A</sub>* and *N<sub>B</sub>* can be considered estimates of the lower bound on the coordination number. Typically it also the case that *N<sub>A</sub> < N<sub>B</sub>*. This consideration of asymmetry leads to the third method, which involves integrating *RDF(r)* from the leading edge of the first peak *r<sub>0</sub>* to first minimum following it, *r<sub>min</sub>*.
 
-><img src='http://latex.codecogs.com/svg.latex?\bar{N}_{A}=2\int^{r%27_{\rm{max}}}_{r%27_{0}}4\pi\rho_{0}r\left[rg(r)\right]_{\rm{sym}}dr'/>
 
-><img src='http://latex.codecogs.com/svg.latex?\bar{N}_{B}=2\int^{r_{\rm{max}}}_{r_{0}}4\pi\rho_{0}\left[r^2g(r)\right]_{\rm{sym}}dr'/>
+```math
+\bar{N}_{A}=2\int^{r^{\prime}_{\rm{max}}}_{r^{\prime}_{0}}4\pi\rho_{0}r\left[rg(r)\right]_{\rm{sym}}dr
+```
 
-><img src='http://latex.codecogs.com/svg.latex?\bar{N}_{C}=\int^{r_{\rm{min}}}_{r_{0}}4\pi\rho_{0}r^2g(r)dr'/>
+```math
+\bar{N}_{B}=2\int^{r_{\rm{max}}}_{r_{0}}4\pi\rho_{0}\left[r^2g(r)\right]_{\rm{sym}}dr
+```
+
+```math
+\bar{N}_{C}=\int^{r_{\rm{min}}}_{r_{0}}4\pi\rho_{0}r^2g(r)dr
+```
 
 An auto-refine button is provided to quickly find the positions of *r<sub>0</sub>*, *r'<sub>max</sub>*, *r<sub>max</sub>* and *r<sub>min</sub>* using a root-finding and minimisation procedure. The user can also set the limits manually via a spinbox or by dragging the limits on the data plot. In particular, careful setting of *r<sub>min</sub>* may be required as its apparent value can fluctuate due to errors in *RDF(r)* [25].
 
@@ -311,11 +348,15 @@ An auto-refine button is provided to quickly find the positions of *r<sub>0</sub
 
 For polyatomic samples it is more useful to fit the *RDF(r)* with a number of peaks so that the individual contribution from different *&alpha;-&beta;* pairs can be investigated [26-27]. LiquidDiffract provides a curve fitting toolbox to do this. Either the *RDF(r)* or the *T(r)* can be fitted, with *T(r)* defined as:
 
-><img src='http://latex.codecogs.com/svg.latex?T(r)=\frac{RDF(r)}{r}'/>
+```math
+T(r)=\frac{RDF(r)}{r}
+```
 
 LiquidDiffract fits the data with an arbitrary number of gaussian type peaks (with an optional skewness parameter) based on the function:
 
-><img src='http://latex.codecogs.com/svg.latex?T(r)=\sum_{\alpha\beta}\left[\frac{\bar{N}_{\alpha\beta}W^{%27\rm{x-ray}}_{\alpha\beta}}{c_{\beta}\sigma_{\alpha\beta}r\sqrt{2\pi}}\exp\left[\frac{-\left(r-r_{\alpha\beta}\right)^2}{2\sigma_{\alpha\beta}^2}\right]\times\left[1+\text{erf}\left(\xi\frac{r-r_{\alpha\beta}}{\sigma_{\alpha\beta}\sqrt{2}}\right)\right]\right]'/>
+```math
+T(r)=\sum_{\alpha\beta}\left[\frac{\bar{N}_{\alpha\beta}W^{^{\prime}\rm{x-ray}}_{\alpha\beta}}{c_{\beta}\sigma_{\alpha\beta}r\sqrt{2\pi}}\exp\left[\frac{-\left(r-r_{\alpha\beta}\right)^2}{2\sigma_{\alpha\beta}^2}\right]\times\left[1+\text{erf}\left(\xi\frac{r-r_{\alpha\beta}}{\sigma_{\alpha\beta}\sqrt{2}}\right)\right]\right]
+```
 
 The x-ray weighting factors are computed automatically and the fitting parameters are the coordination number, *N<sub>&alpha;&beta;</sub>*, the bond length, *r<sub>&alpha;&beta;</sub>*, and a measure of the bond length distribution, *&sigma;<sub>&alpha;&beta;</sub>*. The skewness parameter, *&xi;*, is optional in the fit. All of the parameters can be set manually and individually toggled between remaining fixed or allowed to vary in the fit.
 
