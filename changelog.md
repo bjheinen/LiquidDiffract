@@ -1,5 +1,44 @@
-# Changelog
+## Changelog
 ---------
+
+## v1.2.2-dev (May ?, 2024)
+
+### Minor Changes
+
+- **Support for Qt 6 via qtpy**  
+  This gives support for all major Qt bindings (PyQt5, PyQt6, PySide2 and PySide6). PyQt6 preferred over PySide6.
+- Option to plot self-scattering/compton scattering to compare against _I(Q)_ in the data/optimisation UI
+- Automatic plotting of _&alpha;I(Q)_ to compare with _f(Q)_
+- Optional zero-shift corrections in background subtraction tab
+- Rebinned _I(Q)_ data is now filled with _I(Q<sub>min</sub>)_ at _0 <= Q < Q<sub>min</sub>_
+- Auto rebinning when data and background have different ranges or step sizes
+- More robust peak search for finding integration limits in structural information tab
+- Refactored form factor / average scattering functions for memory efficiency and speed.
+  Creation of large arrays for compositions with many components is now avoided. (addresses issue #1)
+- Minor improvements to user interface, including logic, optimisations, and bugfixes
+- Minor optimisations to core modules
+
+### Bug Fixes
+
+- Removed non-implemented chemical species
+- Fixed breaking bug in _2&theta;_ to _Q_ conversion toolbox
+- Updated usage of code deprecated in dependencies
+- Fixed small errors in LiquidDiffract/scripts/
+- Fixed rebinning errors when raw data has nans
+- Minor bugfixes in core modules
+
+### Development Changes
+
+- This changelog!
+- Unit tests / functional tests for core module.  
+  run `python -m unittest discover ./tests - v`
+- Unit tests run remotely on push to develop branch via github actions.  
+  Test matrix of:  
+    os: [ubuntu-latest, macos-latest, windows-latest]  
+    python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+- Dropped support for python < 3.8  
+  Python 3.8 support maintained via importlib_resources. Support will be dropped in next release.
+
 
 ## v1.1.12 (May 17, 2023)
 
@@ -33,16 +72,16 @@
 
 ### Major Changes
 
-- **Background refinement**
+- **Background refinement**  
   The background scaling factor (_b_) can now be refined alongside the density in the _Refinement Tab_
   Background refinement is optional and can be done independently from or simultaneously with density refinement.
   The background scaling factor set in the _Background Subtraction Tab_ is used as the initial estimate by the solver.
   The figure of merit is redefined to take into account the background scaling - _&Chi;_^2(&rho;;b)
 
-- **LiquidDIffraction publication**
+- **LiquidDiffract publication**  
   There is now a paper describing LiquidDiffract:
   [Heinen, B. J., & Drewitt, J. W. (2022). LiquidDiffract: Software for liquid total scattering analysis. Physics and Chemistry of Minerals, 49:9. doi:10.1007/s00269-022-01186-6](https://link.springer.com/content/pdf/10.1007/s00269-022-01186-6.pdf)
-  Please cite this paper if you use LiquidDiffraction in your work!
+  Please cite this paper if you use LiquidDiffract in your work!
 
 ### Minor Changes
 
