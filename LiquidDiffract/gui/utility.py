@@ -92,7 +92,7 @@ class PreferencesDialog(QDialog):
     def __init__(self, preferences):
         super(PreferencesDialog, self).__init__()
         self.setAttribute(Qt.WA_DeleteOnClose)
-        self.title = 'Additional Preferences | ' + __appname__ + 'v' + __version__
+        self.title = 'Additional Preferences | ' + __appname__ + ' v' + __version__
         self.setWindowTitle(self.title)
         self.resize(500, 500)
 
@@ -818,7 +818,7 @@ class CheckFileDialog(QDialog):
     def __init__(self, data_file):
         super(CheckFileDialog, self).__init__()
         self.setAttribute(Qt.WA_DeleteOnClose)
-        self.title = 'Check Data File! | ' + __appname__ + 'v' + __version__
+        self.title = 'Check Data File! | ' + __appname__ + ' v' + __version__
         self.setWindowTitle(self.title)
         self.resize(800, 500)
 
