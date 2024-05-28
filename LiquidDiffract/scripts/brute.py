@@ -109,7 +109,7 @@ func_args = {'Q_data': x, 'I_data': y, 'comp': comp,
              'window_start': window_start, 'fft_N': fft_N,
              'opt_rho': 1, 'opt_bkg': 0}
 
-brute_array = (brute_eggert_iterations_array, brute_rho_array)
+brute_array = np.array([brute_eggert_iterations_array, brute_rho_array], dtype=np.ndarray)
 brute_iterations = len(brute_rho_array) * len(brute_eggert_iterations_array)
 # Here we calculate the time to make 1 iteration
 t_start = time.time()
