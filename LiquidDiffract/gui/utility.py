@@ -84,6 +84,44 @@ class ValidatedItemDelegate(QStyledItemDelegate):
         return _editor
 
 
+class CustomIntValidator(QIntValidator):
+    '''Subclass of QIntValidator to fixup string on editingFinished'''
+    def __init__(self, *args):
+        super(CustomIntValidator, self).__init__(*args)
+
+    def fixup(self, text):
+        try:
+            val = int(text)
+        # Catch empty strings and do nothing
+        except ValueError:
+            return
+        # Set to min if < min
+        if val < self.bottom():
+            return str(self.bottom())
+        # Set to max if > max
+        if val > self.top():
+            return str(self.top())
+
+
+class CustomDoubleValidator(QDoubleValidator):
+    '''Subclass of QDoubleValidator to fixup string on editingFinished'''
+    def __init__(self, *args):
+        super(CustomDoubleValidator, self).__init__(*args)
+
+    def fixup(self, text):
+        try:
+            val = float(text)
+        # Catch empty strings and do nothing
+        except ValueError:
+            return
+        # Set to min if < min
+        if val < self.bottom():
+            return str(self.bottom())
+        # Set to max if > max
+        if val > self.top():
+            return str(self.top())
+
+
 class PreferencesDialog(QDialog):
 
     fft_check_signal = Signal()
