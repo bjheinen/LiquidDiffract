@@ -150,7 +150,6 @@ class PreferencesDialog(QDialog):
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.title = 'Additional Preferences | ' + __appname__ + ' v' + __version__
         self.setWindowTitle(self.title)
-        self.resize(500, 500)
 
         self.outer_layout = QVBoxLayout()
         self.outer_layout.setContentsMargins(5, 3, 5, 7)
@@ -788,7 +787,6 @@ class AboutDialog(QDialog):
         self.setWindowTitle
         self.title = __appname__ + ' v' + __version__
         self.setWindowTitle(self.title)
-        self.resize(595, 675)
 
         self.vlayout = QVBoxLayout()
         self.vlayout.setContentsMargins(5, 15, 5, 7)
@@ -876,7 +874,6 @@ class CheckFileDialog(QDialog):
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.title = 'Check Data File! | ' + __appname__ + ' v' + __version__
         self.setWindowTitle(self.title)
-        self.resize(800, 500)
 
         self.data_file = data_file
 
@@ -998,8 +995,6 @@ class ComputeMapDialog(QDialog):
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.title = 'Compute χ\u00b2 map | ' + __appname__ + ' v' + __version__
         self.setWindowTitle(self.title)
-        # TODO resize based on screen percentage with an init arg
-        self.resize(1500, 1200)
 
         # data, extra refinement data, and app preferences
         self.data = data

@@ -75,6 +75,7 @@ class App(QMainWindow):
         self.table_widget = MainContainer(self)
         self.setCentralWidget(self.table_widget)
         self.set_default_preferences()
+        self.table_widget.bkg_ui.screen_size = (self.width, self.height)
         self.showMaximized()
 
     def set_default_preferences(self):
@@ -109,7 +110,8 @@ class App(QMainWindow):
         # set window icon
         with resources.as_file(resources.files(self.icon_module).joinpath('gs_icon.png')) as path:
             self.preferences_dialog.setWindowIcon(QIcon(str(path)))
-
+        # Resize as percentage of primary screen size (width, height)
+        self.preferences_dialog.resize(int(self.width*0.35), int(self.height*0.7))
         if self.preferences_dialog.exec() == utility.PreferencesDialog.Accepted:
             self.preferences = self.preferences_dialog.get_preferences()
             _prev_data_units = self.table_widget.bkg_ui.data_units
@@ -149,6 +151,8 @@ class App(QMainWindow):
         # Set icons
         with resources.as_file(resources.files(self.icon_module).joinpath('gs_icon.png')) as path:
             self.about_dialog.setWindowIcon(QIcon(str(path)))
+        # Resize as percentage of primary screen size (width, height)
+        self.about_dialog.resize(int(self.width*0.35), int(self.height*0.6))
         self.about_dialog.exec()
 
     def open_docs(self):
@@ -229,6 +233,9 @@ class App(QMainWindow):
         # Set icons
         with resources.as_file(resources.files(self.icon_module).joinpath('gs_icon.png')) as path:
             self.compute_map_dialog.setWindowIcon(QIcon(str(path)))
+
+        # Resize as percentage of primary screen size (width, height)
+        self.compute_map_dialog.resize(int(self.width*0.7), int(self.height*0.7))
 
         # Call dialog
         self.compute_map_dialog.exec()

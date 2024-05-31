@@ -211,6 +211,7 @@ class BkgUI(QWidget):
 
     def check_file_header(self, _fname):
         _check_dialog = utility.CheckFileDialog(_fname)
+        _check_dialog.resize(int(self.screen_size[0]*0.6), int(self.screen_size[1]*0.5))
         if _check_dialog.exec() == utility.CheckFileDialog.Accepted:
             return _check_dialog.get_header_len()
         else:
