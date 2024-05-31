@@ -1188,6 +1188,34 @@ def refinement_objfun(minvar, *args):
     return chi_squared
 
 
+def chi_squared_map_helper(param, arg_dict):
+    '''
+    Helper function to compute χ^2 maps from a 2D parameter space with a choice
+    from rho, background scaling factor (b), no. iterations, and r-min cutoff).
+
+    Args:
+
+        param - ndarray with shape (4,) in format [rho, b, r_min, n_iter]
+                To call refinement_objfun with no background scaling set
+                b to None
+        arg_dict - Dictionary object of argument to pass to refinement_objfun
+                   see refinement_objfun for details
+
+    Returns:
+
+        chi_squared - see refinement_objfun for details
+    '''
+    # if bkg_scaling is nan - no bkg_scaling
+    if np.isnan(param[1]):
+        objfun_var = param[0]
+    else:
+        objfun_var = param[:2]
+    arg_dict['r_min'] = param[2]
+    arg_dict['n_iter'] = param[3]
+    objfun_arg = tuple(arg_dict.values())
+    return refinement_objfun(objfun_var, *objfun_arg)
+
+
 def integrate_coordination_sphere(r, rdf,
                                   r_0=None, rp_max=None,
                                   r_max=None, r_min=None, method=0):
