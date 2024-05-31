@@ -168,6 +168,8 @@ class App(QMainWindow):
             return
         # Get composition - do not run if composition not set
         _composition = self.table_widget.optim_ui.optim_config_widget.composition_gb.get_composition_dict()
+        if _composition:
+            _composition = self.table_widget.optim_ui.validate_composition(_composition)
         if not _composition:
             _message = ['Missing Composition!', 'Please set composition in <i>Refinement</i> tab']
             _error_msg = utility.ErrorMessageBox(_message)

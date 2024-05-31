@@ -361,10 +361,7 @@ def calculate_weights(composition, Q):
     # Dict of Kp for each species
     K_p_dict = dict(zip(composition.keys(), K_p))
     # List of atoms in composition
-    atom_list = [atom for expanded in
-                 [[species]*composition[species][2]
-                  for species in composition.keys()]
-                 for atom in expanded]
+    atom_list = list(composition.keys())
     # List of atom (alpha-beta) pairs
     pairs = list(set(itertools.product(atom_list, repeat=2)))
     weights = {}

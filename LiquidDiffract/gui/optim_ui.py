@@ -159,14 +159,24 @@ class OptimUI(QWidget):
 
         # this method is only used for 'raw' S(Q) actual data so mod_func = 1
         self.data['modification'] = 1
+        # Validate composition
+        _composition = self.optim_config_widget.composition_gb.get_composition_dict()
+        if _recalc_SQ:
+            _composition = self.validate_composition(_composition)
+        else:
+            _composition = self.validate_composition(_composition, supress_errors=True)
+
         # Plot scattering factors
-        self.toggle_plot_scattering_factors()
+        if _composition:
+            self.toggle_plot_scattering_factors()
+        else:
+            self.data['scattering_factors'] = np.asarray([])
         # Smooth data if option checked. Error handling for empty array
         if self.optim_config_widget.data_options_gb.smooth_data_check.isChecked() and self.data['cor_y_cut'].size:
             self.smooth_data()
         else:
             self.optim_plot_widget.update_plots(self.data)
-        if _recalc_SQ:
+        if _recalc_SQ and _composition:
             self.on_click_calc_sq()
 
     def on_click_calc_sq(self):
@@ -175,6 +185,7 @@ class OptimUI(QWidget):
             return
         # Run only if composition set
         _composition = self.optim_config_widget.composition_gb.get_composition_dict()
+        _composition = self.validate_composition(_composition)
         if not _composition:
             return
 
@@ -254,6 +265,7 @@ class OptimUI(QWidget):
                 self.window_func_error()
                 return
         _composition = self.optim_config_widget.composition_gb.get_composition_dict()
+        _composition = self.validate_composition(_composition)
         # Don't run if no composition set
         if not _composition:
             return
@@ -577,6 +589,7 @@ class OptimUI(QWidget):
     def toggle_plot_scattering_factors(self):
         # Run only if composition set
         _composition = self.optim_config_widget.composition_gb.get_composition_dict()
+        _composition = self.validate_composition(_composition)
         if not _composition:
             self.data['scattering_factors'] = np.asarray([])
             return
@@ -609,6 +622,44 @@ class OptimUI(QWidget):
                                                         poly_order=self.poly_order)
         self.optim_plot_widget.update_plots(self.data)
 
+    def validate_composition(self, _composition, supress_errors=False):
+        """Validates composition dict. Returns valid composition or empty dict if not valid."""
+        # Get SQ method (0: FZ, 1: AL)
+        _sq_AL = self.optim_config_widget.data_options_gb.method_button_group.checkedId()
+        # Get list of n values
+        _n_values = [element[2] for element in _composition.values()]
+
+        # AL
+        if _sq_AL:
+            _int_n_values = []
+            for _n in _n_values:
+                # Prefer isclose(n%1, 0) over n.is_integer()
+                if not np.isclose(_n%1, 0):
+                    if not supress_errors:
+                        self.al_composition_error()
+                    return {}
+                else:
+                    # Convert floats to int
+                    _int_n_values.append(round(_n))
+            # Get current composition values
+            _temp_val = [list(_val) for _val in _composition.values()]
+            # Replace _n with integers
+            for _idx, _val in enumerate(_temp_val):
+                _val[2] = _int_n_values[_idx]
+            # Convert back to tuples
+            _temp_val = [tuple(_val) for _val in _temp_val]
+            # Zip composition dict
+            _composition = dict(zip(_composition.keys(), _temp_val))
+        else:
+            # Check if n values add up to a whole number
+            if not np.isclose(sum(_n_values)%1, 0):
+                if not supress_errors:
+                    self.fz_composition_error()
+                return {}
+
+        # Return validated composition dict
+        return _composition
+
     def enable_config_panel(self, state):
         self.optim_config_widget.setEnabled(state)
         QApplication.processEvents(QEventLoop.ExcludeUserInputEvents)
@@ -635,6 +686,19 @@ class OptimUI(QWidget):
     def bkg_error(self):
         print('Warning: Must load background file to refine background scaling factor')
         _message = ['Missing background!', 'Must load background to refine background scale factor']
+        _error_msg = utility.ErrorMessageBox(_message)
+        _error_msg.exec()
+
+    def fz_composition_error(self):
+        _message = ['Error Setting Composition!', 'Number of atoms must sum to a whole number!']
+        _error_msg = utility.ErrorMessageBox(_message)
+        _error_msg.exec()
+
+    def al_composition_error(self):
+        _message = ['Error Setting Composition!',
+                    ('Ashcroft-Langreth formalism only supports molecular compositions!\n'
+                        'Please adjust composition or use Faber-Ziman formalism for fractional chemical formula')
+                    ]
         _error_msg = utility.ErrorMessageBox(_message)
         _error_msg.exec()
 
@@ -858,7 +922,15 @@ class CompositionGroupBox(QGroupBox):
         for _row_index in range(self.composition_table.rowCount()):
             _Z = int(self.composition_table.item(_row_index, 1).text())
             _charge = int(self.composition_table.item(_row_index, 2).text())
-            _n = int(self.composition_table.item(_row_index, 3).text())
+            # If int, get int, else get float
+            try:
+                _n = int(self.composition_table.item(_row_index, 3).text())
+            except ValueError:
+                _n = float(self.composition_table.item(_row_index, 3).text())
+            # Check for n set to zero
+            if np.isclose(_n, 0):
+                self.zero_atoms_error()
+                return {}
             _key = str(_key_list[_val_list.index(_Z)])
             _dict_entry = {_key: (_Z, _charge, _n)}
             _composition_dict.update(_dict_entry)
@@ -882,6 +954,11 @@ class CompositionGroupBox(QGroupBox):
             _atomic_density = 0.0
         _mass_density = core.conv_density(_atomic_density, _composition)
         self.mass_density.setText('{0:.3f}'.format(_mass_density))
+
+    def zero_atoms_error(self):
+        _message = ['Error Setting Composition!', 'n must be greater than 0!']
+        _error_msg = utility.ErrorMessageBox(_message)
+        _error_msg.exec()
 
 
 class DataOptionsGroupBox(QGroupBox):
@@ -928,8 +1005,8 @@ class DataOptionsGroupBox(QGroupBox):
         self.method_button_group = QButtonGroup()
         self.al_btn = QRadioButton('Ashcroft-Langreth')
         self.fz_btn = QRadioButton('Faber-Ziman')
-        self.method_button_group.addButton(self.fz_btn)
-        self.method_button_group.addButton(self.al_btn)
+        self.method_button_group.addButton(self.fz_btn, 0)
+        self.method_button_group.addButton(self.al_btn, 1)
 
         self.method_lbl = QLabel('S(Q) formulation: ')
 
