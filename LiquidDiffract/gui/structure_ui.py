@@ -611,8 +611,10 @@ class PlotViewGroupBox(QGroupBox):
         self.hbtn_layout.addWidget(self.rdf_btn, 0, 0)
         self.hbtn_layout.addWidget(self.tr_btn, 0, 1)
 
-        self.main_layout.addWidget(self.plot_view_label)
-        self.main_layout.addLayout(self.hbtn_layout)
+        self.main_layout.addWidget(self.plot_view_label, 1)
+        self.main_layout.addLayout(self.hbtn_layout, 1)
+        self.main_layout.addWidget(QWidget(), 1)
+
         self.setLayout(self.main_layout)
 
     def create_signals(self):
@@ -635,34 +637,24 @@ class MonatomicGroupBox(QGroupBox):
         self.create_signals()
 
     def create_widgets(self):
-
         self.r0_label = QLabel('r<sub>0</sub>')
         self.r0_input = QDoubleSpinBox()
-
         self.rpmax_label = QLabel('r\'<sub>max</sub>')
         self.rpmax_input = QDoubleSpinBox()
-
         self.rmax_label = QLabel('r<sub>max</sub>')
         self.rmax_input = QDoubleSpinBox()
-
         self.rmin_label = QLabel('r<sub>min</sub>')
         self.rmin_input = QDoubleSpinBox()
-
         self.find_limits_btn = QPushButton('Auto-Refine Int. Limits')
-
         self.calc_N_btn = QPushButton('Calc Coordination Number')
-
         self.Na_output_label = QLabel('N<sub>a</sub> : ')
         self.Na_output = QLineEdit()
-
         self.Nb_output_label = QLabel('N<sub>b</sub> : ')
         self.Nb_output = QLineEdit()
-
         self.Nc_output_label = QLabel('N<sub>c</sub> : ')
         self.Nc_output = QLineEdit()
 
     def style_widgets(self):
-
         self.r0_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.rpmax_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.rmax_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
@@ -672,15 +664,13 @@ class MonatomicGroupBox(QGroupBox):
         self.Nb_output_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.Nc_output_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
 
-        # May need to change max widths
-        self.r0_input.setMaximumWidth(82)
-        self.rpmax_input.setMaximumWidth(82)
-        self.rmax_input.setMaximumWidth(82)
-        self.rmin_input.setMaximumWidth(82)
-
-        self.Na_output.setMaximumWidth(100)
-        self.Nb_output.setMaximumWidth(100)
-        self.Nc_output.setMaximumWidth(100)
+        self.r0_input.setMaximumWidth(100)
+        self.rpmax_input.setMaximumWidth(100)
+        self.rmax_input.setMaximumWidth(100)
+        self.rmin_input.setMaximumWidth(100)
+        self.Na_output.setMaximumWidth(120)
+        self.Nb_output.setMaximumWidth(120)
+        self.Nc_output.setMaximumWidth(120)
 
         # Set results as read-only
         self.Na_output.setReadOnly(True)
@@ -828,8 +818,8 @@ class PolyatomicGroupBox(QGroupBox):
         self.min_limit_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.max_limit_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
 
-        self.min_limit_input.setMaximumWidth(82)
-        self.max_limit_input.setMaximumWidth(82)
+        self.min_limit_input.setMaximumWidth(100)
+        self.max_limit_input.setMaximumWidth(100)
 
         self.min_limit_input.setSingleStep(0.1)
         self.min_limit_input.setDecimals(2)

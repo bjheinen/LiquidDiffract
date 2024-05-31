@@ -412,13 +412,13 @@ class DataFilesGroupBox(QGroupBox):
 
         self.dq_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         self.dq_input.setAlignment(Qt.AlignRight)
-        self.dq_input.setMaximumWidth(60)
+        self.dq_input.setMaximumWidth(80)
         self.dq_input.setValidator(QDoubleValidator())
 
     def create_layout(self):
         self.grid_layout = QGridLayout()
         self.grid_layout.setContentsMargins(25, 10, 25, 7)
-        self.grid_layout.setSpacing(5)
+        self.grid_layout.setSpacing(10)
         self.data_lbl_frame.setWidget(self.data_filename_lbl)
         self.bkg_lbl_frame.setWidget(self.bkg_filename_lbl)
         self.grid_layout.addWidget(self.load_data_btn, 0, 0)
@@ -466,7 +466,7 @@ class BkgSubtractGroupBox(QGroupBox):
         self.scale_sb.setMinimumWidth(80)
         self.scale_sb.setAlignment(Qt.AlignRight)
 
-        self.scale_step.setMaximumWidth(60)
+        self.scale_step.setMaximumWidth(80)
         self.scale_step.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
         self.scale_step.setAlignment(Qt.AlignRight)
 
@@ -507,44 +507,47 @@ class DataConvertGroupBox(QGroupBox):
         self.data_file = None
         self.two_theta_data = None
 
+        self.create_widgets()
+        self.style_widgets()
+        self.create_layout()
+        self.create_signals()
+
+    def create_widgets(self):
         self.load_conv_data_btn = QPushButton('2θ Data')
         self.data_filename_lbl = QLabel('None')
-
         self.lambda_lbl = QLabel('Wavelength (λ): ')
         self.lambda_input = QLineEdit('')
         self.lambda_input.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
-        self.lambda_input.setMaximumWidth(60)
-
-        self.data_filename_lbl.setAlignment(Qt.AlignCenter)
         self.save_conv_data_btn = QPushButton('Convert')
 
+    def style_widgets(self):
+        self.lambda_input.setMaximumWidth(120)
+        self.data_filename_lbl.setAlignment(Qt.AlignCenter)
+        self.lambda_lbl.setAlignment(Qt.AlignRight)
+        self.lambda_input.setAlignment(Qt.AlignLeft)
+
+    def create_layout(self):
         self.outer_layout = QVBoxLayout()
         self.outer_layout.setContentsMargins(25, 25, 25, 25)
         self.outer_layout.setSpacing(10)
-
         self.inner_layout = QHBoxLayout()
         self.inner_layout.setContentsMargins(0, 0, 0, 0)
         self.inner_layout.setSpacing(10)
-
         self.outer_layout.addWidget(self.load_conv_data_btn)
         self.outer_layout.addWidget(self.data_filename_lbl)
-
+        self.inner_layout.addStretch()
         self.inner_layout.addWidget(self.lambda_lbl)
         self.inner_layout.addWidget(self.lambda_input)
-
+        self.inner_layout.addStretch()
         self.outer_layout.addLayout(self.inner_layout)
         self.outer_layout.addWidget(self.save_conv_data_btn)
-
         self.setLayout(self.outer_layout)
-
-        self.create_signals()
 
     def create_signals(self):
         self.load_conv_data_btn.clicked.connect(self.load_two_theta)
         self.save_conv_data_btn.clicked.connect(self.save_q_space)
 
     def load_two_theta(self):
-
         __file_name = utility.get_filename(io='open', caption='Load 2-theta data file')
         if not __file_name:
             return

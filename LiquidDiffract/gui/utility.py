@@ -328,7 +328,7 @@ class AppSettingsGroupBox(QGroupBox):
 
     def style_widgets(self):
         self.log_mode_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
-        self.log_mode_input.setMaximumWidth(95)
+        self.log_mode_input.setMaximumWidth(150)
 
     def create_layout(self):
         self.main_layout = QVBoxLayout()
@@ -382,7 +382,7 @@ class DataSettingsGroupBox(QGroupBox):
 
     def style_widgets(self):
         self.data_units_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
-        self.data_units_input.setMaximumWidth(100)
+        self.data_units_input.setMaximumWidth(300)
 
         self.smoothing_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
 
@@ -537,6 +537,7 @@ class SolverSettingsGroupBox(QGroupBox):
 
         self.op_method_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         self.op_method_label.setToolTip('Solver to use when refining density.')
+        self.op_method_input.setMaximumWidth(150)
 
         self.solver_info_link.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
 
@@ -546,12 +547,12 @@ class SolverSettingsGroupBox(QGroupBox):
         self.maxiter_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         self.maxiter_input.setAlignment(Qt.AlignRight)
         self.maxiter_input.setValidator(QIntValidator())
-        self.maxiter_input.setMaximumWidth(70)
+        self.maxiter_input.setMaximumWidth(100)
 
         self.maxfun_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         self.maxfun_input.setAlignment(Qt.AlignRight)
         self.maxfun_input.setValidator(QIntValidator())
-        self.maxfun_input.setMaximumWidth(70)
+        self.maxfun_input.setMaximumWidth(100)
 
         self.ftol_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         _tooltip = ('The function convergence limit is the precision goal for '
@@ -564,7 +565,7 @@ class SolverSettingsGroupBox(QGroupBox):
         self.ftol_label.setToolTip(_tooltip)
         self.ftol_input.setAlignment(Qt.AlignRight)
         self.ftol_input.setValidator(QDoubleValidator())
-        self.ftol_input.setMaximumWidth(70)
+        self.ftol_input.setMaximumWidth(100)
 
         self.gtol_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         _tooltip = ('Gradient limit for stopping criterion. \nThe iteration '
@@ -575,7 +576,7 @@ class SolverSettingsGroupBox(QGroupBox):
         self.gtol_label.setToolTip(_tooltip)
         self.gtol_input.setAlignment(Qt.AlignRight)
         self.gtol_input.setValidator(QDoubleValidator())
-        self.gtol_input.setMaximumWidth(70)
+        self.gtol_input.setMaximumWidth(100)
 
         if self.op_method_input.currentText() != 'L-BFGS-B':
             self.maxfun_label.setEnabled(False)
@@ -700,22 +701,22 @@ class GlobalMinSettingsGroupBox(QGroupBox):
         self.niter_basin_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         self.niter_basin_input.setAlignment(Qt.AlignRight)
         self.niter_basin_input.setValidator(QIntValidator())
-        self.niter_basin_input.setMaximumWidth(70)
+        self.niter_basin_input.setMaximumWidth(80)
 
         self.temp_basin_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         self.temp_basin_input.setAlignment(Qt.AlignRight)
         self.temp_basin_input.setValidator(QDoubleValidator())
-        self.temp_basin_input.setMaximumWidth(70)
+        self.temp_basin_input.setMaximumWidth(80)
 
         self.stepsize_basin_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         self.stepsize_basin_input.setAlignment(Qt.AlignRight)
         self.stepsize_basin_input.setValidator(QDoubleValidator())
-        self.stepsize_basin_input.setMaximumWidth(70)
+        self.stepsize_basin_input.setMaximumWidth(80)
 
         self.interval_basin_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         self.interval_basin_input.setAlignment(Qt.AlignRight)
         self.interval_basin_input.setValidator(QIntValidator())
-        self.interval_basin_input.setMaximumWidth(70)
+        self.interval_basin_input.setMaximumWidth(80)
 
     def create_layout(self):
         self.main_layout = QVBoxLayout()
