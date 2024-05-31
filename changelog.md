@@ -3,10 +3,24 @@
 
 ## v1.2.2-dev (May ?, 2024)
 
-### Minor Changes
+### Major Changes
+
+- **Compute *&chi;<sup>2</sup>* Map Toolbox**  
+  This new toolbox allows the user to compute a map of *&chi;<sup>2</sup>* from the data and two chosen parameters.  
+  Options are:
+  - *&rho;*
+  - *b* (background scaling factor)
+  - *r*<sub>min</sub>
+  - No. iterations  
+
+  Options for setting parameter, normalising *&chi;<sup>2</sup>*, and plotting the data are provided.  
+  Computed data can be saved or the plot directly exported as an image.
 
 - **Support for Qt 6 via qtpy**  
   This gives support for all major Qt bindings (PyQt5, PyQt6, PySide2 and PySide6). PyQt6 preferred over PySide6.
+
+### Minor Changes
+
 - Option to plot self-scattering/compton scattering to compare against _I(Q)_ in the data/optimisation UI
 - Automatic plotting of _&alpha;I(Q)_ to compare with _f(Q)_
 - Optional zero-shift corrections in background subtraction tab

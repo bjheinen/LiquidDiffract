@@ -35,12 +35,13 @@ Please cite this article if you use LiquidDiffract in your work.
 		* [Iterative Structure Factor Refinement](#iterative-structure-factor-refinement)
 		* [Density (&rho;) and background scaling (b) Refinement](#density-%CF%81-and-background-scaling-factor-b-refinement)
 			* [Global optimisation capability](#global-optimisation-capability)
-		* [Note on Number of Iterations in the Eggert Procedure & *&Chi;<sup>2</sup>* Minimisation](#note-on-number-of-iterations-in-the-eggert-procedure--χ2-minimisation)
+		* [Note on Number of Iterations in the Eggert Procedure & *&chi;<sup>2</sup>* Minimisation](#note-on-number-of-iterations-in-the-eggert-procedure--χ2-minimisation)
 		* [Terminal & Log-file Output](#terminal--log-file-output)
 	* [PDF Calculation (Output) Tab](#pdf-calculation-output-tab)
 	* [Structural Information Tab](#structural-information-tab)
 		* [Integration Toolbox (monatomic compositions)](#integration-toolbox)
 		* [Curve-fitting Toolbox (polyatomic compositions)](#curve-fitting-toolbox)
+	* [Compute *&chi;<sup>2</sup>* Map Wizard](#compute-χ2-map-wizard)
 	* [Using LiquidDiffract Core Library](#using-liquiddiffract-core-library)
 * [References](#references)
 * [License](#license)
@@ -203,7 +204,7 @@ To refine *S(Q)* the value of *r*-min should be set carefully, as it has a stron
 
 The number of iterations in the procedure can also be set; a minimum of 3 is normally required for convergence.
 
-A *&Chi;<sup>2</sup>* figure of merit, defined as the area under the curve *&Delta;D(r) for r<r-min*, is used to rate the refinement.
+A *&chi;<sup>2</sup>* figure of merit, defined as the area under the curve *&Delta;D(r) for r<r-min*, is used to rate the refinement.
 
 
 ```math
@@ -218,7 +219,7 @@ Where,
 
 #### Density (&rho;) and background scaling factor (*b*) Refinement
 
-The sample density and/or background scaling factor can be determined by finding the values of &rho; and or b that provides the best convergence of the iterative procedure described above. This is done by minimising the resultant value of *&Chi;<sup>2</sup>*. LiquidDiffract supports several different solvers to do this. The solver in use, along with specific options like convergence criteria and number of iterations, can be selected from the *Additional Preferences* dialog. The solvers currently supported are:
+The sample density and/or background scaling factor can be determined by finding the values of &rho; and or b that provides the best convergence of the iterative procedure described above. This is done by minimising the resultant value of *&chi;<sup>2</sup>*. LiquidDiffract supports several different solvers to do this. The solver in use, along with specific options like convergence criteria and number of iterations, can be selected from the *Additional Preferences* dialog. The solvers currently supported are:
 
 * L-BFGS-B [16-17]
 
@@ -247,15 +248,15 @@ The acceptance test used here is the Metropolis criterion of standard Monte Carl
 For more information see the [SciPy documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.basinhopping.html), or consult the references listed.
 
 
-#### Note on Number of Iterations in the Eggert Procedure & *&Chi;<sup>2</sup>* Minimisation
+#### Note on Number of Iterations in the Eggert Procedure & *&chi;<sup>2</sup>* Minimisation
 
-It is important to note that a well defined minimum in *&Chi;<sup>2</sup><sub>n</sub>* only exists for n <~ 10. This is a result of how the iterative procedure works, and the definition of *&Chi;<sup>2</sup>*.
+It is important to note that a well defined minimum in *&chi;<sup>2</sup><sub>n</sub>* only exists for n <~ 10. This is a result of how the iterative procedure works, and the definition of *&chi;<sup>2</sup>*.
 
 <details><summary><b>More info...</b></summary>
 
-The Eggert method works by forcing the region below r<sub>min</sub> to fit a line defined as -4&pi;&rho;r. *&Chi;<sup>2</sup><sub>n</sub>* is the square of the area between this modelled line and *D(r) (r < r<sub>min</sub>)* after *n* iterations. *&Chi;<sup>2</sup>(&rho;)* should display a minimum when the slope (controlled by density) best fits the data. However, after a large number of iterations the data can always be forced to fit the model slope through unreasonable manipulation (e.g. by massively inflating low-Q values), and so *&Chi;<sup>2</sup><sub>n</sub>* will be drastically reduced at large values of *n*. Furthermore, at large values of *n*, *&Chi;<sup>2</sup><sub>n</sub>* will decrease as *&rho;* --> 0, because the absolute values used to calculate *&Chi;<sup>2</sup>* are smaller as the magnitude of the slope decreases.
+The Eggert method works by forcing the region below r<sub>min</sub> to fit a line defined as -4&pi;&rho;r. *&chi;<sup>2</sup><sub>n</sub>* is the square of the area between this modelled line and *D(r) (r < r<sub>min</sub>)* after *n* iterations. *&chi;<sup>2</sup>(&rho;)* should display a minimum when the slope (controlled by density) best fits the data. However, after a large number of iterations the data can always be forced to fit the model slope through unreasonable manipulation (e.g. by massively inflating low-Q values), and so *&chi;<sup>2</sup><sub>n</sub>* will be drastically reduced at large values of *n*. Furthermore, at large values of *n*, *&chi;<sup>2</sup><sub>n</sub>* will decrease as *&rho;* --> 0, because the absolute values used to calculate *&chi;<sup>2</sup>* are smaller as the magnitude of the slope decreases.
 
-We can investigate this by computing the function *&Chi;<sup>2</sup><sub>n</sub>(&rho;, n)* - in this case for an example composition with a density ~0.048 atoms per cubic Angstrom. Plotting *&Chi;<sup>2</sup><sub>n</sub>(&rho;)* for *n = 4* and *n = 25* shows that with only 25 iterations there is no longer a well defined minimum.
+We can investigate this by computing the function *&chi;<sup>2</sup><sub>n</sub>(&rho;, n)* - in this case for an example composition with a density ~0.048 atoms per cubic Angstrom. Plotting *&chi;<sup>2</sup><sub>n</sub>(&rho;)* for *n = 4* and *n = 25* shows that with only 25 iterations there is no longer a well defined minimum.
 
 <p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/docs/4_and_25_iterations.png"></p>
 
@@ -263,7 +264,7 @@ As *n* increases, the density region in which the eggert algorithm can fit the d
 
 <p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/docs/fitting_region.png"></p>
 
-The range of value of *n* that result in a well defined minimum will depend on the data (or more properly on the r<sub>min</sub> value used). This change in the behaviour of *&Chi;<sup>2</sup><sub>n</sub>(&rho;, n)* can best be illustrated by plotting the double natural logarithm of normalised *&Chi;<sup>2</sup>* values, because the magnitude of *&Chi;<sup>2</sup><sub>n</sub>(&rho;, n)* is so much lower at large *n*, and the minima in the function much shallower. For this data it takes 3 iterations for the procedure to converge properly, after which there is a clear stable minimum which allows an accurate density estimate to be retrieved. Above 10 iterations the method no longer works, because of a sharp shelf in the function.
+The range of value of *n* that result in a well defined minimum will depend on the data (or more properly on the r<sub>min</sub> value used). This change in the behaviour of *&chi;<sup>2</sup><sub>n</sub>(&rho;, n)* can best be illustrated by plotting the double natural logarithm of normalised *&chi;<sup>2</sup>* values, because the magnitude of *&chi;<sup>2</sup><sub>n</sub>(&rho;, n)* is so much lower at large *n*, and the minima in the function much shallower. For this data it takes 3 iterations for the procedure to converge properly, after which there is a clear stable minimum which allows an accurate density estimate to be retrieved. Above 10 iterations the method no longer works, because of a sharp shelf in the function.
 
 <p align="center"><img src="https://raw.githubusercontent.com/bjheinen/LiquidDiffract/master/LiquidDiffract/resources/docs/chi_squared_minimum_map.png"></p>
 
@@ -276,7 +277,7 @@ At high enough resolution the number of iterations can be optimised. For this pa
 
 #### Terminal & Log-file Output
 
-A log is automatically generated for any refinement made. This log includes information on the data file, sample composition, data and refinement options used, solver output/convergence info (if refining density), and the final *&Chi;<sup>2</sup>* and *&rho;*.
+A log is automatically generated for any refinement made. This log includes information on the data file, sample composition, data and refinement options used, solver output/convergence info (if refining density), and the final *&chi;<sup>2</sup>* and *&rho;*.
 
 The log for each refinement is automatically written to file. The default behaviour is to store each log in a file named 'refinement.log' within the current data directory. Each log is preceded by a time-stamp. The log-mode can be changed to *Overwrite* in the *Additional Preferences* dialog. This creates a new log file for each data file loaded, which will be overwritten if already present. The file-names generated are of the form 'DATAFILENAME_refinement.log' and are similarly created in the source directory of the loaded data file.
 
@@ -359,6 +360,20 @@ T(r)=\sum_{\alpha\beta}\left[\frac{\bar{N}_{\alpha\beta}W^{^{\prime}\rm{x-ray}}_
 ```
 
 The x-ray weighting factors are computed automatically and the fitting parameters are the coordination number, *N<sub>&alpha;&beta;</sub>*, the bond length, *r<sub>&alpha;&beta;</sub>*, and a measure of the bond length distribution, *&sigma;<sub>&alpha;&beta;</sub>*. The skewness parameter, *&xi;*, is optional in the fit. All of the parameters can be set manually and individually toggled between remaining fixed or allowed to vary in the fit.
+
+
+### Compute χ2 Map Wizard
+
+When using the [iterative structure factor refinement](#iterative-structure-factor-refinement) it can be desirable to compute a map of *&chi;<sup>2</sup>* over a parameter space to check refinement and investigate behaviour. See also [here](#note-on-number-of-iterations-in-the-eggert-procedure--χ2-minimisation) for more details. A pop-up wizard/toolbox to compute *&chi;<sup>2</sup>* maps can be found in the *Tools* menu.
+
+The toolbox will compute a map of *&chi;<sup>2</sup><sub>(n)</sub>(x; y)* where x and y are each one of
+- *&rho;*
+- *b* (background scaling factor)
+- *r*<sub>min</sub>
+- No. iterations
+
+As computing the map can take quite a while, a button to estimate the total time is provided.  
+The created figure can be directly exported as an image file, or the data can be saved directly. When saving data, choosing *raw data* will save the computed *&chi;<sup>2</sup>* values for each pair of *x*, *y* coordinates, while choosing *map data* will save 3 2D arrays of *x*, *y*, and *&chi;<sup>2</sup>* values, including any data normalisations chosen.
 
 
 ### Using LiquidDiffract Core Library
