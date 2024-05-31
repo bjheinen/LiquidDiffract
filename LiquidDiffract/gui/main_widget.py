@@ -59,12 +59,18 @@ class App(QMainWindow):
         with resources.as_file(resources.files(self.icon_module).joinpath('info.png')) as path:
             self.about_action = QAction(QIcon(str(path)), 'About', self)
 
+        with resources.as_file(resources.files(self.icon_module).joinpath('run_tool.png')) as path:
+            self.compute_map_action = QAction(QIcon(str(path)),
+                                              'Compute χ\u00b2 map', self)
+
         self.tools_menu.addAction(self.preferences_action)
+        self.tools_menu.addAction(self.compute_map_action)
         self.help_menu.addAction(self.documentation_action)
         self.help_menu.addAction(self.about_action)
         self.preferences_action.triggered.connect(self.call_preferences_dialog)
         self.about_action.triggered.connect(self.call_about_dialog)
         self.documentation_action.triggered.connect(self.open_docs)
+        self.compute_map_action.triggered.connect(self.call_map_dialog)
 
         self.table_widget = MainContainer(self)
         self.setCentralWidget(self.table_widget)
@@ -141,9 +147,89 @@ class App(QMainWindow):
     def call_about_dialog(self):
         self.about_dialog = utility.AboutDialog()
         self.about_dialog.exec()
+        # TODO set window icon
 
     def open_docs(self):
         webbrowser.open_new('https://github.com/bjheinen/LiquidDiffract')
+
+    def call_map_dialog(self):
+        # Get data and validate
+        # Only call dialog if data present
+        if not self.table_widget.optim_ui.data['cor_x_cut'].size:
+            _message = ['No Data!', 'Please set data in <i>Background Subtraction</i> tab']
+            _error_msg = utility.ErrorMessageBox(_message)
+            _error_msg.exec()
+            return
+        # Get composition - do not run if composition not set
+        _composition = self.table_widget.optim_ui.optim_config_widget.composition_gb.get_composition_dict()
+        if not _composition:
+            _message = ['Missing Composition!', 'Please set composition in <i>Refinement</i> tab']
+            _error_msg = utility.ErrorMessageBox(_message)
+            _error_msg.exec()
+            return
+        # Get modification function if mod_func mode toggled (default is False)
+        if self.preferences['mod_func_mode']:
+            _mod_func = self.table_widget.optim_ui.optim_config_widget.data_options_gb.mod_func_input.currentText()
+            if _mod_func == 'Cosine-window':
+                try:
+                    _window_start = np.float64(self.table_widget.optim_ui.optim_config_widget.data_options_gb.window_start_input.text())
+                except ValueError:
+                    _message = ['Modification Function Error!', 'Please set window for cosine-window function in <i>Refinement</i> tab']
+                    _error_msg = utility.ErrorMessageBox(_message)
+                    _error_msg.exec()
+                    return
+            else:
+                _window_start = None
+        else:
+            _mod_func = None
+            _window_start = None
+        # Check for acceptable data inputs
+        if not (
+            self.table_widget.optim_ui.optim_config_widget.composition_gb.density_input.hasAcceptableInput()
+            and self.table_widget.optim_ui.optim_config_widget.optim_options_gb.rmin_input.hasAcceptableInput()
+            and self.table_widget.optim_ui.optim_config_widget.optim_options_gb.niter_input.hasAcceptableInput()
+        ):
+            print('Error: Please ensure values are set for density, r_min, and n_iterations') # --> warn not print!
+            return
+        # Get r_min, n_iter, and smooth flag
+        _r_min = np.float64(self.table_widget.optim_ui.optim_config_widget.optim_options_gb.rmin_input.text())
+        _n_iter = int(self.table_widget.optim_ui.optim_config_widget.optim_options_gb.niter_input.text())
+        _smooth_flag = self.table_widget.optim_ui.optim_config_widget.data_options_gb.smooth_data_check.isChecked()
+        # Get sq_method
+        if self.table_widget.optim_ui.optim_config_widget.data_options_gb.al_btn.isChecked():
+            _sq_method = 'ashcroft-langreth'
+        else:
+            _sq_method = 'faber-ziman'
+        # Get density - using rho_0 here
+        _rho = np.float64(self.table_widget.optim_ui.optim_config_widget.composition_gb.density_input.text())
+
+        _refinement_data = {
+            'composition': _composition,
+            'rho': _rho,
+            'sq_method': _sq_method,
+            'r_min': _r_min,
+            'n_iter': _n_iter,
+            'smooth_flag': _smooth_flag,
+            'mod_func': _mod_func,
+            'window_start': _window_start
+        }
+        # Check for background presence and pass flag to compute_map_dialog
+        if self.table_widget.bkg_ui.bkg_config_widget.bkg_subtract_gb.isChecked() and self.table_widget.bkg_ui.data['bkg_y'].size:
+            _bkg_flag = 1
+        else:
+            _bkg_flag = 0
+
+        # Make dialog
+        self.compute_map_dialog = utility.ComputeMapDialog(self.table_widget.optim_ui.data,
+                                                           _refinement_data,
+                                                           self.preferences,
+                                                           _bkg_flag)
+        # Set icons
+        with resources.as_file(resources.files(self.icon_module).joinpath('gs_icon.png')) as path:
+            self.compute_map_dialog.setWindowIcon(QIcon(str(path)))
+
+        # Call dialog
+        self.compute_map_dialog.exec()
 
     def check_fft_N(self):
         if self.preferences_dialog.data_units_check == self.preferences['data_units']:
