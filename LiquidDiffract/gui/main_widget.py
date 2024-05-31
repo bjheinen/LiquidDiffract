@@ -146,8 +146,10 @@ class App(QMainWindow):
 
     def call_about_dialog(self):
         self.about_dialog = utility.AboutDialog()
+        # Set icons
+        with resources.as_file(resources.files(self.icon_module).joinpath('gs_icon.png')) as path:
+            self.about_dialog.setWindowIcon(QIcon(str(path)))
         self.about_dialog.exec()
-        # TODO set window icon
 
     def open_docs(self):
         webbrowser.open_new('https://github.com/bjheinen/LiquidDiffract')
