@@ -3,7 +3,8 @@ __author__ = "Benedict J. Heinen"
 __copyright__ = "Copyright 2018-2021, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
-from qtpy.QtCore import Qt, Signal
+from qtpy.QtCore import Qt, Signal, QRectF
+from qtpy.QtGui import QTransform
 from qtpy.QtWidgets import QWidget, QVBoxLayout
 import pyqtgraph as pg
 import numpy as np
@@ -1024,3 +1025,246 @@ class WindowedPlotItem(CustomPlotItem):
 
     def autoBtnClicked(self):
         self.reset_window.emit()
+
+
+class CustomImageItem(pg.ImageItem):
+
+    # Create pyqtSignal for updating pos string
+    mouse_pos_changed = Signal(float, float, float)
+    mouse_pos_cleared = Signal()
+
+    def hoverEvent(self, _event):
+        """Get the position and value under the mouse cursor."""
+        # Super original hoverEvent method
+        super().hoverEvent(_event)
+        # If mouse moves off the image, clear the output
+        if _event.isExit():
+            # emit signal to clear coords on exit event
+            self.mouse_pos_cleared.emit()
+            return
+        # Get mouse event position
+        _pos = _event.pos()
+        _i, _j = _pos.y(), _pos.x()
+        # Get data coords and value from idx
+        _i = int(np.clip(_i, 0, self.image.shape[0] - 1))
+        _j = int(np.clip(_j, 0, self.image.shape[1] - 1))
+        _val = self.image[_i, _j]
+        # Get pos in x, y coords
+        _ppos = self.mapToParent(_pos)
+        _x, _y = _ppos.x(), _ppos.y()
+        # Send x, y, and value
+        self.mouse_pos_changed.emit(_x, _y, _val)
+
+
+class CustomMouseMode():
+    """
+    Class to provide custom mouse behaviour from mouse_drag_event
+
+    Left click & drag to rubberband style zoom, right click and drag to pan,
+    middle click and drag to free zoom, wheel to zoom.
+    """
+    def mouse_drag_event(self, _evt, _view_box, _axis=None):
+        """
+        Re-defined mouse behaviour modified from pyqtgraph.ViewBox
+        """
+        # Accept drag events from any button
+        _evt.accept()
+
+        pos = _evt.pos()
+        lastPos = _evt.lastPos()
+        dif = pos - lastPos
+        dif = dif * -1
+        ## Ignore axes if mouse is disabled
+        mouseEnabled = np.array(_view_box.state['mouseEnabled'], dtype=np.float64)
+        mask = mouseEnabled.copy()
+
+        if _axis is not None:
+            mask[1-_axis] = 0.0
+        # Rubberband zoom for left button drag
+        if _evt.button() == Qt.LeftButton:
+            # Change the view only when drag finished
+            if _evt.isFinish():
+                _view_box.rbScaleBox.hide()
+                ax = QRectF(pg.Point(_evt.buttonDownPos(_evt.button())), pg.Point(pos))
+                ax = _view_box.childGroup.mapRectFromParent(ax)
+                _view_box.showAxRect(ax)
+                _view_box.axHistoryPointer += 1
+                _view_box.axHistory = _view_box.axHistory[:_view_box.axHistoryPointer] + [ax]
+            else:
+                # Update shape of scale box if drag in progress
+                _view_box.updateScaleBox(_evt.buttonDownPos(), _evt.pos())
+
+        # Pan for right button drag
+        elif _evt.button() == Qt.RightButton:
+            tr = _view_box.childGroup.transform()
+            tr = pg.functions.invertQTransform(tr)
+            tr = tr.map(dif*mask) - tr.map(pg.Point(0,0))
+            x = tr.x() if mask[0] == 1 else None
+            y = tr.y() if mask[1] == 1 else None
+            _view_box._resetTarget()
+            if x is not None or y is not None:
+                _view_box.translateBy(x=x, y=y)
+            _view_box.sigRangeChangedManually.emit(_view_box.state['mouseEnabled'])
+        # Zoom for middle button drag
+        elif _evt.button() == Qt.MiddleButton:
+            if _view_box.state['aspectLocked'] is not False:
+                mask[0] = 0
+
+            dif = _evt.screenPos() - _evt.lastScreenPos()
+            dif = np.array([dif.x(), dif.y()])
+            dif[0] *= -1
+            s = ((mask * 0.02) + 1) ** dif
+
+            tr = _view_box.childGroup.transform()
+            tr = pg.functions.invertQTransform(tr)
+
+            x = s[0] if mouseEnabled[0] == 1 else None
+            y = s[1] if mouseEnabled[1] == 1 else None
+
+            center = pg.Point(tr.map(_evt.buttonDownPos(Qt.RightButton)))
+            _view_box._resetTarget()
+            _view_box.scaleBy(x=x, y=y, center=center)
+            _view_box.sigRangeChangedManually.emit(_view_box.state['mouseEnabled'])
+
+
+class ChiSquaredMapWidget(pg.GraphicsLayoutWidget, CustomMouseMode):
+
+    def __init__(self, **kwargs):
+        super(ChiSquaredMapWidget, self).__init__(**kwargs)
+
+        # Create plot (axes/viewbox)
+        self.map_plot = self.addPlot(row=1, col=1)
+        # Get viewbox
+        self.img_vb = self.map_plot.vb
+        # Make an ImageItem()
+        self.img = CustomImageItem()
+        # Change row/col order to match numpy
+        self.img.setOpts(axisOrder='row-major')
+        # Add ImageItem to plotItem
+        self.map_plot.addItem(self.img)
+
+        # Make histogram lookup table colour bar
+        self.hist = pg.HistogramLUTItem()
+        self.hist.axis.setVisible(False)
+        self.hist.fillHistogram(fill=False)
+        self.hist.vb.setMaximumWidth(40)
+        # Link colour bar to image
+        self.hist.setImageItem(self.img)
+        # Add histogram to layout - swap rows/cols for horizontal
+        self.addItem(self.hist, row=1, col=2)
+
+        # Reduce margins/padding
+        self.setContentsMargins(0, 0, 0, 0)
+        self.ci.setContentsMargins(1, 1, 1, 1)
+        self.ci.setSpacing(2)
+        self.img_vb.setContentsMargins(0, 0, 0, 0)
+        self.hist.layout.setContentsMargins(0, 0, 0, 0)
+        self.img_vb.setDefaultPadding(padding=0)
+
+        # Set mouse behaviour
+        self._modify_mouse_behaviour()
+
+        # Make QTransform for image
+        self.image_transform = QTransform()
+
+        # Set up axes labels
+        self.ax_labels = {'rho': '<i>\u03c1 (atoms/\u212b\u00b3)</i>',
+                          'bkg_scaling': '<i>b</i>',
+                          'r_min': '<i>r<sub>min</sub></i>',
+                          'n_iter': 'No. iterations in refinement'
+                          }
+
+        # Set contour lines list
+        self.curves = []
+
+    def _modify_mouse_behaviour(self):
+        # Switch off menus
+        self.img_vb.setMenuEnabled(False)
+        self.hist.vb.setMenuEnabled(False)
+        # Set view box mouse mode
+        self.img_vb.setMouseMode(self.img_vb.RectMode)
+        # Switch mouse off for colour-bar
+        self.hist.vb.setMouseEnabled(y=False, x=False)
+        # Override ViewBox.mouseDoubleClickEvent to unzoom on double right click
+        self.img_vb.mouseDoubleClickEvent = self.mouse_double_click_event
+        # Override ViewBox.mouseDragEvent to rectangle zoom with left button drag,
+        # pan with right button drag, and free zoom with middle button drag
+        self.img_vb.mouseDragEvent = self.mouse_drag_event_helper
+
+    def mouse_drag_event_helper(self, __evt, axis=None):
+        self.mouse_drag_event(__evt, self.img_vb, _axis=axis)
+
+    def set_data(self, map_data, scale, translate, param_names, contour_flag=1, n_levels=10, rescale=True):
+        """Sets the map data, contours, applies x/y transform and rescales map/histogram"""
+        # Reset image transforms
+        self.img.resetTransform()
+        self.image_transform.reset()
+        # Set data
+        self.img.setImage(map_data)
+        # Set data transform
+        self.img.setTransform(self.image_transform.scale(*scale).translate(*translate))
+        # Update contour lines
+        self.set_contours(contour_flag, n_levels=n_levels)
+        # Update axes labels
+        self.set_axes_labels(*param_names)
+        # Set zoom/pan limits
+        self.set_limits()
+        # Rescale view box
+        if rescale is True:
+            self.rescale_img()
+
+    def get_data(self):
+        return self.img.image
+
+    def set_axes_labels(self, x_param_name, y_param_name):
+        # Reset labels to clear formatting
+        self.map_plot.setLabel('bottom', text=None)
+        self.map_plot.setLabel('left', text=None)
+        # Set labels
+        self.map_plot.setLabel('bottom', text=self.ax_labels[x_param_name])
+        self.map_plot.setLabel('left', text=self.ax_labels[y_param_name])
+
+    def set_limits(self):
+        _x_max = self.img.image.shape[1] * self.image_transform.m11() + self.image_transform.m31()
+        _y_max = self.img.image.shape[0] * self.image_transform.m22() + self.image_transform.m32()
+        self.img_vb.setLimits(xMin = self.image_transform.m31(), xMax = _x_max,
+                              yMin = self.image_transform.m32(), yMax = _y_max,
+                              minXRange = self.image_transform.m11(), maxXRange = _x_max,
+                              minYRange = self.image_transform.m22(), maxYRange = _y_max)
+
+    def rescale_img(self):
+        self.img_vb.autoRange()
+
+    def mouse_double_click_event(self, __evt):
+        if __evt.button() == Qt.RightButton:
+            self.rescale_img()
+
+    def set_contours(self, contour_flag, n_levels=None):
+        self.remove_contours()
+        if contour_flag:
+            self.make_contours(n_levels)
+
+    def make_contours(self, n_levels):
+        # Remove any previous contours
+        self.curves = []
+        levels = np.linspace(self.img.image.min(), self.img.image.max(), n_levels)
+        for idx, level_value in enumerate(levels):
+            # Generate isocurve - auto colour
+            curve = pg.IsocurveItem(level=level_value, pen=(idx, len(levels)*1.5))
+            curve.setParentItem(self.img)
+            curve.setZValue(10)
+            curve.setData(self.img.image.T)
+            self.curves.append(curve)
+
+    def remove_contours(self):
+        # Delete contours and clean up
+        for curve in self.curves:
+            curve.setData(None)
+            curve.setParentItem(None)
+            curve.deleteLater()
+            del curve
+        self.curves = []
+
+    def clear_data(self):
+        self.remove_contours()
+        self.img.clear()
