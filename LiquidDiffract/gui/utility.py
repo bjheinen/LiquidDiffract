@@ -11,7 +11,7 @@ import time
 import numpy as np
 from qtpy.QtCore import Qt, Signal, QEventLoop
 from qtpy.QtGui import QIntValidator, QDoubleValidator, QPixmap, \
-                        QTextBlockFormat, QTextCursor
+                        QTextBlockFormat, QTextCursor, QIcon
 from qtpy.QtWidgets import QDialog, QFileDialog, QMessageBox, \
                             QStyledItemDelegate, QFrame, QGroupBox, \
                             QScrollArea, QSplitter, QSizePolicy, \
@@ -72,6 +72,8 @@ class ErrorMessageBox(QMessageBox):
         self.setText(_message[0])
         self.setInformativeText((_message[1]))
         self.setWindowTitle(__appname__ + ' v' + __version__)
+        with resources.as_file(resources.files('LiquidDiffract.resources.icons').joinpath('gs_icon.png')) as path:
+            self.setWindowIcon(QIcon(str(path)))
         self.adjustSize()
 
 
