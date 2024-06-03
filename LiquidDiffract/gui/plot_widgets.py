@@ -49,10 +49,10 @@ class BkgPlotWidget(QWidget):
         self.layout.addWidget(self.pg_layout_widget)
 
     def style_plots(self):
-        self.data_plot.setLabel('bottom', text='Q (1/A)')
+        self.data_plot.setLabel('bottom', text='Q (1/Å)')
         self.data_plot.setLabel('left', text='Intensity (a.u.)')
 
-        self.bkg_corrected_plot.setLabel('bottom', text='Q (1/A)')
+        self.bkg_corrected_plot.setLabel('bottom', text='Q (1/Å)')
         self.bkg_corrected_plot.setLabel('left', text='Intensity (a.u.)')
 
         self.pos_label = pg.LabelItem(justify='right')
@@ -172,13 +172,13 @@ class OptimPlotWidget(QWidget):
         self.layout.addWidget(self.pg_layout_widget)
 
     def style_plots(self):
-        self.data_plot.setLabel('bottom', text='Q (1/A)')
+        self.data_plot.setLabel('bottom', text='Q (1/Å)')
         self.data_plot.setLabel('left', text='Intensity (a.u.)')
 
-        self.iq_plot.setLabel('bottom', text='Q (1/A)')
+        self.iq_plot.setLabel('bottom', text='Q (1/Å)')
         self.iq_plot.setLabel('left', text='i(Q)')
 
-        self.dr_plot.setLabel('bottom', text='r (A)')
+        self.dr_plot.setLabel('bottom', text='r (Å)')
         self.dr_plot.setLabel('left', text='D(r)')
 
         self.pos_label = pg.LabelItem(justify='right')
@@ -356,13 +356,13 @@ class ResultsPlotWidget(QWidget):
         self.layout.addWidget(self.pg_layout_widget)
 
     def style_plots(self):
-        self.sq_plot.setLabel('bottom', text='Q (1/A)')
+        self.sq_plot.setLabel('bottom', text='Q (1/Å)')
         self.sq_plot.setLabel('left', text='S(Q)')
 
-        self.gr_plot.setLabel('bottom', text='r (A)')
+        self.gr_plot.setLabel('bottom', text='r (Å)')
         self.gr_plot.setLabel('left', text='g(r)')
 
-        self.rdf_plot.setLabel('bottom', text='r (A)')
+        self.rdf_plot.setLabel('bottom', text='r (Å)')
         self.rdf_plot.setLabel('left', text='RDF(r)')
 
         self.pos_label = pg.LabelItem(justify='right')
@@ -585,15 +585,15 @@ class StructurePlotWidget(QWidget):
 
     def style_plots(self):
 
-        self.rdf_plot.setLabel('bottom', text='r (A)')
+        self.rdf_plot.setLabel('bottom', text='r (Å)')
         self.rdf_plot.setLabel('left', text='RDF(r)')
 
-        self.tr_plot.setLabel('bottom', text='r (A)')
+        self.tr_plot.setLabel('bottom', text='r (Å)')
         self.tr_plot.setLabel('left', text='T(r)')
 
         # No label on fit_plot - just on residuals
         self.fit_plot.setLabel('left', text='RDF(r)')
-        self.res_plot.setLabel('bottom', text='r (A)')
+        self.res_plot.setLabel('bottom', text='r (Å)')
         self.res_plot.setLabel('left', text='residuals')
         # Fix axis width so plots are aligned
         self.fit_plot.getAxis('bottom').setStyle(showValues=False)
