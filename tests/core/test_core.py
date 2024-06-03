@@ -5,7 +5,7 @@ Unit tests for LiquidDiffract.core.core
 """
 from __future__ import absolute_import
 __author__ = "Benedict J. Heinen"
-__copyright__ = "Copyright 2023, Benedict J. Heinen"
+__copyright__ = "Copyright 2023-2024, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
 import unittest

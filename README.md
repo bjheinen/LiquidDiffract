@@ -623,4 +623,4 @@ See the [license file](../master/LICENSE) for more information.
 
 This program comes with absolutely no warranty or guarantee.
 
-Copyright © 2018-2022 – Benedict J Heinen
+Copyright © 2018-2024 – Benedict J Heinen

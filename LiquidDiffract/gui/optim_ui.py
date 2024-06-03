@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 __author__ = "Benedict J. Heinen"
-__copyright__ = "Copyright 2018-2021, Benedict J. Heinen"
+__copyright__ = "Copyright 2018-2024, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
 import os.path
