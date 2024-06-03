@@ -66,6 +66,16 @@ class TestConvDensity(unittest.TestCase):
         self.assertEqual(mass_density, 0)
 
 
+class TestAttenuationFactor(unittest.TestCase, CustomAssertions):
+
+    def test_calc_self_shielding(self):
+        # two_theta --> [0, 30, 45, 60]
+        Q = np.array([0, (math.sqrt(6) - math.sqrt(2))/4, math.sqrt(2 - math.sqrt(2))/2, 0.5])
+        expected_attenuation = np.array([1.0/math.e, 0.34083619263158144144, 0.30120381868339322352, (math.e-1)/math.e**2])
+        attenuation = core.calc_self_shielding(Q, 1.0, 90.0, 1.0, np.pi*4)
+        self.assertFloatArrayEqual(attenuation, expected_attenuation)
+
+
 class TestCalcZSum(unittest.TestCase):
     def test_calc_Z_sum(self):
         composition_H = {'H': (1,0,1)}
