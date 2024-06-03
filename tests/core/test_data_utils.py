@@ -39,15 +39,21 @@ class TestInterp(unittest.TestCase, CustomAssertions):
         self.assertFloatArrayEqual(data_utils.interp_nan(test_y), self.y)
 
 
-class TestConvertTwoTheta(unittest.TestCase, CustomAssertions):
+class TestConvertTwoThetaQSpace(unittest.TestCase, CustomAssertions):
+
+    def setUp(self):
+        self.wavelength_a = 1.0
+        self.wavelength_b = 0.1722
+        self.test_two_theta = np.array([0.0, 180.0, 9.128558416134155])
+        self.test_q_space = np.array([0.0, 4*np.pi, 1.0])
 
     def test_convert_two_theta(self):
-        wavelength_a = 1.0
-        waveength_b = 0.1722
-        test_two_theta = np.array([0.0, 360.0, 180.0, 9.128558416134155])
-        expected_q = np.array([0.0, 0.0, 4*np.pi, 1.0])
-        self.assertFloatArrayEqual(data_utils.convert_two_theta(test_two_theta, wavelength_a), expected_q, atol=1e-14)
-        self.assertFloatArrayEqual(data_utils.convert_two_theta(test_two_theta, waveength_b), expected_q/waveength_b, atol=1e-14)
+        self.assertFloatArrayEqual(data_utils.convert_two_theta(self.test_two_theta, self.wavelength_a), self.test_q_space, atol=1.e-14)
+        self.assertFloatArrayEqual(data_utils.convert_two_theta(self.test_two_theta, self.wavelength_b), self.test_q_space/self.wavelength_b, atol=1.e-14)
+
+    def test_convert_q_space(self):
+        self.assertFloatArrayEqual(np.degrees(data_utils.convert_q_space(self.test_q_space, self.wavelength_a)), self.test_two_theta, atol=1.e-14)
+        self.assertFloatArrayEqual(data_utils.convert_q_space(self.test_q_space/self.wavelength_b, self.wavelength_b), np.radians(self.test_two_theta), atol=1.e-14)
 
 class TestSmoothData(unittest.TestCase, CustomAssertions):
 
