@@ -838,7 +838,7 @@ class AboutDialog(QDialog):
                      f'<span style="color: #000080;"><span lang="zxx">'
                      f'<u>{_paper_str}</u></span></span></a></p>')
 
-        _copyright = 'Copyright &copy; 2018-2021 &ndash; Benedict J. Heinen'
+        _copyright = 'Copyright &copy; 2018-2024 &ndash; Benedict J. Heinen'
         _warranty = ('This program comes with absolutely no '
                      'warranty or guarantee.')
         _license = '<u>GNU General Public Licence, version 3 or later</u>'
