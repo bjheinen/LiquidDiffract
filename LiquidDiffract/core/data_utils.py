@@ -53,6 +53,11 @@ def convert_two_theta(two_theta, wavelength):
     return q_data
 
 
+def convert_q_space(Q, wavelength):
+    '''Convert Q-space values to 2 theta (in radians)'''
+    return 2 * np.arcsin(wavelength * Q / (4*np.pi))
+
+
 def zero_norm(y, shift=None):
     '''Shift data on y axis. If no 'shift' given, first value is set to zero'''
     if shift == None:
@@ -118,10 +123,10 @@ def smooth_data(data, method='savitzky-golay', window_length=31, poly_order=3):
 
 
 def clean_base_indices(lefts, rights):
-    """
+    '''
     Clean peak base limits
     See https://github.com/scipy/scipy/issues/19232
-    """
+    '''
     _lefts = np.copy(lefts)
     _rights = np.copy(rights)
     for i in range(len(lefts)-1):

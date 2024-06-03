@@ -877,6 +877,8 @@ class CheckFileDialog(QDialog):
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.title = 'Check Data File! | ' + __appname__ + ' v' + __version__
         self.setWindowTitle(self.title)
+        with resources.as_file(resources.files('LiquidDiffract.resources.icons').joinpath('gs_icon.png')) as path:
+            self.setWindowIcon(QIcon(str(path)))
 
         self.data_file = data_file
 
@@ -1069,8 +1071,9 @@ class ComputeMapDialog(QDialog):
         # If varying bkg_scaling additional data is required
         if 'bkg_scaling' in [x_param, y_param]:
             arg_dict = {'Q_data': self.data['cor_x'],
-                        'I_data_uncorrected': self.data['uncorrected_y'], # is there chance not exist?
+                        'I_data_uncorrected': self.data['uncorrected_y'],
                         'I_bkg': self.data['bkg_y'],
+                        'data_correction': self.data['data_correction'],
                         'q_min': self.data['q_min'],
                         'q_max': self.data['q_max'],
                         'smooth_flag': self.ref_data['smooth_flag'],
@@ -1889,3 +1892,124 @@ class MapPositionGroupBox(QGroupBox):
     def clear_all(self):
         self.clear_pos_label()
         self.clear_param_label()
+
+
+class AttenuationInspectDialog(QDialog):
+
+    def __init__(self, data):
+        super(AttenuationInspectDialog, self).__init__()
+        self.setAttribute(Qt.WA_DeleteOnClose)
+        self.title = 'Self-shielding Attenuation Factor | ' + __appname__ + ' v' + __version__
+        self.setWindowTitle(self.title)
+        with resources.as_file(resources.files('LiquidDiffract.resources.icons').joinpath('gs_icon.png')) as path:
+            self.setWindowIcon(QIcon(str(path)))
+        # Unpack data
+        self.q_data, self.two_theta_data, self.attenuation_data = data
+        self.layout = QHBoxLayout(self)
+        self.layout.setSpacing(0)
+        # Make Config Widget
+        self.config_widget = AttenuationPlotConfigWidget()
+        self.config_scroll_area = QScrollArea()
+        self.config_scroll_area.setFrameShape(QFrame.NoFrame)
+        self.config_scroll_area.setWidget(self.config_widget)
+        self.config_scroll_area.setWidgetResizable(True)
+        self.config_scroll_area.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Ignored)
+        # Make vertical line separator
+        self.vline = QFrame()
+        self.vline.setFrameShape(QFrame.VLine)
+        self.vline.setFrameShadow(QFrame.Sunken)
+        self.vline.setObjectName("vline")
+        # Make Plot Widget
+        self.plot_widget = plot_widgets.AttenuationCorrectionPlotWidget()
+        self.plot_scroll_area = QScrollArea()
+        self.plot_scroll_area.setWidget(self.plot_widget)
+        self.plot_scroll_area.setWidgetResizable(True)
+        self.plot_scroll_area.setFrameShape(QFrame.NoFrame)
+        self.hsplitter = QSplitter(Qt.Horizontal)
+        self.hsplitter.addWidget(self.config_scroll_area)
+        self.hsplitter.addWidget(self.plot_scroll_area)
+        self.hsplitter.setStretchFactor(0, 2)
+        self.hsplitter.setStretchFactor(1, 5)
+        self.layout.addWidget(self.hsplitter)
+        self.setLayout(self.layout)
+
+        self.create_signals()
+        self.plot_data()
+
+    def create_signals(self):
+        self.config_widget.attenuation_config_gb.x_unit_button_group.buttonToggled.connect(self.plot_data)
+        self.config_widget.attenuation_config_gb.save_data_btn.clicked.connect(self.save_data)
+
+    def plot_data(self):
+        # Get option (Q-space or two-theta)
+        _plot_two_theta = self.config_widget.attenuation_config_gb.plot_two_theta.isChecked()
+        if _plot_two_theta:
+            _x = self.two_theta_data
+        else:
+            _x = self.q_data
+        # Plot data
+        self.plot_widget.plot_data(_x, self.attenuation_data, _plot_two_theta)
+
+    def save_data(self):
+        # Get save filename
+        _file_name = get_filename(io='save', caption='Save Self-shielding attenuation')
+        if not _file_name:
+            return
+        # Make file header
+        _header = (f'Self-shielding attenuation factor\n'
+                   f'{__appname__} v{__version__}\n'
+                   f'Q | 2-theta | A_s,s\n'
+                   )
+        _data_out = np.column_stack((self.q_data, self.two_theta_data, self.attenuation_data))
+        np.savetxt(_file_name, _data_out, header=_header, comments='#')
+
+
+class AttenuationPlotConfigWidget(QWidget):
+
+    def __init__(self):
+        super(AttenuationPlotConfigWidget, self).__init__()
+        self.vlayout = QVBoxLayout()
+        self.vlayout.setContentsMargins(0, 0, 5, 0)
+        self.vlayout.setSpacing(10)
+        self.attenuation_config_gb = AttenuationPlotConfigGroupBox()
+        self.vlayout.addWidget(self.attenuation_config_gb, 1)
+        self.vlayout.addWidget(QWidget(), 3)
+        self.setLayout(self.vlayout)
+
+
+class AttenuationPlotConfigGroupBox(QGroupBox):
+
+    def __init__(self, *args):
+        super(AttenuationPlotConfigGroupBox, self).__init__(*args)
+        self.setAlignment(Qt.AlignLeft)
+        self.create_widgets()
+        self.style_widgets()
+        self.create_layout()
+
+    def create_widgets(self):
+        self.x_unit_label = QLabel('Units: ')
+        self.plot_q = QRadioButton('Q')
+        self.plot_two_theta = QRadioButton('2θ')
+        self.x_unit_button_group = QButtonGroup()
+        self.x_unit_button_group.addButton(self.plot_q, 0)
+        self.x_unit_button_group.addButton(self.plot_two_theta, 1)
+        self.save_data_btn = QPushButton('Save Data')
+
+    def style_widgets(self):
+        self.x_unit_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.plot_q.setStyleSheet('font: italic')
+        self.plot_two_theta.setStyleSheet('font: italic')
+        self.plot_q.setChecked(True)
+        self.spacer = QWidget()
+        self.spacer.setFixedHeight(10)
+
+    def create_layout(self):
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setContentsMargins(25, 10, 25, 7)
+        self.grid_layout.setSpacing(7)
+        self.grid_layout.addWidget(self.x_unit_label, 0, 0)
+        self.grid_layout.addWidget(self.plot_q, 0, 1)
+        self.grid_layout.addWidget(self.plot_two_theta, 1, 1)
+        self.grid_layout.addWidget(self.spacer, 2, 0)
+        self.grid_layout.addWidget(self.save_data_btn, 3, 0, 1, 2)
+        self.setLayout(self.grid_layout)

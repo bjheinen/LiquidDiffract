@@ -36,8 +36,7 @@ except ImportError:
 
 # Get version number from version.py
 from LiquidDiffract.version import __appname__, __version__
-from LiquidDiffract.core.data_utils import data_cache
-from LiquidDiffract.core.data_utils import smooth_data
+from LiquidDiffract.core.data_utils import data_cache, smooth_data, convert_q_space
 
 
 def calc_mol_mass(composition):
@@ -67,6 +66,37 @@ def conv_density(rho, composition):
     with np.errstate(divide='ignore', invalid='ignore'):
         mass_density = (rho * 10 / 6.0221408) * (mol_mass/N)
     return mass_density
+
+
+def calc_self_shielding(Q, mu, alpha, thickness, wavelength):
+    '''
+    Calculates the self-shielding attenuation factor for a sample in a simple slab geometry.
+
+    Args:
+        Q - Q-space value(s) to evaluate attenuation at
+        mu - attenuation coefficient in m^-1
+        alpha - angle between slab face and incident beam in degrees (90 is normal)
+        thickness - sample/slab thickness in m
+        wavelength - x-ray wavelength in Angstroms
+    Returns:
+        attenuation - Self-shielding attenuation factor A_s,s
+    '''
+    # Convert alpha to radians
+    alpha = np.radians(alpha)
+    # Get two theta values for Q-space data
+    two_theta = convert_q_space(Q, wavelength)
+    # Get direct path length (extended by slab rotation)
+    L = thickness / np.cos(np.pi/2 - alpha)
+    # Get scattered beam path length (scattering angle dependent)
+    x = L * (np.sin(alpha) / np.sin(alpha + two_theta))
+    # Get attenuation factor
+    # Supress divide by zero warnings
+    with np.errstate(divide='ignore', invalid='ignore'):
+        _angle_factor = (np.exp(mu*(x-L))-1) / (mu*(x-L))
+    # Handle for two_theta = 0 (angle_factor = 1.0)
+    _angle_factor = np.nan_to_num(_angle_factor, nan=1.0)
+    attenuation = np.exp(-1 * mu * x) * _angle_factor
+    return attenuation
 
 
 def calc_Z_sum(composition):
@@ -1075,7 +1105,7 @@ def refinement_objfun(minvar, *args):
 
                 If opt_bkg == True (1), the expected args are:
 
-                    (*_, q_data, I_data_uncorrected, I_bkg,
+                    (*_, q_data, I_data_uncorrected, I_bkg, data_correction,
                      qmin, qmax,
                      smooth_flag, smooth_window_length, smooth_poly_order,
                      composition, r_min, iter_limit,
@@ -1099,6 +1129,7 @@ def refinement_objfun(minvar, *args):
                                      prior to background subtraction
                 I_data_corrected - Numpy array of background subtracted I(Q) values
                 I_bkg - Numpy array of background intensities
+                data_correction - Multiplicative data correction (e.g. attenuation correction)
                 qmin - Minimum Q value of useable data (float or None)
                 qmax - Maximum Q value to truncate data (float or None)
                 smooth_flag - Boolean flag to apply savitzky golay filter
@@ -1144,11 +1175,11 @@ def refinement_objfun(minvar, *args):
     if opt_bkg == True:
         # Unpack args - additional args needed when refining bkg_scale
         (*_,
-         q_data, I_data_uncorrected, I_bkg,
+         q_data, I_data_uncorrected, I_bkg, data_correction,
          qmin, qmax, smooth_flag, smooth_window_length, smooth_poly_order,
          composition, r_min, iter_limit,
          method, mod_func, window_start, fft_N, _, _) = args
-        I_data_corrected = I_data_uncorrected - (I_bkg * bkg_scale)
+        I_data_corrected = (I_data_uncorrected - (I_bkg * bkg_scale)) * data_correction
         # Cut at qmax if qmax is != None
         if qmax:
             # Cut data at qmax

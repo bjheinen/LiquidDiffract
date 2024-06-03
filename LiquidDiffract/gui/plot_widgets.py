@@ -996,6 +996,71 @@ class StructurePlotWidget(QWidget):
         self.pos_label_fit.setText(_pos_str)
 
 
+class AttenuationCorrectionPlotWidget(pg.GraphicsLayoutWidget):
+    def __init__(self, *args, **kwargs):
+        super(AttenuationCorrectionPlotWidget, self).__init__(*args, **kwargs)
+        self.create_plots()
+        self.create_signals()
+
+    def create_plots(self):
+        self.setContentsMargins(0, 0, 0, 0)
+        self.ci.setContentsMargins(8, 8, 8, 8)
+        self.pen = pg.mkPen(color=0.1, width=1.2, cosmetic=True)
+        self.pos_label = pg.LabelItem(justify='right')
+        self.addItem(self.pos_label, col=0, row=0)
+        self.attenuation_plot = CustomPlotItem()
+        self.addItem(self.attenuation_plot, row=1, col=0)
+
+    def plot_data(self, x, y, use_two_theta=0):
+        # Clear plot
+        try:
+            self.plot_object.clear()
+        except AttributeError:
+            pass
+        # Set axes labels
+        if use_two_theta:
+            self.attenuation_plot.setLabel('bottom', text='<i>2θ</i> (°)')
+            self.attenuation_plot.setLabel('left', text='<i>A<sub>s,s</sub>(2θ)</i>')
+        else:
+            self.attenuation_plot.setLabel('bottom', text='<i>Q</i> (1/Å)')
+            self.attenuation_plot.setLabel('left', text='<i>A<sub>s,s</sub>(Q)</i>')
+        # Plot data
+        self.plot_object = self.attenuation_plot.plot(x=x, y=y, pen=self.pen)
+        # Set limits
+        self.attenuation_plot.vb.setLimits(xMin = 0, xMax = x.max()*1.02,
+                                           yMin = y.min()*0.99, yMax = y.max()*1.02,
+                                           minXRange = np.diff(x).min(), minYRange = np.diff(y).min())
+        # Autorange
+        self.attenuation_plot.vb.autoRange()
+
+    def create_signals(self):
+        self.mouse_proxy = pg.SignalProxy(self.ci.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved)
+
+    def mouse_moved(self, __evt):
+        # Catch mouse movements and display coords
+        __pos = __evt[0]
+        if self.attenuation_plot.sceneBoundingRect().contains(__pos):
+            __mousePoint = self.attenuation_plot.vb.mapSceneToView(__pos)
+            self.set_mouse_pos_label(pos=__mousePoint)
+            self.attenuation_plot.vline.setPos(__mousePoint.x())
+            self.attenuation_plot.hline.setPos(__mousePoint.y())
+            self.attenuation_plot.vline.setPen((0, 135, 153), width=0.75)
+            self.attenuation_plot.hline.setPen((0, 135, 153), width=0.75)
+        else:
+            self.set_mouse_pos_label(None)
+            self.attenuation_plot.vline.setPen(None)
+            self.attenuation_plot.hline.setPen(None)
+
+    def set_mouse_pos_label(self, pos):
+        if pos:
+            _pos_str = (f'<span style="font-size: 11pt; color:#008799">x='
+                        f'{pos.x():.2f}, y={pos.y():.2f}</span'
+                        )
+        else:
+            _pos_str = ''
+        self.pos_label.setText(_pos_str)
+
+
 class CustomPlotItem(pg.PlotItem):
 
     def __init__(self, *args, **kwargs):

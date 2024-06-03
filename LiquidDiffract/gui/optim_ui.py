@@ -323,6 +323,7 @@ class OptimUI(QWidget):
             if opt_bkg == True:
                 _smooth_flag = self.optim_config_widget.data_options_gb.smooth_data_check.isChecked()
                 _args = (self.data['cor_x'], self.data['uncorrected_y'], self.data['bkg_y'],
+                         self.data['data_correction'],
                          self.data['qmin'], self.data['qmax'],
                          _smooth_flag, self.window_length, self.poly_order,
                          _composition, _r_min, _n_iter,
@@ -428,6 +429,7 @@ class OptimUI(QWidget):
             # Recalculate interference function with new background scaling and/or rho
             if opt_bkg == True:
                 _I_data_corrected = self.data['uncorrected_y'] - (self.data['bkg_y'] * _refined_bkg_scale)
+                _I_data_corrected *= self.data['data_correction']
                 # Cut data at qmax/qmin
                 if self.data['qmax']:
                     _cut_max = np.where(self.data['cor_x'] < self.data['qmax'])

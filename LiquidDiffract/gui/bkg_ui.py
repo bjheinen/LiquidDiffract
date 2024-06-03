@@ -17,6 +17,7 @@ from qtpy.QtWidgets import QWidget, QFrame, QGridLayout, QVBoxLayout, \
 from LiquidDiffract.gui import plot_widgets
 from LiquidDiffract.gui import utility
 from LiquidDiffract.core import data_utils
+from LiquidDiffract.core.core import calc_self_shielding
 from LiquidDiffract.version import __appname__, __version__
 
 
@@ -94,7 +95,12 @@ class BkgUI(QWidget):
         self.bkg_config_widget.data_corrections_gb.zero_shift_check.stateChanged.connect(self.plot_data)
         self.bkg_config_widget.data_corrections_gb.zero_shift_button_group.buttonClicked.connect(self.plot_data)
         self.bkg_config_widget.data_corrections_gb.shift_sb.valueChanged.connect(self.plot_data)
-
+        self.bkg_config_widget.data_corrections_gb.attenuation_slab_check.stateChanged.connect(self.plot_data)
+        self.bkg_config_widget.data_corrections_gb.wavelength_input.textChanged.connect(self.plot_data)
+        self.bkg_config_widget.data_corrections_gb.attenuation_factor_input.textChanged.connect(self.plot_data)
+        self.bkg_config_widget.data_corrections_gb.thickness_input.textChanged.connect(self.plot_data)
+        self.bkg_config_widget.data_corrections_gb.rotation_input.valueChanged.connect(self.plot_data)
+        self.bkg_config_widget.data_corrections_gb.inspect_btn.clicked.connect(self.inspect_attenuation_factor)
 
     def rebin_data(self, bkg='check', x_lim=None, suppress_plots=False):
         '''
@@ -270,7 +276,8 @@ class BkgUI(QWidget):
         self.bkg_config_widget.bkg_subtract_gb.scale_sb.setValue(bkg_scaling)
 
     def data_corrections(self):
-        self.data['data_correction'] = 0
+        self.data['shift_correction'] = 0
+        self.data['attenuation_correction'] = 1.0
         # Skip if no data present
         if not self.data['cor_x'].size:
             return
@@ -278,7 +285,12 @@ class BkgUI(QWidget):
             _shift_correction = self.zero_shift_data()
         else:
             _shift_correction = 0
-        self.data['data_correction'] = _shift_correction
+        self.data['shift_correction'] = _shift_correction
+        if self.bkg_config_widget.data_corrections_gb.attenuation_slab_check.isChecked():
+            _attenuation_correction = self.attenuation_correction_slab()
+        else:
+            _attenuation_correction = 1.0
+        self.data['attenuation_correction'] = _attenuation_correction
 
     def zero_shift_data(self):
         if self.bkg_config_widget.data_corrections_gb.zero_first_val_btn.isChecked():
@@ -292,6 +304,43 @@ class BkgUI(QWidget):
             return
         self.data['cor_y'] = (self.data['cor_y'] - _shift) + 1e-22
         return _shift * -1
+
+    def attenuation_correction_slab(self):
+        # Get attenuation info
+        try:
+            _wavelength = float(self.bkg_config_widget.data_corrections_gb.wavelength_input.text())
+            _attenuation_factor = float(self.bkg_config_widget.data_corrections_gb.attenuation_factor_input.text())
+            _thickness = float(self.bkg_config_widget.data_corrections_gb.thickness_input.text())
+            _rotation = self.bkg_config_widget.data_corrections_gb.rotation_input.value()
+        except ValueError:
+            return 1.0
+            # do i need an error message?
+        # Convert attenuation factor to m^-1
+        _attenuation_factor *= 100.0
+        # Convert thickness to metres
+        _thickness /= 1000.0
+        # Convert rotation from normal (beta), to rotation from beam direction (alpha)
+        _alpha = 90 - _rotation
+        # core.calc_self_shielding(Q, mu, alpha, thickness, wavelength)
+        _attenuation = calc_self_shielding(self.data['cor_x'], _attenuation_factor, _alpha, _thickness, _wavelength)
+        # I_measured = I_actual * A_s,s --> I_actual = I_measured / A_s,s (or * 1/A_s,s)
+        self.data['cor_y'] = self.data['cor_y'] / _attenuation
+        return 1 / _attenuation
+
+    def inspect_attenuation_factor(self):
+        # Return if no data
+        if not self.data['cor_x'].size or not isinstance(self.data['attenuation_correction'], np.ndarray):
+            return
+        # Grab two-theta data
+        try:
+            _wavelength = float(self.bkg_config_widget.data_corrections_gb.wavelength_input.text())
+        except ValueError:
+            return
+        _two_theta = data_utils.convert_q_space(self.data['cor_x'], _wavelength)
+        _attenuation_data = self.data['cor_x'], _two_theta, 1/self.data['attenuation_correction']
+        _inspect_dialog = utility.AttenuationInspectDialog(_attenuation_data)
+        _inspect_dialog.resize(int(self.screen_size[0]*0.7), int(self.screen_size[1]*0.7))
+        _inspect_dialog.exec()
 
     def dq_changed(self):
         try:
@@ -633,19 +682,36 @@ class DataCorrectionsGroupBox(QGroupBox):
         self.zero_first_val_btn = QRadioButton('Zero I(Q=0)')
         self.zero_min_val_btn = QRadioButton('Zero min I(Q)')
         self.custom_shift_btn = QRadioButton('Custom Shift: ')
-
         self.zero_shift_button_group.addButton(self.zero_first_val_btn)
         self.zero_shift_button_group.addButton(self.zero_min_val_btn)
         self.zero_shift_button_group.addButton(self.custom_shift_btn)
-
         self.shift_sb = QDoubleSpinBox()
         self.shift_sb_step = QLineEdit('1')
+
+        self.attenuation_slab_check = QCheckBox('Attenuation/Self-shielding (slab geometry)')
+        self.wavelength_label = QLabel('Wavelength, λ (Å): ')
+        self.wavelength_input = QLineEdit()
+        self.attenuation_factor_label = QLabel('Attenuation factor, μ (cm\u207b\u00b9): ')
+        self.attenuation_factor_input = QLineEdit()
+        self.thickness_label = QLabel('Sample thickness (mm): ')
+        self.thickness_input = QLineEdit()
+        self.rotation_label = QLabel('Rotation (deg): ')
+        self.rotation_input = QDoubleSpinBox()
+        self.inspect_btn = QPushButton('Inspect')
+        self.attenuation_slab_widgets = [self.wavelength_label, self.wavelength_input,
+                                         self.attenuation_factor_label, self.attenuation_factor_input,
+                                         self.thickness_label, self.thickness_input,
+                                         self.rotation_label, self.rotation_input,
+                                         self.inspect_btn]
 
     def style_widgets(self):
         self.zero_first_val_btn.setEnabled(False)
         self.zero_min_val_btn.setEnabled(False)
         self.custom_shift_btn.setEnabled(False)
         self.zero_first_val_btn.setChecked(True)
+        self.attenuation_slab_check.setChecked(False)
+        for _widget in self.attenuation_slab_widgets:
+            _widget.setEnabled(False)
 
         self.shift_sb.setValue(0.0)
         self.shift_sb.setSingleStep(1)
@@ -663,34 +729,83 @@ class DataCorrectionsGroupBox(QGroupBox):
         self.shift_sb_step.setAlignment(Qt.AlignRight)
         self.shift_sb_step.setEnabled(False)
 
+        self.wavelength_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.attenuation_factor_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.thickness_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.rotation_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+
+        self.wavelength_input.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
+        self.attenuation_factor_input.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
+        self.thickness_input.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
+        self.thickness_input.setText('1.0')
+        self.rotation_input.setValue(0.0)
+        self.rotation_input.setDecimals(2)
+        self.rotation_input.setMinimum(0.0)
+        self.rotation_input.setMaximum(90.0)
+
+        self.wavelength_input.setMaximumWidth(100)
+        self.attenuation_factor_input.setMaximumWidth(100)
+        self.thickness_input.setMaximumWidth(100)
+        self.rotation_input.setMaximumWidth(100)
+        self.inspect_btn.setMaximumWidth(150)
+
+        self.wavelength_label.setToolTip('X-ray wavelength in Å (to calculate 2θ)')
+        self.wavelength_input.setToolTip('X-ray wavelength in Å (to calculate 2θ)')
+        self.attenuation_factor_label.setToolTip('Attenuation factor in inverse cm\nE.g. see NIST Standard Reference Database 66 or 126')
+        self.attenuation_factor_input.setToolTip('Attenuation factor in inverse cm\nE.g. see NIST Standard Reference Database 66 or 126')
+        self.thickness_label.setToolTip('Sample thickness in mm')
+        self.thickness_input.setToolTip('Sample thickness in mm')
+        self.rotation_label.setToolTip('Rotation from normal orientation in degrees (slab normal to the beam = 0°)')
+        self.rotation_input.setToolTip('Rotation from normal orientation in degrees (slab normal to the beam = 0°)')
+        self.inspect_btn.setToolTip('Inspect attenuation factor')
+
+        self.spacer = QWidget()
+        self.spacer.setFixedHeight(5)
+
     def create_layout(self):
 
         self.outer_layout = QVBoxLayout()
         self.outer_layout.setContentsMargins(25, 10, 25, 7)
         self.outer_layout.setSpacing(5)
 
-        self.outer_layout.addWidget(self.zero_shift_check)
         self.zero_grid_layout = QGridLayout()
         self.zero_grid_layout.setContentsMargins(25, 5, 10, 5)
         self.zero_grid_layout.setSpacing(5)
-
         self.zero_grid_layout.addWidget(self.zero_first_val_btn, 0, 0)
         self.zero_grid_layout.addWidget(self.zero_min_val_btn, 1, 0)
-
         self.zero_grid_layout.addWidget(self.custom_shift_btn, 2, 0)
-
         self.sb_layout = QHBoxLayout()
         self.sb_layout.addWidget(self.shift_sb)
         self.sb_layout.addWidget(self.shift_sb_step)
-
         self.zero_grid_layout.addLayout(self.sb_layout, 2, 1)
+        self.zero_grid_layout.addWidget(QWidget(), 2, 2)
+
+        self.slab_grid_layout = QGridLayout()
+        self.slab_grid_layout.setContentsMargins(25, 5, 10, 5)
+        self.slab_grid_layout.setSpacing(5)
+        self.slab_grid_layout.addWidget(self.wavelength_label, 0, 0)
+        self.slab_grid_layout.addWidget(self.wavelength_input, 0, 1)
+        self.slab_grid_layout.addWidget(self.attenuation_factor_label, 1, 0)
+        self.slab_grid_layout.addWidget(self.attenuation_factor_input, 1, 1)
+        self.slab_grid_layout.addWidget(self.thickness_label, 2, 0)
+        self.slab_grid_layout.addWidget(self.thickness_input, 2, 1)
+        self.slab_grid_layout.addWidget(self.rotation_label, 3, 0)
+        self.slab_grid_layout.addWidget(self.rotation_input, 3, 1)
+        self.slab_grid_layout.addWidget(self.spacer, 4, 0)
+        self.slab_grid_layout.addWidget(self.inspect_btn, 5, 0)
+        self.slab_grid_layout.addWidget(QWidget(), 5, 2)
+
+        self.outer_layout.addWidget(self.zero_shift_check)
         self.outer_layout.addLayout(self.zero_grid_layout)
+        self.outer_layout.addWidget(self.attenuation_slab_check)
+        self.outer_layout.addLayout(self.slab_grid_layout)
         self.setLayout(self.outer_layout)
 
     def create_signals(self):
         self.zero_shift_check.toggled.connect(self.toggle_zero_correction)
         self.shift_sb_step.editingFinished.connect(self.shift_step_changed)
         self.custom_shift_btn.toggled.connect(self.toggle_custom_shift)
+        self.attenuation_slab_check.toggled.connect(self.toggle_attenuation_slab_correction)
 
     def shift_step_changed(self):
         self.shift_sb.setSingleStep(float(str(self.shift_sb_step.text())))
@@ -705,3 +820,7 @@ class DataCorrectionsGroupBox(QGroupBox):
         if self.custom_shift_btn.isChecked():
             self.shift_sb.setEnabled(check_state)
             self.shift_sb_step.setEnabled(check_state)
+
+    def toggle_attenuation_slab_correction(self, check_state):
+        for _widget in self.attenuation_slab_widgets:
+            _widget.setEnabled(check_state)
