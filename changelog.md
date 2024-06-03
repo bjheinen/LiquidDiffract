@@ -16,6 +16,9 @@
   Options for setting parameter, normalising *&chi;<sup>2</sup>*, and plotting the data are provided.  
   Computed data can be saved or the plot directly exported as an image.
 
+- **Optional corrections for self-shielding attenuation factor**  
+  Optional corrections for self-shielding presuming a slab-type geometry can be made in the *Background Subtraction* tab. More complex geometries (e.g. cylindrical, including a container, etc.) may be added if there is demand.
+
 - **Support for Qt 6 via qtpy**  
   This gives support for all major Qt bindings (PyQt5, PyQt6, PySide2 and PySide6). PyQt6 preferred over PySide6.
 
@@ -28,7 +31,9 @@
 - Auto rebinning when data and background have different ranges or step sizes
 - More robust peak search for finding integration limits in structural information tab
 - Refactored form factor / average scattering functions for memory efficiency and speed.
-  Creation of large arrays for compositions with many components is now avoided. (addresses issue #1)
+  Creation of large arrays for compositions with many components is now avoided.
+- Support for user input of fractional chemical compositions added for Faber-Ziman method. This avoids users having to multiply their formulae to get integer number of atoms. Ashcroft-Langreth structure factors set to only support molecular compositions.
+   (fixes issue #1)
 - Minor improvements to user interface, including logic, optimisations, and bugfixes
 - Minor optimisations to core modules
 

@@ -134,6 +134,8 @@ This tab allows data and (optionally) background files to be loaded in. The auto
 
 All data must be in Q-space. A toolbox is provided to convert raw experimental data of 2&theta; values to Q-space. By default LiquidDiffract expects data in inverse Angstroms, but an option to change this to inverse nano-metres is available in the *Additional Preferences* dialog, which is accessible from the *Tools* menu.
 
+Data corrections such as a shift to account for fluorescence or attenuation from self-shielding (currently for slab-geometry only [28]) can also be applied here.
+
 
 ### Refinement Tab
 
@@ -611,7 +613,7 @@ plt.show()
 
 [27] Sukhomlinov S V, and Muser, M H. Determination of accurate, mean bond lengths from radial distribution functions. 2017. The Journal of chemical physics, 146(2):024506
 
-
+[28] Drewitt, J.W.E (2009) PhD Thesis, University of Bath, pp. 45.
 
 ## License
 
