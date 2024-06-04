@@ -798,10 +798,10 @@ class CompositionGroupBox(QGroupBox):
 
         self.density_input.setAlignment(Qt.AlignRight)
         self.density_input.setValidator(QDoubleValidator(2.225e-308,np.inf,-1))
-        self.density_input.setMaximumWidth(100)
+        self.density_input.setMaximumWidth(122)
 
         self.mass_density.setAlignment(Qt.AlignRight)
-        self.mass_density.setMaximumWidth(100)
+        self.mass_density.setMaximumWidth(122)
 
         self.mass_density.setReadOnly(True)
         self.mass_density.isReadOnly()
@@ -849,7 +849,7 @@ class CompositionGroupBox(QGroupBox):
         self.density_layout = QGridLayout()
         self.density_layout.addWidget(self.density_lbl, 0, 0)
         self.density_layout.addWidget(self.density_input, 0, 1)
-        self.density_layout.addWidget(QLabel('atoms/A<sup>3</sup>'), 0, 2)
+        self.density_layout.addWidget(QLabel('atoms/Å<sup>3</sup>'), 0, 2)
         self.density_layout.addWidget(self.mass_density, 1, 1)
         self.density_layout.addWidget(self.mass_density_label, 1, 2)
 
@@ -1279,12 +1279,12 @@ class OptimResultsGroupBox(QGroupBox):
 
     def create_widgets(self):
 
-        self.chi_sq_label = QLabel('Final Chi-squared: ')
+        self.chi_sq_label = QLabel('Final χ<sup>2</sup>: ')
         self.chi_sq_output = QLineEdit()
         self.bkg_scale_output_label = QLabel('Refined background scale factor: ')
         self.bkg_scale_output = QLineEdit()
         self.bkg_scale_copy_btn = QPushButton()
-        self.density_output_label = QLabel('Refined density (at/A<sup>3</sup>): ')
+        self.density_output_label = QLabel('Refined density (at/Å<sup>3</sup>): ')
         self.density_output = QLineEdit()
         self.density_copy_btn = QPushButton()
         self.mass_density_label = QLabel('(g/cm<sup>3</sup>): ')
@@ -1303,10 +1303,10 @@ class OptimResultsGroupBox(QGroupBox):
         self.bkg_scale_output.isReadOnly()
         self.density_output.isReadOnly()
         self.mass_density.isReadOnly()
-        self.chi_sq_output.setMaximumWidth(100)
-        self.bkg_scale_output.setMaximumWidth(100)
-        self.density_output.setMaximumWidth(100)
-        self.mass_density.setMaximumWidth(100)
+        self.chi_sq_output.setMaximumWidth(125)
+        self.bkg_scale_output.setMaximumWidth(125)
+        self.density_output.setMaximumWidth(125)
+        self.mass_density.setMaximumWidth(125)
         self.bkg_scale_copy_btn.setMaximumWidth(30)
         self.density_copy_btn.setMaximumWidth(30)
 

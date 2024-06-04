@@ -370,7 +370,7 @@ class DataSettingsGroupBox(QGroupBox):
         self.rescale_AL_label = QLabel('Plot rescaled Ashcroft-Langreth S(Q) & g(r)')
         self.rescale_AL_input = QCheckBox()
         self.fft_label = QLabel('FFT Options:')
-        self.fft_N_label = QLabel('<b><i>N</i></b> | Size of padded array for FFT = 2^N: ')
+        self.fft_N_label = QLabel('<b><i>N</i></b> | Size of padded array for FFT = 2<sup>N</sup>: ')
         self.fft_N_input = QSpinBox()
 
     def set_data(self, preferences):
@@ -1414,10 +1414,10 @@ class ComputeMapOptionsGroupBox(QGroupBox):
 
     def create_widgets(self):
         # Four options for variables to compute
-        _param_items = ['Density (\u03c1\u2080)',
+        _param_items = ['Density (\u03c1)',
                         'Background Scaling (b)',
                         'r\u2098\u1d62\u2099',
-                        'No. iterations'] #1d70c for italic
+                        'No. iterations']
 
         # Combo boxes for selecting x and y
         self.x_param_label = QLabel('x: ')
