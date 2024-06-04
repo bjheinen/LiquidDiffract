@@ -1045,8 +1045,8 @@ class ComputeMapDialog(QDialog):
             _y_b_item = self.compute_map_config_widget.map_options_gb.y_param_input_list.item(1)
             # (item.flags() & ~Qt.ItemIsSelectable & ~Qt.ItemIsEnabled)
             # Qt.ItemIsSelectable == 1, Qt.ItemIsEnabled == 32
-            _x_b_item.setFlags(_x_b_item.flags() & ~1 & ~32)
-            _y_b_item.setFlags(_y_b_item.flags() & ~1 & ~32)
+            _x_b_item.setFlags(_x_b_item.flags() & ~Qt.ItemIsSelectable & ~Qt.ItemIsEnabled)
+            _y_b_item.setFlags(_y_b_item.flags() & ~Qt.ItemIsSelectable & ~Qt.ItemIsEnabled)
 
         self.create_signals()
 
