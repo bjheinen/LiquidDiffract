@@ -81,7 +81,7 @@ def calc_self_shielding(Q, mu, alpha, thickness, wavelength):
     Returns:
         attenuation - Self-shielding attenuation factor A_s,s
     '''
-    Q = Q.astype(np.float128)
+    Q = Q.astype(np.longdouble)
     # Convert alpha to radians
     alpha = np.radians(alpha)
     # Get two theta values for Q-space data
