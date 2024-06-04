@@ -1,6 +1,12 @@
 ## Changelog
 ---------
 
+## v1.2.5 (June 4, 2024) (Patch release)
+
+### Bug Fix
+
+- Fixes a crashing bug when using Qt6 caused by not setting Qt.ItemFlag explicitly
+
 ## v1.2.4 (June 4, 2024)
 
 ### Major Changes
