@@ -1,7 +1,7 @@
 ## Changelog
 ---------
 
-## v1.2.2-dev (May ?, 2024)
+## v1.2.4 (June 4, 2024)
 
 ### Major Changes
 
