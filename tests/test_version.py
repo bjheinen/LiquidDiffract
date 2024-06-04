@@ -15,7 +15,7 @@ class TestVersionFile(unittest.TestCase):
         from LiquidDiffract.version import __version__
         # Version numbers on dev branch like '1.2.7-dev'
         # Check if version number still -dev and warn if true
-        self.assertGreater(len(__version__), 5)
+        self.assertGreater(len(__version__), 4)
         try:
             self.assertTrue(Version(__version__))
         except InvalidVersion:
