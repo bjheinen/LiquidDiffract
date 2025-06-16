@@ -10,7 +10,7 @@ __email__ = "benedict.heinen@gmail.com"
 import os.path
 import webbrowser
 try:
-    import importlib_resources as resources
+    import importlib_resources as resources # type: ignore
 except ImportError:
     from importlib import resources
 import numpy as np
