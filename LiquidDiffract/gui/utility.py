@@ -19,6 +19,7 @@ from qtpy.QtWidgets import QDialog, QFileDialog, QMessageBox, \
                             QLabel, QLineEdit, QCheckBox, QComboBox, \
                             QSpinBox, QDialogButtonBox, QPushButton, \
                             QListWidget, QButtonGroup, QRadioButton, \
+                            QSlider, \
                             QTextBrowser, QPlainTextEdit, QProgressBar, \
                             QWidget, QApplication
 from pyqtgraph.exporters import ImageExporter
@@ -142,6 +143,200 @@ class CustomDoubleValidator(QDoubleValidator):
             return str(self.top())
 
 
+class ApplicationOptionsDialog(QDialog):
+
+    def __init__(self, settings):
+        super(ApplicationOptionsDialog, self).__init__()
+        self.setAttribute(Qt.WA_DeleteOnClose)
+        self.title = 'Stylesheet Options??? | ' + __appname__ + ' v' + __version__
+        self.setWindowTitle(self.title)
+
+        self.outer_layout = QVBoxLayout()
+        self.outer_layout.setContentsMargins(5, 3, 5, 7)
+        self.outer_layout.setSpacing(10)
+
+        self.container_widget = QWidget()
+        self.vlayout = QVBoxLayout()
+        self.vlayout.setContentsMargins(5, 3, 5, 7)
+        self.vlayout.setSpacing(10)
+
+        self.app_settings_gb = AppSettingsGroupBox(settings)
+        self.plot_settings_gb = PlotCanvasSettingsGroupBox(settings)
+
+        self.vlayout.addWidget(self.app_settings_gb)
+        self.vlayout.addWidget(self.plot_settings_gb)
+        self.vlayout.addStretch()
+        self.container_widget.setLayout(self.vlayout)
+
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setFrameShape(QFrame.NoFrame)
+        self.scroll_area.setWidget(self.container_widget)
+        self.scroll_area.setWidgetResizable(True)
+
+        self.button_box = QDialogButtonBox()
+        self.button_box.addButton('&Cancel', QDialogButtonBox.RejectRole)
+        self.button_box.addButton('&Apply', QDialogButtonBox.AcceptRole)
+
+        self.hline = QFrame()
+        self.hline.setFrameShape(QFrame.HLine)
+        self.hline.setFrameShadow(QFrame.Sunken)
+        self.hline.setObjectName('hline')
+
+        self.outer_layout.addWidget(self.scroll_area)
+        self.outer_layout.addWidget(self.hline)
+        self.outer_layout.addWidget(self.button_box)
+
+        self.setLayout(self.outer_layout)
+
+        self.button_box.accepted.connect(self.accept_settings)
+        self.button_box.rejected.connect(self.rejected)
+
+        self.rejected.connect(self.close)
+
+
+    def accept_settings(self):
+        # Log mode
+        if self.app_settings_gb.log_mode_input.currentText() == 'Append':
+            _append_log_mode = 1
+        else:
+            _append_log_mode = 0
+        _font_scaling_lvl = self.plot_settings_gb.font_size_scaling_input.value()
+        _line_scaling_lvl = self.plot_settings_gb.line_width_scaling_input.value()
+        # Set preferences dictionary to return
+        _plot_scaling = {'font_size_scaling': self.plot_settings_gb.font_size_scaling,
+                         'plot_line_width_scaling': self.plot_settings_gb.plot_line_width_scaling,
+                         'tick_line_width_scaling': self.plot_settings_gb.tick_line_width_scaling,
+                         'axes_line_width_scaling': self.plot_settings_gb.axes_line_width_scaling,
+                         'tick_length_scaling': self.plot_settings_gb.tick_length_scaling
+                        }
+        self._settings = {'append_log_mode': _append_log_mode,
+                          'plot_font_scaling_lvl': _font_scaling_lvl,
+                          'plot_line_scaling_lvl': _line_scaling_lvl,
+                          'plot_scaling': _plot_scaling
+                         }
+        # handle for ValueError if nothing entered
+        self.done(1)
+
+    def get_settings(self):
+        return self._settings
+
+
+class AppSettingsGroupBox(QGroupBox):
+
+    def __init__(self, settings):
+        super(AppSettingsGroupBox, self).__init__()
+        self.setTitle('Application Options')
+        self.setAlignment(Qt.AlignLeft)
+        self.setStyleSheet('GroupBox::title{subcontrol-origin: margin; subcontrol-position: top left;}')
+        self.create_widgets()
+        self.set_data(settings)
+        self.style_widgets()
+        self.create_layout()
+
+    def create_widgets(self):
+        self.log_mode_label = QLabel('Log mode: ')
+        self.log_mode_input = QComboBox()
+        self.log_mode_input.insertItem(0, 'Append')
+        self.log_mode_input.insertItem(1, 'Overwrite')
+
+    def set_data(self, settings):
+        self.log_mode_input.setCurrentIndex(1 - settings['append_log_mode'])
+
+    def style_widgets(self):
+        self.log_mode_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.log_mode_input.setMaximumWidth(150)
+        self.log_mode_label.setToolTip('Append or overwrite analysis log files?')
+
+    def create_layout(self):
+        self.main_layout = QVBoxLayout()
+        self.main_layout.setContentsMargins(20, 10, 20, 7)
+        self.main_layout.setSpacing(25)
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setSpacing(15)
+        self.grid_layout.addWidget(self.log_mode_label, 0, 0)
+        self.grid_layout.addWidget(self.log_mode_input, 0, 1)
+        self.main_layout.addLayout(self.grid_layout)
+        self.setLayout(self.main_layout)
+
+
+class PlotCanvasSettingsGroupBox(QGroupBox):
+
+    def __init__(self, settings):
+        super(PlotCanvasSettingsGroupBox, self).__init__()
+        self.setTitle('Plot Canvas Options')
+        self.setAlignment(Qt.AlignLeft)
+        self.setStyleSheet('GroupBox::title{subcontrol-origin: margin; subcontrol-position: top left;}')
+        self.create_widgets()
+        self.set_data(settings)
+        self.style_widgets()
+        self.create_layout()
+        self.create_signals()
+
+    def create_widgets(self):
+        self.font_size_scaling_label = QLabel('Font size: ')
+        self.font_size_scaling_input = QSlider()
+        self.line_width_scaling_label = QLabel('Line widths: ')
+        self.line_width_scaling_input = QSlider()
+        self.reset_button = QPushButton("Reset to Defaults")
+        # TODO: Colour options etc.
+
+    def set_data(self, settings):
+        self.default_slider_value = 25
+        self.font_size_scaling_input.setValue(settings['plot_font_scaling_lvl'])
+        self.line_width_scaling_input.setValue(settings['plot_line_scaling_lvl'])
+        self.compute_plot_scaling()
+
+    def style_widgets(self):
+        self.font_size_scaling_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.font_size_scaling_input.setOrientation(Qt.Horizontal)
+        self.font_size_scaling_input.setRange(0, 100)
+        self.font_size_scaling_input.setTickPosition(QSlider.TicksBelow)
+        self.font_size_scaling_input.setTickInterval(25)
+        self.line_width_scaling_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.line_width_scaling_input.setOrientation(Qt.Horizontal)
+        self.line_width_scaling_input.setRange(0, 100)
+        self.line_width_scaling_input.setTickPosition(QSlider.TicksBelow)
+        self.line_width_scaling_input.setTickInterval(25)
+        self.reset_button.setMaximumWidth(200)
+
+    def create_layout(self):
+        self.main_layout = QVBoxLayout()
+        self.main_layout.setContentsMargins(20, 10, 20, 7)
+        self.main_layout.setSpacing(25)
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setSpacing(15)
+        self.grid_layout.addWidget(self.font_size_scaling_label, 0, 0)
+        self.grid_layout.addWidget(self.font_size_scaling_input, 0, 1)
+        self.grid_layout.addWidget(self.line_width_scaling_label, 1, 0)
+        self.grid_layout.addWidget(self.line_width_scaling_input, 1, 1)
+        self.grid_layout.addWidget(self.reset_button, 2, 1, alignment=Qt.AlignRight)
+        self.main_layout.addLayout(self.grid_layout)
+        self.setLayout(self.main_layout)
+
+    def create_signals(self):
+        self.reset_button.clicked.connect(self.reset_sliders_to_defaults)
+        self.font_size_scaling_input.valueChanged.connect(self.compute_plot_font_scaling)
+        self.line_width_scaling_input.valueChanged.connect(self.compute_plot_line_scaling)
+
+    def reset_sliders_to_defaults(self):
+        self.font_size_scaling_input.setValue(self.default_slider_value)
+        self.line_width_scaling_input.setValue(self.default_slider_value)
+
+    def compute_plot_scaling(self):
+        self.compute_plot_line_scaling()
+        self.compute_plot_font_scaling()
+
+    def compute_plot_line_scaling(self):
+        _scale = 0.5 + 2.0 * (self.line_width_scaling_input.value() / 100.0)
+        self.plot_line_width_scaling = _scale ** 1.2
+        self.tick_line_width_scaling = _scale
+        self.axes_line_width_scaling = _scale
+        self.tick_length_scaling = - (_scale - 1.0) * 5.0 # Do default + scaling
+
+    def compute_plot_font_scaling(self):
+        self.font_size_scaling = 0.5 + 2.0 * (self.font_size_scaling_input.value() / 100.0)
+
+
 class PreferencesDialog(QDialog):
 
     fft_check_signal = Signal()
@@ -162,14 +357,12 @@ class PreferencesDialog(QDialog):
         self.vlayout.setContentsMargins(5, 3, 5, 7)
         self.vlayout.setSpacing(10)
 
-        self.app_settings_gb = AppSettingsGroupBox(preferences)
         self.data_settings_gb = DataSettingsGroupBox(preferences)
         self.ref_proc_settings_gb = IterativeProcedureSettingsGroupBox(preferences)
         self.refine_settings_gb = SolverSettingsGroupBox(preferences)
         self.global_min_settings_gb = GlobalMinSettingsGroupBox(preferences)
         self.gaussian_fit_settings_gb = GaussianFittingSettingsGroupBox(preferences)
 
-        self.vlayout.addWidget(self.app_settings_gb)
         self.vlayout.addWidget(self.data_settings_gb)
         self.vlayout.addWidget(self.ref_proc_settings_gb)
         self.vlayout.addWidget(self.refine_settings_gb)
@@ -203,13 +396,6 @@ class PreferencesDialog(QDialog):
         self.rejected.connect(self.close)
 
     def accept_preferences(self):
-
-        # Log mode
-        if self.app_settings_gb.log_mode_input.currentText() == 'Append':
-            _append_log_mode = 1
-        else:
-            _append_log_mode = 0
-
         try:
             _data_units = int(self.data_settings_gb.data_units_input.currentIndex())
             self.data_units_check = _data_units
@@ -283,8 +469,7 @@ class PreferencesDialog(QDialog):
                                }
 
         # Set preferences dictionary to return
-        self._preferences = {'append_log_mode': _append_log_mode,
-                             'data_units': _data_units,
+        self._preferences = {'data_units': _data_units,
                              'window_length': _window_length,
                              'poly_order': _poly_order,
                              'rescale_AL': _rescale_AL,
@@ -302,46 +487,6 @@ class PreferencesDialog(QDialog):
 
     def get_preferences(self):
         return self._preferences
-
-
-class AppSettingsGroupBox(QGroupBox):
-
-    def __init__(self, preferences):
-        super(AppSettingsGroupBox, self).__init__()
-        self.setTitle('Application Options')
-        self.setAlignment(Qt.AlignLeft)
-        self.setStyleSheet('GroupBox::title{subcontrol-origin: margin; subcontrol-position: top left;}')
-
-        self.create_widgets()
-        self.set_data(preferences)
-        self.style_widgets()
-        self.create_layout()
-
-    def create_widgets(self):
-        self.log_mode_label = QLabel('Log mode: ')
-        self.log_mode_input = QComboBox()
-        self.log_mode_input.insertItem(0, 'Append')
-        self.log_mode_input.insertItem(1, 'Overwrite')
-
-    def set_data(self, preferences):
-        self.log_mode_input.setCurrentIndex(1 - preferences['append_log_mode'])
-
-    def style_widgets(self):
-        self.log_mode_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
-        self.log_mode_input.setMaximumWidth(150)
-
-    def create_layout(self):
-        self.main_layout = QVBoxLayout()
-        self.main_layout.setContentsMargins(20, 10, 20, 7)
-        self.main_layout.setSpacing(25)
-
-        self.grid_layout = QGridLayout()
-        self.grid_layout.setSpacing(15)
-        self.grid_layout.addWidget(self.log_mode_label, 0, 0)
-        self.grid_layout.addWidget(self.log_mode_input, 0, 1)
-
-        self.main_layout.addLayout(self.grid_layout)
-        self.setLayout(self.main_layout)
 
 
 class DataSettingsGroupBox(QGroupBox):
@@ -1896,7 +2041,7 @@ class MapPositionGroupBox(QGroupBox):
 
 class AttenuationInspectDialog(QDialog):
 
-    def __init__(self, data):
+    def __init__(self, data, plot_settings):
         super(AttenuationInspectDialog, self).__init__()
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.title = 'Self-shielding Attenuation Factor | ' + __appname__ + ' v' + __version__
@@ -1920,7 +2065,7 @@ class AttenuationInspectDialog(QDialog):
         self.vline.setFrameShadow(QFrame.Sunken)
         self.vline.setObjectName("vline")
         # Make Plot Widget
-        self.plot_widget = plot_widgets.AttenuationCorrectionPlotWidget()
+        self.plot_widget = plot_widgets.AttenuationCorrectionPlotWidget(plot_settings)
         self.plot_scroll_area = QScrollArea()
         self.plot_scroll_area.setWidget(self.plot_widget)
         self.plot_scroll_area.setWidgetResizable(True)
