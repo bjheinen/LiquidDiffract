@@ -4,7 +4,7 @@ __copyright__ = "Copyright 2018-2024, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
 from qtpy.QtCore import Qt, Signal, QRectF
-from qtpy.QtGui import QTransform
+from qtpy.QtGui import QTransform, QFont, QPen
 from qtpy.QtWidgets import QWidget, QVBoxLayout
 import pyqtgraph as pg
 import numpy as np
@@ -14,6 +14,28 @@ pg_options = {'leftButtonPan': False, 'background': 0.9, 'foreground': 0.15,
               'antialias': True}
 pg.setConfigOptions(**pg_options)
 
+def redraw_plots(obj, plot_items, line_width_scaling):
+    for _plot in plot_items:
+        if hasattr(obj, _plot):
+            # gauss_peaks will be list of plot objects
+            _item_or_items = getattr(obj, _plot)
+            _items = _item_or_items if isinstance(_item_or_items, (list, tuple)) else [_item_or_items]
+            for _p in _items:
+                _p = getattr(obj, _plot)
+                if _p is not None:
+                    if hasattr(_p, 'default_line_width'):
+                        _current_pen = _p.opts.get('pen')
+                        if isinstance(_current_pen, QPen):
+                            _new_pen = QPen(_current_pen)
+                            _new_pen.setWidthF(_p.default_line_width * line_width_scaling)
+                            _p.setPen(_new_pen)
+                        elif isinstance(_current_pen, dict):
+                            _new_pen = _current_pen.copy()
+                            _new_pen['width'] = _p.default_line_width * line_width_scaling
+                            _p.setPen(_new_pen)
+                    if hasattr(_p, 'default_symbol_size'):
+                        _new_symbol_size = _p.default_symbol_size * line_width_scaling
+                        _p.setSymbolSize(_new_symbol_size)
 
 class BkgPlotWidget(QWidget):
     def __init__(self, *args, **kwargs):
@@ -51,7 +73,6 @@ class BkgPlotWidget(QWidget):
     def style_plots(self):
         self.data_plot.setLabel('bottom', text='Q (1/Å)')
         self.data_plot.setLabel('left', text='Intensity (a.u.)')
-
         self.bkg_corrected_plot.setLabel('bottom', text='Q (1/Å)')
         self.bkg_corrected_plot.setLabel('left', text='Intensity (a.u.)')
 
@@ -71,17 +92,23 @@ class BkgPlotWidget(QWidget):
         except AttributeError:
             pass
 
-        self.p1_a = self.data_plot.plot(x=_data['data_x'], y=_data['data_y'], pen={'color': 0.1, 'width': 1.2})
-        self.p2_a = self.data_plot.plot(x=_data['bkg_x'], y=_data['bkg_y_sc'], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
-        self.p3 = self.bkg_corrected_plot.plot(x=_data['cor_x'], y=_data['cor_y'], pen={'color': 0.1, 'width': 1.2})
+        self.p1_a = self.data_plot.plot(x=_data['data_x'], y=_data['data_y'], pen={'color': 0.1, 'width': 1.2 * self.plot_line_scaling})
+        self.p2_a = self.data_plot.plot(x=_data['bkg_x'], y=_data['bkg_y_sc'], pen={'color': '#342256', 'width': 1.2 * self.plot_line_scaling, 'style': Qt.DashLine})
+        self.p3 = self.bkg_corrected_plot.plot(x=_data['cor_x'], y=_data['cor_y'], pen={'color': 0.1, 'width': 1.2 * self.plot_line_scaling})
+        self.p1_a.default_line_width = 1.2
+        self.p2_a.default_line_width = 1.2
+        self.p3.default_line_width = 1.2
+
 
         self.p1_a.setLogMode(False, _plot_log)
         self.p2_a.setLogMode(False, _plot_log)
         self.p3.setLogMode(False, _plot_log)
 
         if _plot_raw:
-            self.p1_b = self.data_plot.plot(x=_data['data_raw_x'], y=_data['data_raw_y'], pen=None, symbolPen={'color': 0.1}, symbolBrush=0.1, symbol='x', symbolSize=7)
-            self.p2_b = self.data_plot.plot(x=_data['bkg_raw_x'], y=_data['bkg_raw_y_sc'], pen=None, symbolPen={'color': '#342256'}, symbolBrush='#342256', symbol='x', symbolSize=7)
+            self.p1_b = self.data_plot.plot(x=_data['data_raw_x'], y=_data['data_raw_y'], pen=None, symbolPen={'color': 0.1}, symbolBrush=0.1, symbol='x', symbolSize=7 * self.plot_line_scaling)
+            self.p2_b = self.data_plot.plot(x=_data['bkg_raw_x'], y=_data['bkg_raw_y_sc'], pen=None, symbolPen={'color': '#342256'}, symbolBrush='#342256', symbol='x', symbolSize=7 * self.plot_line_scaling)
+            self.p1_b.default_symbol_size = 7
+            self.p2_b.default_symbol_size = 7
             self.p1_b.setLogMode(False, _plot_log)
             self.p2_b.setLogMode(False, _plot_log)
 
@@ -94,6 +121,11 @@ class BkgPlotWidget(QWidget):
 
         self.data_plot.vb.autoRange()
         self.bkg_corrected_plot.vb.autoRange()
+
+    def redraw_plots(self, line_width_scaling):
+        _plot_items = ['p1_a', 'p2_a', 'p3', 'p1_b', 'p2_b']
+        redraw_plots(self, _plot_items, line_width_scaling)
+
 
     def create_signals(self):
         self.mouse_proxy = pg.SignalProxy(self.pg_layout.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved)
@@ -109,7 +141,7 @@ class BkgPlotWidget(QWidget):
             self.data_plot.hline.setPos(__mousePoint.y())
 
             self.data_plot.vline.setPen((0, 135, 153), width=0.75)
-            self.data_plot.hline.setPen((0, 135, 153), width=0.75)
+            self.data_plot.hline.setPen((0, 135, 153), width=0.75) # TODO: * self.plot_line_scaling here?
 
             self.bkg_corrected_plot.vline.setPen(None)
             self.bkg_corrected_plot.hline.setPen(None)
@@ -240,24 +272,36 @@ class OptimPlotWidget(QWidget):
         except IndexError:
             pass
 
-        self.p1_a = self.data_plot.plot(x=_data['cor_x_cut'], y=_data['cor_y_cut'], pen={'color': 0.1, 'width': 1.2})
-        self.p1_b = self.data_plot.plot(x=_data['cor_x_cut'], y=_data['rescaled_cor_y_cut'], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
-        self.p1_c = self.data_plot.plot(x=_data['cor_x_cut'], y=_data['scattering_factors'], pen={'color': '#783091', 'width': 1.2, 'style': Qt.DashLine})
-        self.p2_a = self.iq_plot.plot(x=_data['iq_x'], y=_data['int_func'], pen={'color': 0.1, 'width': 1.2})
-        self.p2_b = self.iq_plot.plot(x=_data['impr_iq_x'], y=_data['impr_int_func'], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
-        self.p3_a = self.dr_plot.plot(x=_data['dr_x'][:_window], y=_data['dr_y'][:_window], pen={'color': 0.1, 'width': 1.2})
-        self.p3_b = self.dr_plot.plot(x=_data['impr_dr_x'][:_window], y=_data['impr_dr_y'][:_window], pen={'color': '#342256', 'width': 1.2, 'style': Qt.DashLine})
+        self.p1_a = self.data_plot.plot(x=_data['cor_x_cut'], y=_data['cor_y_cut'], pen={'color': 0.1, 'width': 1.2 * self.plot_line_scaling})
+        self.p1_b = self.data_plot.plot(x=_data['cor_x_cut'], y=_data['rescaled_cor_y_cut'], pen={'color': '#342256', 'width': 1.2 * self.plot_line_scaling, 'style': Qt.DashLine})
+        self.p1_c = self.data_plot.plot(x=_data['cor_x_cut'], y=_data['scattering_factors'], pen={'color': '#783091', 'width': 1.2 * self.plot_line_scaling, 'style': Qt.DashLine})
+        self.p2_a = self.iq_plot.plot(x=_data['iq_x'], y=_data['int_func'], pen={'color': 0.1, 'width': 1.2 * self.plot_line_scaling})
+        self.p2_b = self.iq_plot.plot(x=_data['impr_iq_x'], y=_data['impr_int_func'], pen={'color': '#342256', 'width': 1.2 * self.plot_line_scaling, 'style': Qt.DashLine})
+        self.p3_a = self.dr_plot.plot(x=_data['dr_x'][:_window], y=_data['dr_y'][:_window], pen={'color': 0.1, 'width': 1.2 * self.plot_line_scaling})
+        self.p3_b = self.dr_plot.plot(x=_data['impr_dr_x'][:_window], y=_data['impr_dr_y'][:_window], pen={'color': '#342256', 'width': 1.2 * self.plot_line_scaling, 'style': Qt.DashLine})
+        self.p1_a.default_line_width = 1.2
+        self.p1_b.default_line_width = 1.2
+        self.p1_c.default_line_width = 1.2
+        self.p2_a.default_line_width = 1.2
+        self.p2_b.default_line_width = 1.2
+        self.p3_a.default_line_width = 1.2
+        self.p3_b.default_line_width = 1.2
 
         if _data['mod_func'] != 'None':
             # Apply modification function and handle any nans that arise 
             _modified_int_func = _data['modification'] * _data['int_func']
             if np.isnan(_modified_int_func).any():
                  _modified_int_func = data_utils.interp_nan(_modified_int_func)
-            self.p2_c = self.iq_plot.plot(x=_data['iq_x'], y=_modified_int_func, pen={'color': '#342256', 'width': 0.8, 'style': Qt.DashLine})
+            self.p2_c = self.iq_plot.plot(x=_data['iq_x'], y=_modified_int_func, pen={'color': '#342256', 'width': 0.8 * self.plot_line_scaling, 'style': Qt.DashLine})
+            self.p2_c.default_line_width = 0.8
 
         self.data_plot.vb.autoRange()
         self.iq_plot.vb.autoRange()
         self.dr_plot.vb.autoRange()
+
+    def redraw_plots(self, line_width_scaling):
+        _plot_items = ['p1_a', 'p1_b', 'p1_c', 'p2_a', 'p2_b', 'p2_c', 'p3_a', 'p3_b']
+        redraw_plots(self, _plot_items, line_width_scaling)
 
     def create_signals(self):
         self.mouse_proxy = pg.SignalProxy(self.pg_layout.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved)
@@ -403,9 +447,13 @@ class ResultsPlotWidget(QWidget):
 
         self.p1 = self.sq_plot.plot(x=_data['sq_x'], y=_data['sq_y'], pen={'color': 0.1, 'width': 1.2})
         if _data['mod_func'] != None:
-            self.p1_mod = self.sq_plot.plot(x=_data['sq_x'], y=_data['sq_y_mod'], pen={'color': '#342256', 'width': 0.8, 'style': Qt.DashLine})
-        self.p2 = self.gr_plot.plot(x=_data['gr_x'][:_window], y=_data['gr_y'][:_window], pen={'color': 0.1, 'width': 1.2})
-        self.p3 = self.rdf_plot.plot(x=_data['rdf_x'][:_window], y=_data['rdf_y'][:_window], pen={'color': 0.1, 'width': 1.2})
+            self.p1_mod = self.sq_plot.plot(x=_data['sq_x'], y=_data['sq_y_mod'], pen={'color': '#342256', 'width': 0.8 * self.plot_line_scaling, 'style': Qt.DashLine})
+            self.p1_mod.default_line_width = 0.8
+        self.p2 = self.gr_plot.plot(x=_data['gr_x'][:_window], y=_data['gr_y'][:_window], pen={'color': 0.1, 'width': 1.2 * self.plot_line_scaling})
+        self.p3 = self.rdf_plot.plot(x=_data['rdf_x'][:_window], y=_data['rdf_y'][:_window], pen={'color': 0.1, 'width': 1.2 * self.plot_line_scaling})
+        self.p1.default_line_width = 1.2
+        self.p2.default_line_width = 1.2
+        self.p3.default_line_width = 1.2
 
         # Limit the inital view to important information
         try:
@@ -439,6 +487,10 @@ class ResultsPlotWidget(QWidget):
                                       yRange=(self.y_min_rdf, self.y_max_rdf))
         except:
             return
+
+    def redraw_plots(self, line_width_scaling):
+        _plot_items = ['p1', 'p1_mod', 'p2', 'p3']
+        redraw_plots(self, _plot_items, line_width_scaling)
 
     def create_signals(self):
         self.mouse_proxy = pg.SignalProxy(self.pg_layout.scene().sigMouseMoved, rateLimit=60, slot=self.mouse_moved)
@@ -600,7 +652,7 @@ class StructurePlotWidget(QWidget):
         self.fit_plot.getAxis('left').setWidth(55)
         self.res_plot.getAxis('left').setWidth(55)
 
-        self.rdf_xaxis = pg.InfiniteLine(pos=0, angle=0, movable=False, pen={'color': 'k', 'width': 0.75})
+        self.rdf_xaxis = pg.InfiniteLine(pos=0, angle=0, movable=False, pen={'color': 'k', 'width': 0.75}) #TODO scale here?
         self.rdf_plot.addItem(self.rdf_xaxis)
         self.tr_xaxis = pg.InfiniteLine(pos=0, angle=0, movable=False, pen={'color': 'k', 'width': 0.75})
         self.tr_plot.addItem(self.tr_xaxis)
@@ -786,9 +838,12 @@ class StructurePlotWidget(QWidget):
             self.p_Nb = self.rdf_plot.plot(x=_Nb_area_x, y=_Nb_area_y, brush=(199,26,74, 245), pen=None, fillLevel=0)
 
         # Plot data/functions RDF(r), T(r)
-        self.p_rdf = self.rdf_plot.plot(x=_data['rdf_x'], y=_data['rdf_y'], pen={'color': 0.1, 'width': 1.2})
-        self.p_tr = self.tr_plot.plot(x=_data['tr_x'], y=_data['tr_y'], pen={'color': 0.1, 'width': 1.2})
-        self.p_fit = self.fit_plot.plot(x=_data['rdf_x'], y=_data['obj_fun'], pen={'color': 0.1, 'width': 1.2})
+        self.p_rdf = self.rdf_plot.plot(x=_data['rdf_x'], y=_data['rdf_y'], pen={'color': 0.1, 'width': 1.2 * self.plot_line_scaling})
+        self.p_tr = self.tr_plot.plot(x=_data['tr_x'], y=_data['tr_y'], pen={'color': 0.1, 'width': 1.2 * self.plot_line_scaling})
+        self.p_fit = self.fit_plot.plot(x=_data['rdf_x'], y=_data['obj_fun'], pen={'color': 0.1, 'width': 1.2 * self.plot_line_scaling})
+        self.p_rdf.default_line_width = 1.2
+        self.p_tr.default_line_width = 1.2
+        self.p_fit.default_line_width = 1.2
 
         # Limit the inital view to important information
         try:
@@ -854,7 +909,8 @@ class StructurePlotWidget(QWidget):
             for i, _peak_model in enumerate(_data['gauss_peaks']):
                 # Get color - use i%8 to cycle list of colors
                 _color = self.gauss_colors[i%len(self.gauss_colors)]
-                _p_peak = self.fit_plot.plot(x=_data['rdf_x'], y=_peak_model, pen={'color': _color, 'width': 1.2})
+                _p_peak = self.fit_plot.plot(x=_data['rdf_x'], y=_peak_model, pen={'color': _color, 'width': 1.2 * self.plot_line_scaling})
+                _p_peak.default_line_width = 1.2
                 _p_peak.setZValue(4)
                 self.p_peaks.append(_p_peak)
                 # Label peak at location of curve maximum
@@ -870,12 +926,15 @@ class StructurePlotWidget(QWidget):
 
             # Plot gaussian model (sum of individual peaks)
             # change color of this
-            self.p_gauss_model = self.fit_plot.plot(x=_data['rdf_x'], y=_data['gauss_model'], pen={'color': (199,26,74), 'width': 1.8, 'style':Qt.DashLine})
+            self.p_gauss_model = self.fit_plot.plot(x=_data['rdf_x'], y=_data['gauss_model'], pen={'color': (199,26,74), 'width': 1.8 * self.plot_line_scaling, 'style':Qt.DashLine})
             self.p_gauss_model.setZValue(5)
             # Plot residuals over whole r range in grey
-            self.p_res_full = self.res_plot.plot(x=_data['rdf_x'], y=_data['gauss_residuals_full'], pen={'color': 0.75, 'width': 1.2})
+            self.p_res_full = self.res_plot.plot(x=_data['rdf_x'], y=_data['gauss_residuals_full'], pen={'color': 0.75, 'width': 1.2 * self.plot_line_scaling})
             # Plot residuals over fit range in colour
-            self.p_res = self.res_plot.plot(x=_data['fit_r'], y=_data['gauss_residuals'], pen={'color': (26,121,199), 'width': 1.5})
+            self.p_res = self.res_plot.plot(x=_data['fit_r'], y=_data['gauss_residuals'], pen={'color': (26,121,199), 'width': 1.5 * self.plot_line_scaling})
+            self.p_gauss_model.default_line_width = 1.8
+            self.p_res_full.default_line_width = 1.2
+            self.p_res.default_line_width = 1.5
 
         # Force repaint
         self.rdf_int_layout.update()
@@ -942,6 +1001,11 @@ class StructurePlotWidget(QWidget):
 
         self.fit_limits.sigRegionChanged.connect(self.update_linear_region)
 
+    def redraw_plots(self, line_width_scaling):
+        # Fills - p_Na, p_Nb, p_Nc
+        _plot_items = ['p_rdf', 'p_tr', 'p_fit', 'p_gauss_model', 'p_res_full', 'p_res', 'p_peaks']
+        redraw_plots(self, _plot_items, line_width_scaling)
+
     def update_linear_region(self):
         _lb, _ub = self.fit_limits.getRegion()
         _min, _ = self.deselect_lower.getRegion()
@@ -997,15 +1061,20 @@ class StructurePlotWidget(QWidget):
 
 
 class AttenuationCorrectionPlotWidget(pg.GraphicsLayoutWidget):
-    def __init__(self, *args, **kwargs):
-        super(AttenuationCorrectionPlotWidget, self).__init__(*args, **kwargs)
+    def __init__(self, plot_settings):
+        super(AttenuationCorrectionPlotWidget, self).__init__()
+        self.set_plot_settings(plot_settings)
         self.create_plots()
         self.create_signals()
+
+    def set_plot_settings(self, plot_settings):
+        self.plot_line_scaling = plot_settings['plot_line_scaling']
+        #TODO fonts also!! Axes line widths
 
     def create_plots(self):
         self.setContentsMargins(0, 0, 0, 0)
         self.ci.setContentsMargins(8, 8, 8, 8)
-        self.pen = pg.mkPen(color=0.1, width=1.2, cosmetic=True)
+        self.pen = pg.mkPen(color=0.1, width=1.2 * self.plot_line_scaling, cosmetic=True)
         self.pos_label = pg.LabelItem(justify='right')
         self.addItem(self.pos_label, col=0, row=0)
         self.attenuation_plot = CustomPlotItem()
