@@ -338,7 +338,7 @@ class BkgUI(QWidget):
             return
         _two_theta = data_utils.convert_q_space(self.data['cor_x'], _wavelength)
         _attenuation_data = self.data['cor_x'], _two_theta, 1/self.data['attenuation_correction']
-        _inspect_dialog = utility.AttenuationInspectDialog(_attenuation_data)
+        _inspect_dialog = utility.AttenuationInspectDialog(_attenuation_data, {'plot_line_scaling': self.bkg_plot_widget.plot_line_scaling})
         _inspect_dialog.resize(int(self.screen_size[0]*0.7), int(self.screen_size[1]*0.7))
         _inspect_dialog.exec()
 
