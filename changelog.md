@@ -1,6 +1,14 @@
 ## Changelog
 ---------
 
+## v1.2.6-dev
+
+### Minor Changes
+
+- **Application Options**
+  New *Application Options* dialog in *Tools* menu to separate data options and GUI settings.
+  Added control to change line widths and font size on plots.
+
 ## v1.2.5 (June 4, 2024) (Patch release)
 
 ### Bug Fix
