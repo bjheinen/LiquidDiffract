@@ -15,7 +15,7 @@ except ImportError:
     from importlib import resources
 import numpy as np
 from qtpy.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTabWidget
-from qtpy.QtGui import QIcon, QAction
+from qtpy.QtGui import QIcon, QAction, QFont, QPen
 
 from LiquidDiffract.gui import bkg_ui
 from LiquidDiffract.gui import optim_ui
@@ -48,6 +48,10 @@ class App(QMainWindow):
         self.tools_menu = self.menu_bar.addMenu('&Tools')
         self.help_menu = self.menu_bar.addMenu('&Help')
 
+        with resources.as_file(resources.files(self.icon_module).joinpath('settings.png')) as path:
+            self.app_options_action = QAction(QIcon(str(path)),
+                                              'Application Options...', self)
+
         with resources.as_file(resources.files(self.icon_module).joinpath('config.png')) as path:
             self.preferences_action = QAction(QIcon(str(path)),
                                               'Additional Preferences...', self)
@@ -63,10 +67,12 @@ class App(QMainWindow):
             self.compute_map_action = QAction(QIcon(str(path)),
                                               'Compute χ\u00b2 map', self)
 
+        self.tools_menu.addAction(self.app_options_action)
         self.tools_menu.addAction(self.preferences_action)
         self.tools_menu.addAction(self.compute_map_action)
         self.help_menu.addAction(self.documentation_action)
         self.help_menu.addAction(self.about_action)
+        self.app_options_action.triggered.connect(self.call_app_options_dialog)
         self.preferences_action.triggered.connect(self.call_preferences_dialog)
         self.about_action.triggered.connect(self.call_about_dialog)
         self.documentation_action.triggered.connect(self.open_docs)
@@ -79,8 +85,7 @@ class App(QMainWindow):
         self.showMaximized()
 
     def set_default_preferences(self):
-        self.preferences = {'append_log_mode': 1,
-                            'data_units': 0,
+        self.preferences = {'data_units': 0,
                             'window_length': 5,
                             'poly_order': 3,
                             'rescale_AL': 1,
@@ -102,7 +107,40 @@ class App(QMainWindow):
                                  'interval': 50},
                             'xray_weight_mode': 0
                             }
+        self.app_options = {'append_log_mode': 1,
+                            'plot_font_scaling_lvl': 25,
+                            'plot_line_scaling_lvl': 25,
+                            'plot_scaling':
+                                {'font_size_scaling': 1.0,
+                                'plot_line_width_scaling': 1.0,
+                                'tick_line_width_scaling': 1.0,
+                                'axes_line_width_scaling': 1.0,
+                                'tick_length_scaling': 1.0
+                                }
+                            }
+        self.set_plot_style_defaults()
         self.set_preferences()
+        self.set_app_options()
+
+    def set_plot_style_defaults(self):
+        _ax = self.table_widget.bkg_ui.bkg_plot_widget.data_plot.getAxis('left')
+        # Default label font size
+        self.default_plot_font = QFont(_ax.label.font())
+        #_default_plot_font_size = _default_plot_font.pointSize()
+        # Default plot line widths
+        self.default_plot_axes_pen = QPen(_ax.pen())
+        #_default_plot_axes_pen_width = _default_plot_axes_pen.width()
+        self.default_plot_tick_pen = QPen(_ax.tickPen())
+        self.default_plot_axes_tick_length = _ax.style['tickLength']
+
+    def call_app_options_dialog(self):
+        self.app_options_dialog = utility.ApplicationOptionsDialog(self.app_options)
+        with resources.as_file(resources.files(self.icon_module).joinpath('gs_icon.png')) as path:
+            self.app_options_dialog.setWindowIcon(QIcon(str(path)))
+        self.app_options_dialog.resize(int(self.width*0.35), int(self.height*0.3))
+        if self.app_options_dialog.exec() == utility.ApplicationOptionsDialog.Accepted:
+            self.app_options = self.app_options_dialog.get_settings()
+            self.set_app_options()
 
     def call_preferences_dialog(self):
         self.preferences_dialog = utility.PreferencesDialog(self.preferences)
@@ -123,6 +161,15 @@ class App(QMainWindow):
             if _prev_data_units != self.table_widget.bkg_ui.data_units:
                 self.table_widget.bkg_ui.data_units_changed()
 
+    def set_app_options(self):
+        self.table_widget.optim_ui.append_log_mode = self.app_options['append_log_mode']
+        self.table_widget.structure_ui.append_log_mode = self.app_options['append_log_mode']
+        _plot_scaling = self.app_options['plot_scaling']['plot_line_width_scaling']
+        self.table_widget.bkg_ui.bkg_plot_widget.plot_line_scaling = _plot_scaling
+        self.table_widget.optim_ui.optim_plot_widget.plot_line_scaling = _plot_scaling
+        self.table_widget.results_ui.results_plot_widget.plot_line_scaling = _plot_scaling
+        self.table_widget.structure_ui.structure_plot_widget.plot_line_scaling = _plot_scaling
+        self.update_plot_style()
 
     def set_preferences(self):
         # Set data and minimisation preferences
@@ -131,8 +178,6 @@ class App(QMainWindow):
         self.table_widget.optim_ui.minimisation_options = self.preferences['minimisation_options']
         self.table_widget.optim_ui.global_minimisation = self.preferences['global_minimisation']
         self.table_widget.optim_ui.global_min_options = self.preferences['global_min_options']
-        self.table_widget.optim_ui.append_log_mode = self.preferences['append_log_mode']
-        self.table_widget.structure_ui.append_log_mode = self.preferences['append_log_mode']
         self.table_widget.optim_ui.window_length = self.preferences['window_length']
         self.table_widget.optim_ui.poly_order = self.preferences['poly_order']
         # Set N for FFT
@@ -264,6 +309,60 @@ class App(QMainWindow):
             self.preferences_dialog.fft_check_result = 1
         else:
             self.preferences_dialog.fft_check_result = 0
+
+    def update_plot_style(self):
+        _plot_font = QFont(self.default_plot_font)
+        _font_size = int(_plot_font.pointSize() * self.app_options['plot_scaling']['font_size_scaling'])
+        _plot_font.setPointSize(_font_size)
+        _axes_pen = QPen(self.default_plot_axes_pen)
+        _axes_width = self.biased_round(_axes_pen.width() * self.app_options['plot_scaling']['axes_line_width_scaling'])
+        _axes_pen.setWidth(_axes_width)
+        _tick_pen = QPen(self.default_plot_tick_pen)
+        _tick_width = self.biased_round(_tick_pen.width() * self.app_options['plot_scaling']['tick_line_width_scaling'])
+        _tick_pen.setWidth(_tick_width)
+        _tick_length = self.default_plot_axes_tick_length
+        _tick_length += int(self.app_options['plot_scaling']['tick_length_scaling'])
+        # For each plot, for each axis!
+        _axes = [
+            self.table_widget.bkg_ui.bkg_plot_widget.data_plot.getAxis('left'),
+            self.table_widget.bkg_ui.bkg_plot_widget.data_plot.getAxis('bottom'),
+            self.table_widget.bkg_ui.bkg_plot_widget.bkg_corrected_plot.getAxis('left'),
+            self.table_widget.bkg_ui.bkg_plot_widget.bkg_corrected_plot.getAxis('bottom'),
+            self.table_widget.optim_ui.optim_plot_widget.data_plot.getAxis('left'),
+            self.table_widget.optim_ui.optim_plot_widget.data_plot.getAxis('bottom'),
+            self.table_widget.optim_ui.optim_plot_widget.iq_plot.getAxis('left'),
+            self.table_widget.optim_ui.optim_plot_widget.iq_plot.getAxis('bottom'),
+            self.table_widget.optim_ui.optim_plot_widget.dr_plot.getAxis('left'),
+            self.table_widget.optim_ui.optim_plot_widget.dr_plot.getAxis('bottom'),
+            self.table_widget.results_ui.results_plot_widget.sq_plot.getAxis('left'),
+            self.table_widget.results_ui.results_plot_widget.sq_plot.getAxis('bottom'),
+            self.table_widget.results_ui.results_plot_widget.gr_plot.getAxis('left'),
+            self.table_widget.results_ui.results_plot_widget.gr_plot.getAxis('bottom'),
+            self.table_widget.results_ui.results_plot_widget.rdf_plot.getAxis('left'),
+            self.table_widget.results_ui.results_plot_widget.rdf_plot.getAxis('bottom'),
+            self.table_widget.structure_ui.structure_plot_widget.rdf_plot.getAxis('left'),
+            self.table_widget.structure_ui.structure_plot_widget.rdf_plot.getAxis('bottom'),
+            self.table_widget.structure_ui.structure_plot_widget.tr_plot.getAxis('left'),
+            self.table_widget.structure_ui.structure_plot_widget.tr_plot.getAxis('bottom'),
+            self.table_widget.structure_ui.structure_plot_widget.fit_plot.getAxis('left'),
+            self.table_widget.structure_ui.structure_plot_widget.fit_plot.getAxis('bottom'),
+            self.table_widget.structure_ui.structure_plot_widget.res_plot.getAxis('left'),
+            self.table_widget.structure_ui.structure_plot_widget.res_plot.getAxis('bottom')
+        ]
+        for _ax in _axes:
+            _ax.setStyle(tickFont = _plot_font)
+            _ax.label.setFont(_plot_font)
+            _ax.setPen(_axes_pen)
+            _ax.setTickPen(_tick_pen)
+            _ax.setStyle(tickLength=_tick_length)
+        # Update PlotDataItems
+        self.table_widget.bkg_ui.bkg_plot_widget.redraw_plots(self.app_options['plot_scaling']['plot_line_width_scaling'])
+        self.table_widget.optim_ui.optim_plot_widget.redraw_plots(self.app_options['plot_scaling']['plot_line_width_scaling'])
+        self.table_widget.results_ui.results_plot_widget.redraw_plots(self.app_options['plot_scaling']['plot_line_width_scaling'])
+        self.table_widget.structure_ui.structure_plot_widget.redraw_plots(self.app_options['plot_scaling']['plot_line_width_scaling'])
+
+    def biased_round(self, val, bias=0.35):
+        return int(np.round(val + bias))
 
 
 class MainContainer(QWidget):
