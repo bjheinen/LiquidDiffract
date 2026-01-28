@@ -95,6 +95,7 @@ class TestCalcZSum(unittest.TestCase):
         self.assertEqual(Z_tot_H0, 0.0)
         self.assertEqual(Z_tot_CaSiO3, 58)
 
+
 @unittest.skipIf(parse_version(python_version()) < parse_version('3.9'), 'Tests unsupported for python<3.9 - Suppport will be removed in a future version of LiquidDiffract')
 class TestLoadData(unittest.TestCase):
     def setUp(self):
@@ -302,6 +303,7 @@ class TestCalcCoherentScattering(unittest.TestCase, CustomAssertions):
         self.assertEqual(fz_comp_test, 6.0)
         self.assertEqual(al_comp_test, 18.0)
 
+
 class TestNormaliseALFunc(unittest.TestCase, CustomAssertions):
     def test_normalise_al(self):
         sq_norm = core.normalise_achroft_langreth_func(0.5, sq=np.array([1, 2]))
@@ -327,7 +329,6 @@ class TestGetModFunc(unittest.TestCase, CustomAssertions):
         if not math.isclose(lorch[0], expected_lorch[0], rel_tol=1e-7, abs_tol=1e-16):
             warnings.warn(f'First values in lorch function arrays not equal | {lorch[0]} != {expected_lorch[0]}'
                           f' with relative tolerance of {1e-7:.3g} and absolute tolerance of {1e-16:.3g}')
-
 
     def test_get_cosine_window(self):
         test_Q = np.array([0, 0.02, 0.5, 1, 2.2, 4.2,
@@ -376,6 +377,7 @@ class TestStopIteration(unittest.TestCase):
     def test_stop_iteration(self):
         self.assertTrue(core.stop_iteration(count=5, iter_limit=5))
         self.assertFalse(core.stop_iteration(count=5, iter_limit=6))
+
     def test_bad_method(self):
         self.assertRaises(NotImplementedError, core.stop_iteration, chi_squared=1.0, stop_condition='chi2_converge')
 
@@ -532,6 +534,98 @@ class TestCalcImprIntFunc(unittest.TestCase, CustomAssertions):
                                                           r_min, iter_limit,
                                                           method, mod_func, window_start, fft_N)
         self.assertFloatArrayEqual(impr_intf_func, self.expected_refined_intf_func_Ga)
+
+
+class TestRefinementObjFun(unittest.TestCase, CustomAssertions):
+
+    def setUp(self):
+        with resources.files('LiquidDiffract.scripts').joinpath('example_data.dat').open('r') as fp:
+            _q_test, _I_test = np.loadtxt(fp, unpack=True, skiprows=0)
+        self.q_test, self.I_test = data_utils.rebin_data(_q_test, _I_test, dx=0.02, extrapolate_mode='extrapolate')
+        self.composition_Ga = {'Ga': (31,0,1)}
+        self.r_min = 2.3
+        self.iter_limit = 5
+        self.method = 'faber-ziman'
+        self.mod_func = None
+        self.window_start = None
+        self.fft_N = 12
+        self.rho = 0.048
+        self.bkg_scale = 0.0
+        self.expected_chi_sq = 5751.222386995383
+
+    def test_opt_rho(self):
+        opt_rho = True
+        opt_bkg = False
+        args = (
+            self.q_test, self.I_test,
+            self.composition_Ga,
+            self.r_min, self.iter_limit, self.method,
+            self.mod_func, self.window_start, self.fft_N,
+            opt_rho, opt_bkg
+        )
+        x = self.rho
+        x_list = [x]
+        x_arr = np.asarray(x_list)
+        chi_sq_x = core.refinement_objfun(x, *args)
+        chi_sq_x_list = core.refinement_objfun(x_list, *args)
+        chi_sq_x_arr = core.refinement_objfun(x_arr, *args)
+        self.assertFloatEqual(chi_sq_x, self.expected_chi_sq)
+        self.assertFloatEqual(chi_sq_x_list, self.expected_chi_sq)
+        self.assertFloatEqual(chi_sq_x_arr, self.expected_chi_sq)
+
+    def test_opt_bkg(self):
+        opt_rho = False
+        opt_bkg = True
+        args = (
+            self.rho,
+            self.q_test, self.I_test,
+            self.I_test, 1.0,
+            np.min(self.q_test), np.max(self.q_test)+0.01,
+            False, None, None,
+            self.composition_Ga,
+            self.r_min, self.iter_limit, self.method,
+            self.mod_func, self.window_start, self.fft_N,
+            opt_rho, opt_bkg
+        )
+        x = self.bkg_scale
+        x_list = [x]
+        x_arr = np.asarray(x_list)
+        chi_sq_x = core.refinement_objfun(x, *args)
+        chi_sq_x_list = core.refinement_objfun(x_list, *args)
+        chi_sq_x_arr = core.refinement_objfun(x_arr, *args)
+        self.assertFloatEqual(chi_sq_x, self.expected_chi_sq)
+        self.assertFloatEqual(chi_sq_x_list, self.expected_chi_sq)
+        self.assertFloatEqual(chi_sq_x_arr, self.expected_chi_sq)
+
+    def test_opt_rho_and_bkg(self):
+        opt_rho = True
+        opt_bkg = True
+        args = (
+            self.q_test, self.I_test,
+            self.I_test, 1.0,
+            np.min(self.q_test), np.max(self.q_test)+0.01,
+            False, None, None,
+            self.composition_Ga,
+            self.r_min, self.iter_limit, self.method,
+            self.mod_func, self.window_start, self.fft_N,
+            opt_rho, opt_bkg
+        )
+        x_list = [self.rho, self.bkg_scale]
+        x_arr = np.asarray(x_list)
+        chi_sq_x_list = core.refinement_objfun(x_list, *args)
+        chi_sq_x_arr = core.refinement_objfun(x_arr, *args)
+        self.assertFloatEqual(chi_sq_x_list, self.expected_chi_sq)
+        self.assertFloatEqual(chi_sq_x_arr, self.expected_chi_sq)
+
+    def test_no_opt(self):
+        opt_rho, opt_bkg = False, False
+        args = (self.q_test, self.I_test, opt_rho, opt_bkg)
+        self.assertRaises(
+            NotImplementedError,
+            core.refinement_objfun,
+            1.0,
+            *args
+        )
 
 
 if __name__ == "__main__":
