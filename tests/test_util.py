@@ -12,6 +12,7 @@ import numpy as np
 from util import CustomAssertions
 from util import data_path
 
+
 class TestCustomAssertions(unittest.TestCase, CustomAssertions):
     def test_assert_float_equal(self):
         self.assertFloatEqual(1000.0, 1001, rtol=1e-3, atol=1e-16)

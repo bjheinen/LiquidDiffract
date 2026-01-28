@@ -7,6 +7,7 @@ import unittest
 import warnings
 from packaging.version import Version
 
+
 class TestVersionFile(unittest.TestCase):
     def test_appname(self):
         from LiquidDiffract.version import __appname__

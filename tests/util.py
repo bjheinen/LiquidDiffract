@@ -15,9 +15,10 @@ unittest_path = os.path.dirname(__file__)
 data_path = os.path.join(unittest_path, './data')
 __unittest = True
 
+
 class CustomAssertions:
     # Compare floats
-    def assertFloatEqual(self, a, b, rtol=1e-7, atol=1e-16, err_msg=''):       
+    def assertFloatEqual(self, a, b, rtol=1e-7, atol=1e-16, err_msg=''):
         std_err_msg = (f'{a} != {b} with relative tolerance of {rtol:.3g}'
                        f' and absolute tolerance of {atol:.3g}')
         # equivalent to abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)

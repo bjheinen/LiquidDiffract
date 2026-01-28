@@ -459,7 +459,7 @@ class MainContainer(QWidget):
     def results_cleared_slot(self):
         self.results_ui.clear_data()
         self.results_ui.results_plot_widget.update_plots(self.results_ui.data)
-        
+
         self.structure_ui.clear_data()
         self.structure_ui.structure_plot_widget.clear_plots(_clear_all=True)
 

@@ -24,6 +24,7 @@ import LiquidDiffract.core.data_utils as data_utils
 from util import data_path
 from util import CustomAssertions
 
+
 class TestCalcMolMass(unittest.TestCase, CustomAssertions):
     def test_calc_mol_mass(self):
         composition_Ga = {'Ga': (31,0,1)}

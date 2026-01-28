@@ -544,7 +544,7 @@ class DataSettingsGroupBox(QGroupBox):
         self.rescale_AL_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
 
         self.fft_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
-        
+
         self.fft_N_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         self.fft_N_input.setAlignment(Qt.AlignRight)
         self.fft_N_input.setRange(1,20)

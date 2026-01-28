@@ -51,4 +51,3 @@ class TestSkewGauss(unittest.TestCase, CustomAssertions):
         self.assertFloatEqual(simpson(small_skew_gauss_Si_O, x=test_r), simpson(big_skew_gauss_Si_O, x=test_r))
         # N_ab = c_b/w_ab * Area
         self.assertFloatEqual(0.6 * simpson(small_skew_gauss_Si_O, x=test_r)/0.19974189041782536, 4.0)
-
