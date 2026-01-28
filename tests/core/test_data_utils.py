@@ -10,7 +10,6 @@ __email__ = "benedict.heinen@gmail.com"
 
 import unittest
 import os.path
-import math
 import numpy as np
 
 # import core module to test
