@@ -5,7 +5,7 @@ __email__ = "benedict.heinen@gmail.com"
 
 import unittest
 import warnings
-from packaging.version import Version
+from packaging.version import Version, InvalidVersion
 
 
 class TestVersionFile(unittest.TestCase):
