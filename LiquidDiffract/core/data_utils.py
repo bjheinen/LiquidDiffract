@@ -139,19 +139,19 @@ def clean_base_indices(lefts, rights):
 
 def find_integration_limits(r, rdf, rho=None, peak_search_limit=10.0, search_method=None):
     '''
-    Computes the integration limits used in the calculation of the 
+    Computes the integration limits used in the calculation of the
     first coordination number for a monatomic system.
 
     The function returns several values for use in different methods of
-    calculating the coordination number. 
+    calculating the coordination number.
     See 'core.integrate_coordination_sphere' for more information on
     the methods implemented in LiquidDiffract.
 
-    The location of the peak corresponding to the first coordination sphere 
-    (the 1st peak in RDF(r)) is first approximated from the discrete data 
+    The location of the peak corresponding to the first coordination sphere
+    (the 1st peak in RDF(r)) is first approximated from the discrete data
     using a peak finding algorithm. A continuous function is then generated
     using cubic interpolation and the position of r_0 refined using a root
-    finding algorithm and the positions of r_max, rp_max, and r_min are 
+    finding algorithm and the positions of r_max, rp_max, and r_min are
     refined through calls to scipy.minimize
 
     Args:
@@ -184,11 +184,11 @@ def find_integration_limits(r, rdf, rho=None, peak_search_limit=10.0, search_met
     # Take the last root in RDF(r) as the leading edge of the 1st peak, r_0
     # Uses Brent method to find a zero of RDF(r) on the sign changing interval [a , b].
     # First find last sign-changing interval in discrete data
-    brent_a = np.argwhere(np.sign(rdf) == -1)[-1]
+    brent_a = np.flatnonzero(np.sign(rdf) == -1)[-1]
     # Find root using scipy.optimize.brentq
     r_0 = scipy.optimize.brentq(rdf_interp, r[brent_a], r[brent_a+1])
 
-    # Generate list of indices of approximate peak positions in the discrete 
+    # Generate list of indices of approximate peak positions in the discrete
     # data. Here using scipy.signal but using np.diff(np.sign(np.diff(rdf)) to
     # avoid the extra import may be less expensive
     peak_list, _ = scipy.signal.find_peaks(rdf[r<peak_search_limit])
@@ -238,7 +238,7 @@ def find_integration_limits(r, rdf, rho=None, peak_search_limit=10.0, search_met
         else:
             # If no previous peaks found take the last change in sign of gradient
             # (-1 r-step again)
-            r_0_lb = r[np.argwhere(np.sign(np.diff(Tr[np.where(r <= r_0_ub)])) == -1)[-2]]
+            r_0_lb = r[np.flatnonzero(np.sign(np.diff(Tr[np.where(r <= r_0_ub)])) == -1)[-2]]
         # Find minimum
         preceding_minimum = scipy.optimize.minimize_scalar(Tr_interp,
                                                            method='bounded',
@@ -254,7 +254,7 @@ def find_integration_limits(r, rdf, rho=None, peak_search_limit=10.0, search_met
                 check_interval = np.pad(check_interval, 1, 'edge')
                 check_interval[0] -= 1
                 check_interval[-1] += 1
-            brent_a = check_interval[np.argwhere(np.sign(rdf[check_interval]) == -1)[-1]]
+            brent_a = check_interval[np.flatnonzero(np.sign(rdf[check_interval]) == -1)[-1]]
             # Find root using scipy.optimize.brentq
             r_0 = scipy.optimize.brentq(rdf_interp, r[brent_a], r[brent_a+1])
         else:
@@ -263,7 +263,7 @@ def find_integration_limits(r, rdf, rho=None, peak_search_limit=10.0, search_met
     else:
         # If peak idx match use located r_0
         peak_idx = peak_idx_first
-    
+
     # Get left and right base of peak
     peak_bases = (r[left_bases[peak_idx]], r[right_bases[peak_idx]])
     # Refine rp_max (peak centre in r g(r))
@@ -305,7 +305,7 @@ def find_integration_limits(r, rdf, rho=None, peak_search_limit=10.0, search_met
         # Re-define r_min to preceding crossing of RDF = 0
         # Find first sign changing interval between peak and r_min
         check_interval = np.where((r >= rp_max) & (r <= r_min))
-        brent_b = np.ravel(check_interval)[np.argwhere(np.sign(rdf[check_interval]) == -1)[0]]
+        brent_b = np.ravel(check_interval)[np.flatnonzero(np.sign(rdf[check_interval]) == -1)[0]]
         # Find root using scipy.optimize.brentq
         r_min = scipy.optimize.brentq(rdf_interp, r[brent_b-1], r[brent_b])
 
