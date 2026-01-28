@@ -109,7 +109,7 @@ class TestLoadData(unittest.TestCase):
         for atomic_number in iter(self.element_dict.values()):
             self.assertIn(atomic_number, ff_lookup)
 
-    def test_load_compton_data(self):        
+    def test_load_compton_data(self):
         for element in self.element_dict:
             try:
                 self.assertTrue(core.load_compton_data(element))
@@ -117,10 +117,9 @@ class TestLoadData(unittest.TestCase):
                 self.fail("core.load_compton_data() raised FileNotFoundError!")
 
     def test_load_mass_data(self):
-        with resources.files('LiquidDiffract.resources').joinpath('mass_data.npy').open('rb') as fp:
-            mass_dict = np.load(fp, allow_pickle=True).item()
+        from LiquidDiffract.resources.mass_data import MASS_DATA
         for element in self.element_dict:
-            self.assertIn(element, mass_dict)
+            self.assertIn(element, MASS_DATA)
 
 
 class TestCalcAtomicFF(unittest.TestCase, CustomAssertions):

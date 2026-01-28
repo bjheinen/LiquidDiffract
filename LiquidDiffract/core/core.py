@@ -37,6 +37,7 @@ except ImportError:
 # Get version number from version.py
 from LiquidDiffract.version import __appname__, __version__
 from LiquidDiffract.core.data_utils import data_cache, smooth_data, convert_q_space
+from LiquidDiffract.resources import mass_data as _mass_data
 
 
 def calc_mol_mass(composition):
@@ -47,9 +48,7 @@ def calc_mol_mass(composition):
     composition is dictionary in the form: (Z, charge, n)
     where n is number of atoms in formula unit
     '''
-    with resources.files('LiquidDiffract.resources').joinpath('mass_data.npy').open('rb') as fp:
-        mass_dict = np.load(fp, allow_pickle=True).item()
-    mol_mass = np.sum([mass_dict[element]*(composition[element][2]) for element in composition])
+    mol_mass = np.sum([_mass_data.MASS_DATA[element]*(composition[element][2]) for element in composition])
     return mol_mass
 
 
@@ -1250,38 +1249,38 @@ def integrate_coordination_sphere(r, rdf,
                                   r_0=None, rp_max=None,
                                   r_max=None, r_min=None, method=0):
     '''
-    Calculates the 1st coordination number, N_1, for a monatomic sample by 
+    Calculates the 1st coordination number, N_1, for a monatomic sample by
     integrating the area under the first peak in RDF(r)
 
-    The position of the 1st peak in RDF(r) directly gives the average 
+    The position of the 1st peak in RDF(r) directly gives the average
     interatomic bond length, r_ab, between an atom 'a' at the origin and the
-    next-nearest neighbour. The area under this curve gives the average 
-    coordination number of the 1st coordination sphere, N_1. RDF(r) is the 
+    next-nearest neighbour. The area under this curve gives the average
+    coordination number of the 1st coordination sphere, N_1. RDF(r) is the
     radial distribution function, defined as:
 
         RDF(r) = 4πρr^2g(r), where g(r) is the pair-distribution function
 
-    The coordination number is fairly sensitive to the upper integration limit 
-    chosen. There are several methods used in the literature to define the 
-    limits based on either physical models or empirical observations. Three 
+    The coordination number is fairly sensitive to the upper integration limit
+    chosen. There are several methods used in the literature to define the
+    limits based on either physical models or empirical observations. Three
     methods are implimented in LiquidDiffract:
 
         1) Integration of area symmetrical in rg(r)
 
-        This method is based on the assumption that the quantity rg(r) is 
+        This method is based on the assumption that the quantity rg(r) is
         symmetrical for a coordination shell about its average position. The
-        coordination number is calculated by integrating across RDF(r) from 
+        coordination number is calculated by integrating across RDF(r) from
         the leading edge of the 1st peak, r_0, to the peak centre of the
-        function r*g(r), r'_max. The integral is doubled to account for the 
+        function r*g(r), r'_max. The integral is doubled to account for the
         right half of the peak:
 
             (Eq. 2.5.1 in Waseda, 1980)
-            N_a = 2 * INT 4πρr[rg(r)]_sym dr | r=r_0 --> r=r'_max 
+            N_a = 2 * INT 4πρr[rg(r)]_sym dr | r=r_0 --> r=r'_max
 
         2) Integration of area symmetrical in r^2g(r)
 
         This method is similar to method 1 but assumes the peak is symmetrical
-        in r^2g(r) instead of rg(r). The limit r_max is therefore the peak 
+        in r^2g(r) instead of rg(r). The limit r_max is therefore the peak
         centre in RDF(r):
 
             (Eq. 2.5.2 in Waseda, 1980)
@@ -1292,20 +1291,20 @@ def integrate_coordination_sphere(r, rdf,
         3) Integration to the firt minimum in RDF(r)
 
         This is the most commonly used method to estimate N_1. It is based on
-        the observation that the 1st peak is generally assymetric in 
-        experimental data. The function 4πρr^2g(r) is integrated from r_0 to 
+        the observation that the 1st peak is generally assymetric in
+        experimental data. The function 4πρr^2g(r) is integrated from r_0 to
         the first minimum after the peak:
 
             (Eq. 2.5.3 in Waseda, 1980)
-            N_c = INT RDF(r) dr | r=r_0 --> r=r_min 
+            N_c = INT RDF(r) dr | r=r_0 --> r=r_min
 
         N_c is sensitive to the value of r_min used and r_min is not always
         easily refined. Noise and truncation ripples in RDF(r) can make it
-        difficult to determine r_min, as can the broadening of RDF(r) 
+        difficult to determine r_min, as can the broadening of RDF(r)
         associated with an increase in temperature.
 
     It should be noted that: N_a < N_b but N_c is not always > N_b
-    N_a can be considered a lower-bound on the coordination numeber as the 
+    N_a can be considered a lower-bound on the coordination numeber as the
     peak is never truly symmetrical. In some cases N_c can provide an upper
     limit, but the value is much more sensitive as r_min is never as well
     defined as r_0 and r_max/r'_max
