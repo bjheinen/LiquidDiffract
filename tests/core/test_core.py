@@ -537,6 +537,7 @@ class TestCalcImprIntFunc(unittest.TestCase, CustomAssertions):
         self.assertFloatArrayEqual(impr_intf_func, self.expected_refined_intf_func_Ga)
 
 
+@unittest.skipIf(parse_version(python_version()) < parse_version('3.9'), 'Tests unsupported for python<3.9 - Suppport will be removed in a future version of LiquidDiffract')
 class TestRefinementObjFun(unittest.TestCase, CustomAssertions):
 
     def setUp(self):
