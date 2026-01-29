@@ -4,7 +4,7 @@ name: run-tests
 
 on:
   push:
-    branches: 
+    branches:
       - develop
   pull_request:
   workflow_dispatch:
@@ -13,12 +13,12 @@ jobs:
   test-build:
     name: test-build
     runs-on: ${{ matrix.os  }}
-    
+
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v3
