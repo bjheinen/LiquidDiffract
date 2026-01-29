@@ -19,7 +19,7 @@ See <https://github.com/bjheinen/LiquidDiffract#using-liquiddiffract-core-librar
 
 """
 __author__ = 'Benedict J. Heinen'
-__copyright__ = 'Copyright 2018-2024, Benedict J. Heinen'
+__copyright__ = 'Copyright 2018-2026, Benedict J. Heinen'
 __email__ = 'benedict.heinen@gmail.com'
 __license__ = 'GNU GPL v3'
 
@@ -1010,7 +1010,7 @@ def calc_impr_interference_func(q_data, interference_func,
         chi_sq - Figure of merit (see calc_chi_squared)
     '''
     # Unpack rho - solver passes rho as a single element array
-    rho = np.float64(rho)
+    rho = float(np.asarray(rho).item())
 
     dq = q_data[1] - q_data[0]
     # Calculate initial D(r)
@@ -1158,20 +1158,20 @@ def refinement_objfun(minvar, *args):
     *_, opt_rho, opt_bkg = args
     # Unpack optimisation variables (rho and/or bkg_scale)
     if opt_rho == True and opt_bkg == True:
-        rho = np.float64(minvar[0])
-        bkg_scale = np.float64(minvar[1])
+        rho = float(minvar[0])
+        bkg_scale = float(minvar[1])
     # Unpack rho - solver passes rho as a single element array
     elif opt_rho == True and opt_bkg == False:
-        rho = np.float64(minvar)
+        rho = float(np.asarray(minvar).item())
     # Unpack bkg_scale as abovs
     elif opt_rho == False and opt_bkg == True:
-        bkg_scale = np.float64(minvar)
+        bkg_scale = float(np.asarray(minvar).item())
     else:
         raise NotImplementedError()
 
     if opt_rho == False:
         rho, *_ = args
-        rho = np.float64(rho)
+        rho = float(rho)
 
     if opt_bkg == True:
         # Unpack args - additional args needed when refining bkg_scale
