@@ -9,6 +9,11 @@
   New *Application Options* dialog in *Tools* menu to separate data options and GUI settings.
   Added control to change line widths and font size on plots.
 
+### Bug Fixes & Dev Changes
+
+- Added support for python v3.13
+- Added support for numpy v>=2.40
+
 ## v1.2.5 (June 4, 2024) (Patch release)
 
 ### Bug Fix
@@ -19,21 +24,21 @@
 
 ### Major Changes
 
-- **Compute *&chi;<sup>2</sup>* Map Toolbox**  
-  This new toolbox allows the user to compute a map of *&chi;<sup>2</sup>* from the data and two chosen parameters.  
+- **Compute *&chi;<sup>2</sup>* Map Toolbox**
+  This new toolbox allows the user to compute a map of *&chi;<sup>2</sup>* from the data and two chosen parameters.
   Options are:
   - *&rho;*
   - *b* (background scaling factor)
   - *r*<sub>min</sub>
-  - No. iterations  
+  - No. iterations
 
-  Options for setting parameter, normalising *&chi;<sup>2</sup>*, and plotting the data are provided.  
+  Options for setting parameter, normalising *&chi;<sup>2</sup>*, and plotting the data are provided.
   Computed data can be saved or the plot directly exported as an image.
 
-- **Optional corrections for self-shielding attenuation factor**  
+- **Optional corrections for self-shielding attenuation factor**
   Optional corrections for self-shielding presuming a slab-type geometry can be made in the *Background Subtraction* tab. More complex geometries (e.g. cylindrical, including a container, etc.) may be added if there is demand.
 
-- **Support for Qt 6 via qtpy**  
+- **Support for Qt 6 via qtpy**
   This gives support for all major Qt bindings (PyQt5, PyQt6, PySide2 and PySide6). PyQt6 preferred over PySide6.
 
 ### Minor Changes
@@ -63,13 +68,13 @@
 ### Development Changes
 
 - This changelog!
-- Unit tests / functional tests for core module.  
+- Unit tests / functional tests for core module.
   run `python -m unittest discover ./tests - v`
-- Unit tests run remotely on push to develop branch via github actions.  
-  Test matrix of:  
-    os: [ubuntu-latest, macos-latest, windows-latest]  
+- Unit tests run remotely on push to develop branch via github actions.
+  Test matrix of:
+    os: [ubuntu-latest, macos-latest, windows-latest]
     python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-- Dropped support for python < 3.8  
+- Dropped support for python < 3.8
   Python 3.8 support maintained via importlib_resources. Support will be dropped in next release.
 
 
@@ -105,20 +110,20 @@
 
 ### Major Changes
 
-- **Background refinement**  
+- **Background refinement**
   The background scaling factor (_b_) can now be refined alongside the density in the _Refinement Tab_
   Background refinement is optional and can be done independently from or simultaneously with density refinement.
   The background scaling factor set in the _Background Subtraction Tab_ is used as the initial estimate by the solver.
   The figure of merit is redefined to take into account the background scaling - _&Chi;_^2(&rho;;b)
 
-- **LiquidDiffract publication**  
+- **LiquidDiffract publication**
   There is now a paper describing LiquidDiffract:
   [Heinen, B. J., & Drewitt, J. W. (2022). LiquidDiffract: Software for liquid total scattering analysis. Physics and Chemistry of Minerals, 49:9. doi:10.1007/s00269-022-01186-6](https://link.springer.com/content/pdf/10.1007/s00269-022-01186-6.pdf)
   Please cite this paper if you use LiquidDiffract in your work!
 
 ### Minor Changes
 
-- LiquidDiffract.core.core now uses a separate objective function for density and/or background refinement - core.refinement_objfun. 
+- LiquidDiffract.core.core now uses a separate objective function for density and/or background refinement - core.refinement_objfun.
 As a result, the arguments taken by core.calc_impr_interference_function have been redefined. The docs and example scripts have been updated to reflect this.
 - Fixed some documentation issues and removed some dead code
 
@@ -144,7 +149,7 @@ The calculation of the x-ray weighting factors for partial pair correlations use
 
   There are two toolboxes provided:
   - An _Integration Toolbox_: Integrate over the first peak in the _RDF(r)_ or _T(r)_ to estimate the bond-length and average coordination number of the first coordination shell for monatomic samples. Three different methods of calculating the coordination number are provided. The limits can be set manually, but there is also an auto-find feature to automatically refine the integration limits using optimisation/root-finding routines.
-  - A _Curve-fitting Toolbox_: Fit an arbitrary number of gaussian-type peaks to the _RDF(r)_ or _T(r)_ to estimate bond lengths and coordination numbers of correlated atomic pairs in polyatomic samples. X-ray weighting factors are applied automatically and the bond length and coordination number are actual fitting parameters. Any combination of individual peaks or parameters can be fixed or refined during the fit. There is also an optional skewness parameter to fit a skew-normal distribution that can be toggled for any peak. 
+  - A _Curve-fitting Toolbox_: Fit an arbitrary number of gaussian-type peaks to the _RDF(r)_ or _T(r)_ to estimate bond lengths and coordination numbers of correlated atomic pairs in polyatomic samples. X-ray weighting factors are applied automatically and the bond length and coordination number are actual fitting parameters. Any combination of individual peaks or parameters can be fixed or refined during the fit. There is also an optional skewness parameter to fit a skew-normal distribution that can be toggled for any peak.
 
 - Fixed several bugs in the calculation of the S(Q) and g(r) for polyatomic samples
 
