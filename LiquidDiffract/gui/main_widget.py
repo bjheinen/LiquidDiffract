@@ -4,7 +4,7 @@ GUI frontend for LiquidDiffract
 <https://github.com/bjheinen/LiquidDiffract>
 """
 __author__ = "Benedict J. Heinen"
-__copyright__ = "Copyright 2018-2024, Benedict J. Heinen"
+__copyright__ = "Copyright 2018-2026, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
 import os.path
@@ -225,7 +225,7 @@ class App(QMainWindow):
             _mod_func = self.table_widget.optim_ui.optim_config_widget.data_options_gb.mod_func_input.currentText()
             if _mod_func == 'Cosine-window':
                 try:
-                    _window_start = np.float64(self.table_widget.optim_ui.optim_config_widget.data_options_gb.window_start_input.text())
+                    _window_start = float(self.table_widget.optim_ui.optim_config_widget.data_options_gb.window_start_input.text())
                 except ValueError:
                     _message = ['Modification Function Error!', 'Please set window for cosine-window function in <i>Refinement</i> tab']
                     _error_msg = utility.ErrorMessageBox(_message)
@@ -245,7 +245,7 @@ class App(QMainWindow):
             print('Error: Please ensure values are set for density, r_min, and n_iterations') # --> warn not print!
             return
         # Get r_min, n_iter, and smooth flag
-        _r_min = np.float64(self.table_widget.optim_ui.optim_config_widget.optim_options_gb.rmin_input.text())
+        _r_min = float(self.table_widget.optim_ui.optim_config_widget.optim_options_gb.rmin_input.text())
         _n_iter = int(self.table_widget.optim_ui.optim_config_widget.optim_options_gb.niter_input.text())
         _smooth_flag = self.table_widget.optim_ui.optim_config_widget.data_options_gb.smooth_data_check.isChecked()
         # Get sq_method
@@ -254,7 +254,7 @@ class App(QMainWindow):
         else:
             _sq_method = 'faber-ziman'
         # Get density - using rho_0 here
-        _rho = np.float64(self.table_widget.optim_ui.optim_config_widget.composition_gb.density_input.text())
+        _rho = float(self.table_widget.optim_ui.optim_config_widget.composition_gb.density_input.text())
 
         _refinement_data = {
             'composition': _composition,
@@ -424,7 +424,7 @@ class MainContainer(QWidget):
         if (self.optim_ui.optim_config_widget.optim_options_gb.opt_check.isChecked()) & (self.optim_ui.optim_config_widget.optim_options_gb.isChecked()):
             self.results_ui.data['rho'] = self.optim_ui.data['refined_rho']
         else:
-            self.results_ui.data['rho'] = np.float64(self.optim_ui.optim_config_widget.composition_gb.density_input.text())
+            self.results_ui.data['rho'] = float(self.optim_ui.optim_config_widget.composition_gb.density_input.text())
         if self.optim_ui.optim_config_widget.optim_options_gb.isChecked():
             self.results_ui.data['int_func'] = self.optim_ui.data['impr_int_func']
             self.results_ui.data['sq_x'] = self.optim_ui.data['impr_iq_x']
@@ -473,4 +473,4 @@ class MainContainer(QWidget):
 
     def copy_bkg_scale_result(self):
         _bkg_scale_result = self.optim_ui.optim_config_widget.optim_results_gb.bkg_scale_output.text()
-        self.bkg_ui.bkg_config_widget.bkg_subtract_gb.scale_sb.setValue(np.float64(_bkg_scale_result))
+        self.bkg_ui.bkg_config_widget.bkg_subtract_gb.scale_sb.setValue(float(_bkg_scale_result))

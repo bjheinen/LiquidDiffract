@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 __author__ = "Benedict J. Heinen"
-__copyright__ = "Copyright 2018-2024, Benedict J. Heinen"
+__copyright__ = "Copyright 2018-2026, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
 import os
@@ -110,7 +110,7 @@ class BkgUI(QWidget):
         before rebinning as this could hang on very large files.
         '''
         try:
-            _dx = np.float64(self.bkg_config_widget.data_files_gb.dq_input.text())
+            _dx = float(self.bkg_config_widget.data_files_gb.dq_input.text())
         except ValueError:
             _dx = 0
         if bkg == 1:
@@ -372,7 +372,7 @@ class BkgUI(QWidget):
     def missing_bkg_file_error(self):
         message = ['No background file!', 'Please load a background file']
         self.warning_message(message)
-    
+
     def bkg_match_error(self):
         message = ['Error subtracting background!', 'Data and background\n do not match!']
         self.warning_message(message)
@@ -419,7 +419,7 @@ class DataFilesGroupBox(QGroupBox):
         self.setTitle('Data Files')
         self.setAlignment(Qt.AlignLeft)
         self.setStyleSheet('GroupBox::title{subcontrol-origin: margin; subcontrol-position: top left;}')
-        
+
         self.create_widgets()
         self.style_widgets()
         self.create_layout()
@@ -624,7 +624,7 @@ class DataConvertGroupBox(QGroupBox):
         if self.data_file is None or self.two_theta_data is None:
             return
         try:
-            __lambda = np.float64(self.lambda_input.text())
+            __lambda = float(self.lambda_input.text())
         # Return if no wavelength set
         except ValueError:
             _message = ['No Wavelength Set!', 'Please set wavelength value']

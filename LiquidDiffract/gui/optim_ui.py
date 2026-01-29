@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 __author__ = "Benedict J. Heinen"
-__copyright__ = "Copyright 2018-2024, Benedict J. Heinen"
+__copyright__ = "Copyright 2018-2026, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
 import os.path
@@ -131,7 +131,7 @@ class OptimUI(QWidget):
         # Cut q at qmax first (if selected) and define cor_x_cut
         if qmax_cut:
             # Get q_max to cut at
-            self.data['qmax'] = np.float64(self.optim_config_widget.data_options_gb.qmax_input.text())
+            self.data['qmax'] = float(self.optim_config_widget.data_options_gb.qmax_input.text())
             # cut q data at qmax
             _cut = np.where(self.data['cor_x'] < self.data['qmax'])
             # Take copy of array to avoid modifying cor_x/cor_y
@@ -146,7 +146,7 @@ class OptimUI(QWidget):
 
         # Cut at qmin if selected
         if qmin_cut:
-            self.data['qmin'] = np.float64(self.optim_config_widget.data_options_gb.qmin_input.text())
+            self.data['qmin'] = float(self.optim_config_widget.data_options_gb.qmin_input.text())
             # Take first intensity value after q_min
             # Catch empty array error caused by no data:
             try:
@@ -198,7 +198,7 @@ class OptimUI(QWidget):
         self.data['mod_func'] = self.optim_config_widget.data_options_gb.mod_func_input.currentText()
         if self.data['mod_func'] == 'Cosine-window':
             try:
-                self.data['window_start'] = np.float64(self.optim_config_widget.data_options_gb.window_start_input.text())
+                self.data['window_start'] = float(self.optim_config_widget.data_options_gb.window_start_input.text())
             except ValueError:
                 self.window_func_error()
                 return
@@ -214,7 +214,7 @@ class OptimUI(QWidget):
         self.data['sq_method'] = _method
         # Get rho 0 - Force intermediate values passed by QValidator to 0
         try:
-            _rho_0 = np.float64(self.optim_config_widget.composition_gb.density_input.text())
+            _rho_0 = float(self.optim_config_widget.composition_gb.density_input.text())
         except ValueError:
             _rho_0 = 0.0
         self.data['iq_x'] = self.data['cor_x_cut']
@@ -260,7 +260,7 @@ class OptimUI(QWidget):
         self.data['mod_func'] = self.optim_config_widget.data_options_gb.mod_func_input.currentText()
         if self.data['mod_func'] == 'Cosine-window':
             try:
-                self.data['window_start'] = np.float64(self.optim_config_widget.data_options_gb.window_start_input.text())
+                self.data['window_start'] = float(self.optim_config_widget.data_options_gb.window_start_input.text())
             except ValueError:
                 self.window_func_error()
                 return
@@ -277,9 +277,9 @@ class OptimUI(QWidget):
         elif self.optim_config_widget.data_options_gb.fz_btn.isChecked():
             _method = 'faber-ziman'
         # Get density
-        _rho_0 = np.float64(self.optim_config_widget.composition_gb.density_input.text())
+        _rho_0 = float(self.optim_config_widget.composition_gb.density_input.text())
         # Get r_min
-        _r_min = np.float64(self.optim_config_widget.optim_options_gb.rmin_input.text())
+        _r_min = float(self.optim_config_widget.optim_options_gb.rmin_input.text())
         # Get no. iterations for Eggert refinement
         _n_iter = int(self.optim_config_widget.optim_options_gb.niter_input.text())
         if _n_iter < 2:
@@ -1026,7 +1026,7 @@ class DataOptionsGroupBox(QGroupBox):
         self.qmax_label.setEnabled(False)
 
         self.qmin_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
-        self.qmin_label.setToolTip('Minimum Q value - set to truncate data') 
+        self.qmin_label.setToolTip('Minimum Q value - set to truncate data')
         self.qmin_input.setAlignment(Qt.AlignRight)
         self.qmin_input.setValidator(QDoubleValidator())
         self.qmin_input.setMaximumWidth(100)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 __author__ = "Benedict J. Heinen"
-__copyright__ = "Copyright 2018-2024, Benedict J. Heinen"
+__copyright__ = "Copyright 2018-2026, Benedict J. Heinen"
 __email__ = "benedict.heinen@gmail.com"
 
 try:
@@ -411,11 +411,11 @@ class PreferencesDialog(QDialog):
             _op_method = self.refine_settings_gb.op_method_input.currentText()
             _disp = int(self.refine_settings_gb.disp_check.isChecked())
             _maxiter = int(self.refine_settings_gb.maxiter_input.text())
-            _ftol = np.float64(self.refine_settings_gb.ftol_input.text())
+            _ftol = float(self.refine_settings_gb.ftol_input.text())
             # Get l_bfgs_b specific options
             if _op_method == 'L-BFGS-B':
                 _maxfun = int(self.refine_settings_gb.maxfun_input.text())
-                _gtol = np.float64(self.refine_settings_gb.gtol_input.text())
+                _gtol = float(self.refine_settings_gb.gtol_input.text())
             # Get globam minimisation (basin-hopping) options
             _bh_disp = int(self.global_min_settings_gb.disp_check.isChecked())
             _bh_niter = int(self.global_min_settings_gb.niter_basin_input.text())
